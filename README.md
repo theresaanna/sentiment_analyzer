@@ -2,13 +2,18 @@
 
 A Flask web application that analyzes the sentiment of YouTube video comments using the YouTube Data API v3.
 
+**GitHub Repository:** https://github.com/theresaanna/sentiment_analyzer
+
 ## Features
 
 - 📹 Extract video ID from various YouTube URL formats
-- 💬 Fetch comments from YouTube videos (API integration pending)
-- 📊 Perform sentiment analysis on comments
-- 📈 Visualize sentiment distribution
+- 💬 Fetch comments from YouTube videos (API integration ready)
+- 📊 Perform sentiment analysis on comments (coming soon)
+- 📈 Visualize sentiment distribution (coming soon)
 - 🎨 Clean, modern, responsive UI with Bootstrap 5
+- ✅ Form validation with WTForms
+- 🔧 Environment-based configuration
+- 📱 Fully responsive design
 
 ## Tech Stack
 
@@ -16,6 +21,35 @@ A Flask web application that analyzes the sentiment of YouTube video comments us
 - **Frontend**: HTML5, CSS3, Bootstrap 5
 - **APIs**: YouTube Data API v3
 - **Deployment**: Gunicorn (production server)
+
+## Quick Start
+
+### Local Setup (macOS/Linux)
+
+```bash
+# 1. Clone the repository
+cd /Users/theresa/PycharmProjects/sentiment_analyzer
+# Or if cloning fresh:
+# git clone https://github.com/theresaanna/sentiment_analyzer.git
+# cd sentiment_analyzer
+
+# 2. Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Set up environment variables
+cp .env.example .env
+# Edit .env and add your YouTube API key:
+# YOUTUBE_API_KEY=your-actual-api-key-here
+
+# 5. Run the application
+python run.py
+```
+
+The application will be available at **http://localhost:5000**
 
 ## Installation
 
@@ -71,20 +105,30 @@ sentiment_analyzer/
 │   │   ├── __init__.py
 │   │   └── youtube.py      # YouTube URL parsing
 │   ├── templates/          # HTML templates
-│   │   ├── base.html
-│   │   ├── index.html
-│   │   ├── analyze.html
-│   │   └── about.html
+│   │   ├── base.html       # Base template with navigation
+│   │   ├── index.html      # Homepage with URL input form
+│   │   ├── analyze.html    # Analysis results page
+│   │   └── about.html      # About page
 │   └── static/            # Static files
 │       └── css/
-│           └── style.css
-├── tests/                 # Test modules
+│           └── style.css   # Custom styles
+├── tests/                 # Test modules (to be added)
 ├── requirements.txt       # Python dependencies
 ├── .env.example          # Environment variables template
+├── .env                  # Your local environment (not in git)
 ├── .gitignore           # Git ignore file
 ├── README.md            # This file
 └── run.py              # Application entry point
 ```
+
+### Key Components
+
+- **Application Factory Pattern**: Clean Flask app initialization in `app/__init__.py`
+- **Blueprints**: Modular route organization using Flask blueprints
+- **Configuration Management**: Environment-based config in `app/config.py`
+- **URL Parsing**: Robust YouTube URL parsing in `app/utils/youtube.py`
+- **Form Validation**: WTForms with CSRF protection in `app/main/forms.py`
+- **Responsive UI**: Bootstrap 5 templates with custom CSS
 
 ## Usage
 
@@ -115,8 +159,27 @@ black app/
 flake8 app/
 ```
 
+## Next Steps for API Integration
+
+The application is ready for YouTube API integration. To complete the setup:
+
+1. **Get your YouTube API Key:**
+   - Go to [Google Cloud Console](https://console.cloud.google.com/)
+   - Create a new project or select existing
+   - Enable YouTube Data API v3
+   - Create credentials (API Key)
+   - Add the key to your `.env` file
+
+2. **Test the Application:**
+   - Navigate to http://localhost:5000
+   - Enter any YouTube URL
+   - The app will extract and display the video ID
+   - API integration will fetch comments in the next phase
+
 ## Future Enhancements
 
+- [x] Extract video ID from YouTube URLs
+- [x] Bootstrap UI with forms
 - [ ] Complete YouTube API integration for fetching comments
 - [ ] Implement sentiment analysis using TextBlob/VADER
 - [ ] Add data visualization with charts
