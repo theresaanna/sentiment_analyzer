@@ -79,6 +79,21 @@ main {
     font-size: 1.125rem;
 }
 
+/* Gray gradient button */
+.btn-gradient-gray {
+    background: linear-gradient(135deg, #6b7280 0%, #374151 100%);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-gradient-gray:hover {
+    background: linear-gradient(135deg, #4b5563 0%, #1f2937 100%);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* Alert customization */
 .alert {
     border: none;
@@ -130,6 +145,65 @@ code {
         padding: 0.5rem 1.5rem;
         font-size: 1rem;
     }
+}
+
+/* Gray gradient backgrounds */
+.bg-gradient-gray {
+    background: linear-gradient(135deg, #6b7280 0%, #374151 100%);
+    color: white;
+}
+
+.bg-gradient-dark-gray {
+    background: linear-gradient(135deg, #434343 0%, #000000 100%);
+    color: white;
+}
+
+.bg-gradient-light-gray {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    color: #333;
+}
+
+.bg-gradient-silver {
+    background: linear-gradient(135deg, #8e9eab 0%, #4e5559 100%);
+    color: white;
+}
+
+.bg-gradient-elegant-gray {
+    background: linear-gradient(to right, #4b5563 0%, #1f2937 50%, #4b5563 100%);
+    color: white;
+}
+
+/* Custom navbar styling for gradient */
+.navbar.bg-gradient-gray,
+.navbar.bg-gradient-dark-gray,
+.navbar.bg-gradient-elegant-gray {
+    border: none;
+}
+
+.navbar.bg-gradient-gray .navbar-brand,
+.navbar.bg-gradient-dark-gray .navbar-brand,
+.navbar.bg-gradient-elegant-gray .navbar-brand {
+    color: white !important;
+}
+
+.navbar.bg-gradient-gray .nav-link,
+.navbar.bg-gradient-dark-gray .nav-link,
+.navbar.bg-gradient-elegant-gray .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.navbar.bg-gradient-gray .nav-link:hover,
+.navbar.bg-gradient-dark-gray .nav-link:hover,
+.navbar.bg-gradient-elegant-gray .nav-link:hover {
+    color: white !important;
+}
+
+/* Card header gradient styling */
+.card-header.bg-gradient-gray,
+.card-header.bg-gradient-dark-gray,
+.card-header.bg-gradient-elegant-gray {
+    border: none;
+    border-radius: 10px 10px 0 0;
 }
 
 /* Animation classes */

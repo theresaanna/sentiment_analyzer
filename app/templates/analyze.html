@@ -4,43 +4,164 @@
 
 {% block content %}
 <div class="row justify-content-center">
-    <div class="col-md-10">
-        <div class="card shadow">
-            <div class="card-header bg-primary text-white">
+    <div class="col-md-12">
+        {% if success %}
+        <!-- Video Embed and Info -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-gradient-elegant-gray text-white">
                 <h3 class="mb-0">
-                    <i class="fab fa-youtube"></i> Video Analysis
+                    <i class="fab fa-youtube"></i> {{ video_info.title }}
                 </h3>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <h5 class="alert-heading">Video Information</h5>
-                    <p class="mb-2"><strong>Video ID:</strong> <code>{{ video_id }}</code></p>
-                    <p class="mb-2"><strong>URL:</strong> <a href="{{ video_url }}" target="_blank" rel="noopener">{{ video_url }}</a></p>
+                <!-- Video Embed -->
+                <div class="embed-responsive embed-responsive-16by9 mb-4">
+                    <iframe class="embed-responsive-item" 
+                            src="https://www.youtube.com/embed/{{ video_id }}"
+                            allowfullscreen></iframe>
                 </div>
                 
-                <div class="alert alert-warning">
-                    <h5 class="alert-heading">
-                        <i class="fas fa-info-circle"></i> Coming Soon
-                    </h5>
-                    <p class="mb-0">{{ message }}</p>
-                    <hr>
-                    <p class="mb-0">
-                        In the next step, we'll integrate the YouTube API to:
-                    </p>
-                    <ul class="mb-0 mt-2">
-                        <li>Fetch video metadata (title, description, statistics)</li>
-                        <li>Extract comments from the video</li>
-                        <li>Perform sentiment analysis on the comments</li>
-                        <li>Display visualizations and insights</li>
-                    </ul>
+                <!-- Video Metadata -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong><i class="fas fa-tv"></i> Channel:</strong> {{ video_info.channel }}</p>
+                        <p><strong><i class="fas fa-calendar"></i> Published:</strong> {{ video_info.published_at[:10] }}</p>
+                        <p><strong><i class="fas fa-clock"></i> Duration:</strong> {{ video_info.duration }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong><i class="fas fa-link"></i> URL:</strong> <a href="{{ video_url }}" target="_blank" rel="noopener">Watch on YouTube</a></p>
+                        <p><strong><i class="fas fa-hashtag"></i> Video ID:</strong> <code>{{ video_id }}</code></p>
+                    </div>
                 </div>
                 
-                <div class="text-center mt-4">
-                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
-                        <i class="fas fa-arrow-left"></i> Analyze Another Video
-                    </a>
+                <!-- Video Statistics Cards -->
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title text-primary">{{ "{:,}".format(video_info.statistics.views) }}</h4>
+                                <p class="card-text"><i class="fas fa-eye"></i> Views</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title text-success">{{ "{:,}".format(video_info.statistics.likes) }}</h4>
+                                <p class="card-text"><i class="fas fa-thumbs-up"></i> Likes</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title text-info">{{ "{:,}".format(video_info.statistics.comments) }}</h4>
+                                <p class="card-text"><i class="fas fa-comment"></i> Total Comments</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title text-warning">{{ "%.2f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</h4>
+                                <p class="card-text"><i class="fas fa-percentage"></i> Engagement</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+        
+        <!-- Comment Analysis -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-gradient-elegant-gray text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-comments"></i> Comment Analysis
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-info-circle"></i> Based on a sample of {{ comment_stats.total_comments }} comments
+                </div>
+                
+                <!-- Comment Statistics Cards -->
+                <div class="row text-center mb-4">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title text-primary">{{ comment_stats.unique_commenters }}</h4>
+                                <p class="card-text"><i class="fas fa-users"></i> Unique Commenters</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title text-success">{{ comment_stats.avg_comment_length }}</h4>
+                                <p class="card-text"><i class="fas fa-text-width"></i> Avg Length (chars)</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title text-info">{{ comment_stats.top_level_count }}</h4>
+                                <p class="card-text"><i class="fas fa-comment-dots"></i> Top-level</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h4 class="card-title text-warning">{{ comment_stats.replies_count }}</h4>
+                                <p class="card-text"><i class="fas fa-reply"></i> Replies</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Top Commenters -->
+                {% if comment_stats.top_commenters %}
+                <div class="card bg-light">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-trophy"></i> Most Active Commenters</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol class="list-group list-group-flush">
+                            {% for author, count in comment_stats.top_commenters %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span><strong>#{{ loop.index }}</strong> {{ author }}</span>
+                                <span class="badge badge-primary badge-pill">{{ count }} comments</span>
+                            </li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% else %}
+        <!-- Error State -->
+        <div class="card shadow">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="fas fa-exclamation-triangle"></i> Analysis Error
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-danger">
+                    <h5 class="alert-heading">Unable to analyze video</h5>
+                    <p>{{ error }}</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="text-center mt-4">
+            <a href="{{ url_for('main.index') }}" class="btn btn-gradient-gray">
+                <i class="fas fa-arrow-left"></i> Analyze Another Video
+            </a>
         </div>
     </div>
 </div>

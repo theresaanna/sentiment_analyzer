@@ -14,7 +14,7 @@
                     Analyze the sentiment of YouTube video comments. Enter a YouTube URL below to get started.
                 </p>
                 
-                <form method="POST" action="{{ url_for('main.index') }}" novalidate>
+                <form method="POST" action="{{ url_for('main.index') }}" novalidate id="analyzeForm">
                     {{ form.hidden_tag() }}
                     
                     <div class="mb-3">
@@ -35,7 +35,13 @@
                     </div>
                     
                     <div class="d-grid">
-                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        <button type="submit" class="btn btn-gradient-gray btn-lg" id="submitBtn">
+                            <span id="submitText">Analyze Comments</span>
+                            <span id="loadingSpinner" class="d-none">
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Analyzing... This may take a moment
+                            </span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -44,21 +50,32 @@
         <!-- Features Section -->
         <div class="row mt-5">
             <div class="col-md-4 text-center mb-3">
-                <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                <i class="fas fa-chart-line fa-3x text-secondary mb-3"></i>
                 <h5>Sentiment Analysis</h5>
                 <p class="text-muted">Analyze the overall sentiment of video comments</p>
             </div>
             <div class="col-md-4 text-center mb-3">
-                <i class="fas fa-comments fa-3x text-primary mb-3"></i>
+                <i class="fas fa-comments fa-3x text-secondary mb-3"></i>
                 <h5>Comment Extraction</h5>
                 <p class="text-muted">Extract and process YouTube comments efficiently</p>
             </div>
             <div class="col-md-4 text-center mb-3">
-                <i class="fas fa-tachometer-alt fa-3x text-primary mb-3"></i>
+                <i class="fas fa-tachometer-alt fa-3x text-secondary mb-3"></i>
                 <h5>Real-time Results</h5>
                 <p class="text-muted">Get instant insights from video comments</p>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('analyzeForm').addEventListener('submit', function() {
+    // Hide the normal text and show the loading spinner
+    document.getElementById('submitText').classList.add('d-none');
+    document.getElementById('loadingSpinner').classList.remove('d-none');
+    document.getElementById('loadingMessage').classList.remove('d-none');
+    // Disable the button to prevent multiple submissions
+    document.getElementById('submitBtn').disabled = true;
+});
+</script>
 {% endblock %}
