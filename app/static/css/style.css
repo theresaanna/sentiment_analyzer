@@ -1,0 +1,162 @@
+/* Custom styles for YouTube Sentiment Analyzer */
+
+:root {
+    --primary-color: #0d6efd;
+    --youtube-red: #FF0000;
+    --success-color: #198754;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-bg: #f8f9fa;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+/* Navbar customization */
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+.navbar-brand i {
+    margin-right: 0.5rem;
+}
+
+/* Card enhancements */
+.card {
+    border: none;
+    border-radius: 10px;
+    transition: transform 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+/* Form styling */
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-control.form-control-lg {
+    font-size: 1.125rem;
+    padding: 0.75rem 1rem;
+}
+
+/* Button enhancements */
+.btn {
+    border-radius: 5px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.btn-lg {
+    padding: 0.75rem 2rem;
+    font-size: 1.125rem;
+}
+
+/* Alert customization */
+.alert {
+    border: none;
+    border-radius: 8px;
+}
+
+/* Feature icons */
+.fa-3x {
+    font-size: 2.5rem;
+}
+
+/* Footer styling */
+.footer {
+    background-color: var(--light-bg);
+    margin-top: auto;
+}
+
+/* YouTube specific styling */
+.fa-youtube {
+    color: var(--youtube-red);
+}
+
+.text-youtube {
+    color: var(--youtube-red);
+}
+
+/* Code blocks */
+code {
+    background-color: #f4f4f4;
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.9em;
+}
+
+/* Loading spinner (for future use) */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.3em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .btn-lg {
+        padding: 0.5rem 1.5rem;
+        font-size: 1rem;
+    }
+}
+
+/* Animation classes */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Sentiment colors (for future use) */
+.sentiment-positive {
+    color: var(--success-color);
+}
+
+.sentiment-neutral {
+    color: var(--warning-color);
+}
+
+.sentiment-negative {
+    color: var(--danger-color);
+}

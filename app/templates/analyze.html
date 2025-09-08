@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze - YouTube Sentiment Analyzer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">
+                    <i class="fab fa-youtube"></i> Video Analysis
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">Video Information</h5>
+                    <p class="mb-2"><strong>Video ID:</strong> <code>{{ video_id }}</code></p>
+                    <p class="mb-2"><strong>URL:</strong> <a href="{{ video_url }}" target="_blank" rel="noopener">{{ video_url }}</a></p>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <h5 class="alert-heading">
+                        <i class="fas fa-info-circle"></i> Coming Soon
+                    </h5>
+                    <p class="mb-0">{{ message }}</p>
+                    <hr>
+                    <p class="mb-0">
+                        In the next step, we'll integrate the YouTube API to:
+                    </p>
+                    <ul class="mb-0 mt-2">
+                        <li>Fetch video metadata (title, description, statistics)</li>
+                        <li>Extract comments from the video</li>
+                        <li>Perform sentiment analysis on the comments</li>
+                        <li>Display visualizations and insights</li>
+                    </ul>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Analyze Another Video
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

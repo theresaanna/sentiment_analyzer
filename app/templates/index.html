@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Home - YouTube Sentiment Analyzer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h1 class="card-title text-center mb-4">
+                    <i class="fab fa-youtube text-danger"></i> YouTube Sentiment Analyzer
+                </h1>
+                <p class="text-center text-muted mb-4">
+                    Analyze the sentiment of YouTube video comments. Enter a YouTube URL below to get started.
+                </p>
+                
+                <form method="POST" action="{{ url_for('main.index') }}" novalidate>
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.url.label(class="form-label") }}
+                        {{ form.url(class="form-control form-control-lg" + (" is-invalid" if form.url.errors else "")) }}
+                        {% if form.url.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in form.url.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            Examples: 
+                            <code>https://www.youtube.com/watch?v=dQw4w9WgXcQ</code> or 
+                            <code>https://youtu.be/dQw4w9WgXcQ</code>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Features Section -->
+        <div class="row mt-5">
+            <div class="col-md-4 text-center mb-3">
+                <i class="fas fa-chart-line fa-3x text-primary mb-3"></i>
+                <h5>Sentiment Analysis</h5>
+                <p class="text-muted">Analyze the overall sentiment of video comments</p>
+            </div>
+            <div class="col-md-4 text-center mb-3">
+                <i class="fas fa-comments fa-3x text-primary mb-3"></i>
+                <h5>Comment Extraction</h5>
+                <p class="text-muted">Extract and process YouTube comments efficiently</p>
+            </div>
+            <div class="col-md-4 text-center mb-3">
+                <i class="fas fa-tachometer-alt fa-3x text-primary mb-3"></i>
+                <h5>Real-time Results</h5>
+                <p class="text-muted">Get instant insights from video comments</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

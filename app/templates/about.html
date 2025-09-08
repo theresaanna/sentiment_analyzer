@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}About - YouTube Sentiment Analyzer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-body p-5">
+                <h1 class="card-title text-center mb-4">About Sentiment Analyzer</h1>
+                
+                <p class="lead">
+                    The YouTube Sentiment Analyzer is a powerful tool designed to analyze and understand 
+                    the sentiment of comments on YouTube videos.
+                </p>
+                
+                <h3 class="mt-4">Features</h3>
+                <ul>
+                    <li>Extract comments from any public YouTube video</li>
+                    <li>Perform sentiment analysis on comments</li>
+                    <li>Visualize sentiment distribution</li>
+                    <li>Identify trends and patterns in viewer feedback</li>
+                </ul>
+                
+                <h3 class="mt-4">How It Works</h3>
+                <ol>
+                    <li>Enter a YouTube video URL</li>
+                    <li>The system extracts the video ID</li>
+                    <li>Comments are fetched using the YouTube Data API</li>
+                    <li>Sentiment analysis is performed on each comment</li>
+                    <li>Results are aggregated and visualized</li>
+                </ol>
+                
+                <h3 class="mt-4">Technology Stack</h3>
+                <p>This application is built with:</p>
+                <ul>
+                    <li><strong>Flask</strong> - Python web framework</li>
+                    <li><strong>YouTube Data API v3</strong> - For fetching video data</li>
+                    <li><strong>Bootstrap 5</strong> - For responsive UI</li>
+                    <li><strong>Python 3.9+</strong> - Core programming language</li>
+                </ul>
+                
+                <div class="text-center mt-5">
+                    <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-rocket"></i> Start Analyzing
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
