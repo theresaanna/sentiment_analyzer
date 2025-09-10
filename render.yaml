@@ -3,13 +3,14 @@ services:
   - type: web
     name: sentiment-analyzer
     runtime: python
+    runtime_version: 3.11.10
     region: oregon # You can change to: ohio, frankfurt, singapore
     plan: free # Options: free, starter ($7/mo), standard ($25/mo)
     
     # Build configuration
     buildCommand: |
-      pip install --upgrade pip setuptools wheel
-      pip install --no-cache-dir -r requirements-production.txt
+      python -m pip install --upgrade pip setuptools wheel
+      python -m pip install -r requirements-render.txt
       python -c "import nltk; nltk.download('vader_lexicon', quiet=True) 2>/dev/null || true"
     
     # Start command using gunicorn for production
@@ -87,6 +88,8 @@ buildFilter:
     - app/**
     - requirements.txt
     - requirements-production.txt
+    - requirements-render.txt
+    - runtime.txt
     - run.py
     - render.yaml
   ignoredPaths:
