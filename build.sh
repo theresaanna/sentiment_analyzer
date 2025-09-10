@@ -17,14 +17,9 @@ echo "Installing build tools..."
 python -m pip install --upgrade pip==25.2
 python -m pip install --upgrade setuptools>=70.0.0 wheel>=0.41.0
 
-# Check which requirements file to use
-if [ -f "requirements-render.txt" ]; then
-    echo "Using requirements-render.txt for installation..."
-    REQUIREMENTS_FILE="requirements-render.txt"
-else
-    echo "Using requirements.txt for installation..."
-    REQUIREMENTS_FILE="requirements.txt"
-fi
+# Always use requirements.txt for installation on Railway
+REQUIREMENTS_FILE="requirements.txt"
+echo "Using ${REQUIREMENTS_FILE} for installation..."
 
 # Install PyTorch CPU version first to avoid memory issues
 echo "Installing PyTorch CPU version..."
