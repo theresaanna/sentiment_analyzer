@@ -43,11 +43,9 @@ def create_app(config_class=Config):
     with app.app_context():
         try:
             from app.models import User  # noqa: F401
-            # Note: db.create_all() is now handled by migrations
-            # Only create tables if migrations folder doesn't exist
-            import os
-            if not os.path.exists('migrations'):
-                db.create_all()
+            # Create tables if they don't exist (for initial deployment)
+            # This is safe to run even with migrations
+            db.create_all()
         except Exception as e:
             print(f"Warning: could not initialize database: {e}")
     
