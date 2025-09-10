@@ -18,7 +18,12 @@ class Config:
     TESTING = False
 
     # Database
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
+    database_url = os.environ.get('DATABASE_URL')
+    if database_url and database_url.startswith('postgres://'):
+        # Railway uses postgres:// but SQLAlchemy needs postgresql://
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
+    
+    SQLALCHEMY_DATABASE_URI = database_url or \
         'sqlite:///' + os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
