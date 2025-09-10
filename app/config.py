@@ -21,7 +21,7 @@ class Config:
     RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL') or 'memory://'
     
     # Application settings
-    MAX_COMMENTS_PER_VIDEO = int(os.environ.get('MAX_COMMENTS_PER_VIDEO', 100))
+    MAX_COMMENTS_PER_VIDEO = int(os.environ.get('MAX_COMMENTS_PER_VIDEO', 10000))  # Increased for better analysis
     CACHE_TIMEOUT = int(os.environ.get('CACHE_TIMEOUT', 300))  # 5 minutes
 
 

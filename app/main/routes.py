@@ -2,12 +2,22 @@
 Routes for the main blueprint.
 """
 import os
+import threading
+import json
 from flask import render_template, flash, redirect, url_for, session, jsonify, request
 from app.main import bp
 from app.main.forms import YouTubeURLForm
 from app.utils.youtube import extract_video_id, build_youtube_url
 from app.services import YouTubeService
+from app.services.enhanced_youtube_service import EnhancedYouTubeService, analyze_comment_coverage
 from app.cache import cache
+from app.science import SentimentAnalyzer, CommentSummarizer
+
+# Import fast routes to register them
+try:
+    from app.main import fast_routes
+except ImportError as e:
+    print(f"Warning: Could not import fast routes: {e}")
 
 
 @bp.route('/', methods=['GET', 'POST'])
@@ -40,15 +50,15 @@ def analyze(video_id):
     cache_status = {'enabled': cache.enabled, 'hits': []}
     
     try:
-        # Initialize YouTube service
-        youtube_service = YouTubeService()
+        # Initialize Enhanced YouTube service for maximum comment retrieval
+        youtube_service = EnhancedYouTubeService()
         
-        # Use fewer comments for faster loading
-        max_comments = 20
+        # Get more comments for better analysis (configurable)
+        max_comments = request.args.get('max_comments', type=int, default=1000)
         
         # Check if data is in cache first
         video_cached = cache.get('video_info', video_id) is not None
-        comments_cached = cache.get('comments_flat', f"{video_id}:{max_comments}") is not None
+        comments_cached = cache.get('enhanced_comments', f"{video_id}:max:{max_comments}:True:relevance") is not None
         
         if video_cached:
             cache_status['hits'].append('video_info')
@@ -58,8 +68,15 @@ def analyze(video_id):
         # Fetch video info (will use cache if available)
         video_info = youtube_service.get_video_info(video_id)
         
-        # Fetch sample of comments for analysis (will use cache if available)
-        comments = youtube_service.get_all_comments_flat(video_id, max_comments=max_comments)
+        # Fetch maximum available comments using enhanced service
+        result = youtube_service.get_all_available_comments(
+            video_id=video_id,
+            target_comments=max_comments,
+            include_replies=True,
+            sort_order='relevance'
+        )
+        comments = result['comments']
+        fetch_stats = result['statistics']
         
         # Calculate statistics
         unique_commenters = set()
@@ -86,14 +103,20 @@ def analyze(video_id):
         avg_comment_length = round(total_length / len(comments)) if comments else 0
         top_level_count = len(comments) - replies_count
         
-        # Prepare stats for template
+        # Prepare stats for template with enhanced metrics
         comment_stats = {
             'total_comments': len(comments),
             'unique_commenters': len(unique_commenters),
             'avg_comment_length': avg_comment_length,
             'replies_count': replies_count,
             'top_level_count': top_level_count,
-            'top_commenters': top_commenters
+            'top_commenters': top_commenters,
+            # Enhanced statistics
+            'total_available': fetch_stats['total_comments_available'],
+            'fetch_percentage': fetch_stats['fetch_percentage'],
+            'fetch_time': fetch_stats['fetch_time_seconds'],
+            'comments_per_second': fetch_stats['comments_per_second'],
+            'quota_used': fetch_stats['quota_used']
         }
         
         return render_template(
@@ -133,34 +156,48 @@ def api_get_comments(video_id):
         - format: 'threaded' (default) or 'flat'
     """
     try:
-        # Initialize YouTube service
-        youtube_service = YouTubeService()
+        # Initialize Enhanced YouTube service
+        youtube_service = EnhancedYouTubeService()
         
-        # Get parameters
+        # Get parameters with higher default
         max_comments = request.args.get('max_comments', type=int)
         if not max_comments:
-            max_comments = int(os.getenv('MAX_COMMENTS_PER_VIDEO', 100))
+            max_comments = int(os.getenv('MAX_COMMENTS_PER_VIDEO', 10000))
         
         format_type = request.args.get('format', 'threaded')
         
-        # Fetch comments based on format
+        # Fetch comments using enhanced service
         if format_type == 'flat':
-            comments = youtube_service.get_all_comments_flat(video_id, max_comments)
+            result = youtube_service.get_all_available_comments(
+                video_id=video_id,
+                target_comments=max_comments,
+                include_replies=True,
+                sort_order='relevance'
+            )
             return jsonify({
                 'success': True,
                 'video_id': video_id,
                 'format': 'flat',
-                'comments': comments,
-                'total_comments': len(comments)
+                'comments': result['comments'],
+                'total_comments': len(result['comments']),
+                'statistics': result['statistics'],
+                'metadata': result['fetch_metadata']
             })
         else:
             # Get comprehensive summary with threads
-            data = youtube_service.get_video_comments_summary(video_id, max_comments)
+            result = youtube_service.get_all_available_comments(
+                video_id=video_id,
+                target_comments=max_comments,
+                include_replies=True,
+                sort_order='relevance'
+            )
             return jsonify({
                 'success': True,
                 'video_id': video_id,
                 'format': 'threaded',
-                'data': data
+                'threads': result['threads'],
+                'statistics': result['statistics'],
+                'metadata': result['fetch_metadata']
             })
             
     except ValueError as e:
@@ -259,6 +296,183 @@ def api_cache_stats():
             'success': True,
             'stats': stats
         })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@bp.route('/api/analyze/sentiment/<video_id>', methods=['POST'])
+def api_analyze_sentiment(video_id):
+    """
+    API endpoint to trigger sentiment analysis for video comments.
+    """
+    try:
+        # Get analysis parameters
+        data = request.get_json() or {}
+        max_comments = data.get('max_comments', 100)
+        
+        # Store analysis status
+        analysis_id = f"sentiment_{video_id}_{max_comments}"
+        
+        # Check if analysis already exists in cache
+        cached_result = cache.get('sentiment_analysis', analysis_id)
+        if cached_result:
+            return jsonify({
+                'success': True,
+                'analysis_id': analysis_id,
+                'status': 'completed',
+                'cached': True
+            })
+        
+        # Set initial status
+        cache.set('analysis_status', analysis_id, {'status': 'started', 'progress': 0}, ttl_hours=1)
+        
+        # Start analysis in background thread
+        thread = threading.Thread(
+            target=run_sentiment_analysis,
+            args=(video_id, max_comments, analysis_id)
+        )
+        thread.daemon = True
+        thread.start()
+        
+        return jsonify({
+            'success': True,
+            'analysis_id': analysis_id,
+            'status': 'started',
+            'message': 'Sentiment analysis started'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
+    """
+    Run sentiment analysis in background.
+    """
+    try:
+        # Update status
+        cache.set('analysis_status', analysis_id, {'status': 'fetching_comments', 'progress': 10}, ttl_hours=1)
+        
+        # Fetch comments
+        youtube_service = YouTubeService()
+        comments = youtube_service.get_all_comments_flat(video_id, max_comments=max_comments)
+        
+        # Update status
+        cache.set('analysis_status', analysis_id, {'status': 'analyzing_sentiment', 'progress': 30}, ttl_hours=1)
+        
+        # Initialize analyzer
+        analyzer = SentimentAnalyzer()
+        
+        # Progress callback
+        def progress_callback(current, total):
+            progress = 30 + int((current / total) * 50)  # 30-80% for sentiment analysis
+            cache.set('analysis_status', analysis_id, 
+                     {'status': 'analyzing_sentiment', 'progress': progress, 
+                      'current': current, 'total': total}, ttl_hours=1)
+        
+        # Analyze sentiment
+        sentiment_results = analyzer.analyze_batch(
+            [c['text'] for c in comments],
+            progress_callback=progress_callback
+        )
+        
+        # Update status
+        cache.set('analysis_status', analysis_id, {'status': 'generating_summary', 'progress': 85}, ttl_hours=1)
+        
+        # Generate summary
+        summarizer = CommentSummarizer(use_openai=os.getenv('OPENAI_API_KEY') is not None)
+        summary_results = summarizer.generate_summary(comments, sentiment_results)
+        
+        # Get sentiment timeline
+        timeline = analyzer.get_sentiment_timeline(comments[:50])  # Limit timeline to 50 comments
+        
+        # Prepare final results
+        results = {
+            'video_id': video_id,
+            'analysis_id': analysis_id,
+            'sentiment': sentiment_results,
+            'summary': summary_results,
+            'timeline': timeline,
+            'comments_sample': comments[:10]  # Include sample of analyzed comments
+        }
+        
+        # Cache results
+        cache.set('sentiment_analysis', analysis_id, results, ttl_hours=24)  # Cache for 24 hours
+        
+        # Update status to completed
+        cache.set('analysis_status', analysis_id, {'status': 'completed', 'progress': 100}, ttl_hours=1)
+        
+    except Exception as e:
+        # Update status to error
+        cache.set('analysis_status', analysis_id, 
+                 {'status': 'error', 'progress': 0, 'error': str(e)}, ttl_hours=1)
+
+
+@bp.route('/api/analyze/status/<analysis_id>')
+def api_analysis_status(analysis_id):
+    """
+    Get the status of a sentiment analysis job.
+    """
+    try:
+        status = cache.get('analysis_status', analysis_id)
+        if not status:
+            return jsonify({
+                'success': False,
+                'error': 'Analysis not found'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'status': status
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@bp.route('/api/analyze/results/<analysis_id>')
+def api_analysis_results(analysis_id):
+    """
+    Get the results of a completed sentiment analysis.
+    """
+    try:
+        # Check if analysis is complete
+        status = cache.get('analysis_status', analysis_id)
+        if not status:
+            return jsonify({
+                'success': False,
+                'error': 'Analysis not found'
+            }), 404
+        
+        if status.get('status') != 'completed':
+            return jsonify({
+                'success': False,
+                'error': 'Analysis not yet completed',
+                'status': status
+            }), 202
+        
+        # Get results
+        results = cache.get('sentiment_analysis', analysis_id)
+        if not results:
+            return jsonify({
+                'success': False,
+                'error': 'Results not found'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'results': results
+        })
+        
     except Exception as e:
         return jsonify({
             'success': False,

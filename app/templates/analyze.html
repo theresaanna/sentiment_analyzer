@@ -2,6 +2,78 @@
 
 {% block title %}Analyze - YouTube Sentiment Analyzer{% endblock %}
 
+{% block extra_css %}
+<style>
+    .sentiment-card {
+        transition: transform 0.2s;
+    }
+    .sentiment-card:hover {
+        transform: translateY(-5px);
+    }
+    .progress-container {
+        min-height: 200px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .analysis-section {
+        display: none;
+    }
+    .analysis-section.active {
+        display: block;
+    }
+    .sentiment-positive { color: #28a745; }
+    .sentiment-negative { color: #dc3545; }
+    .sentiment-neutral { color: #6c757d; }
+    
+    /* Pulse animation for analyze button */
+    .pulse-animation {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+        }
+        70% {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+        }
+    }
+    
+    /* Word cloud controls */
+    .word-cloud-controls {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .zoom-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+    
+    .zoom-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row justify-content-center">
     <div class="col-md-12">
@@ -81,7 +153,15 @@
             </div>
             <div class="card-body">
                 <div class="alert alert-info mb-4">
-                    <i class="fas fa-info-circle"></i> Based on a sample of {{ comment_stats.total_comments }} comments
+                    <i class="fas fa-info-circle"></i> 
+                    Fetched <strong>{{ comment_stats.total_comments }}</strong> of <strong>{{ "{:,}".format(comment_stats.total_available) }}</strong> available comments 
+                    (<strong>{{ "%.1f"|format(comment_stats.fetch_percentage) }}%</strong> coverage)
+                    <br>
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> Fetch time: {{ "%.2f"|format(comment_stats.fetch_time) }}s | 
+                        <i class="fas fa-tachometer-alt"></i> Speed: {{ "%.1f"|format(comment_stats.comments_per_second) }} comments/sec | 
+                        <i class="fas fa-chart-bar"></i> API quota used: {{ comment_stats.quota_used }} units
+                    </small>
                 </div>
                 
                 <!-- Comment Statistics Cards -->
@@ -122,7 +202,7 @@
                 
                 <!-- Top Commenters -->
                 {% if comment_stats.top_commenters %}
-                <div class="card bg-light">
+                <div class="card bg-light mb-3">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-trophy"></i> Most Active Commenters</h5>
                     </div>
@@ -138,6 +218,147 @@
                     </div>
                 </div>
                 {% endif %}
+                
+                <!-- Sentiment Analysis CTA -->
+                <div class="text-center">
+                    <button id="startSentimentAnalysisMain" class="btn btn-gradient-primary btn-lg shadow-lg pulse-animation" style="font-size: 1.2rem; padding: 12px 30px;">
+                        <i class="fas fa-brain"></i> Analyze Sentiment
+                    </button>
+                    <p class="text-muted mt-2 mb-0">Get AI-powered insights into the emotional tone of these comments</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sentiment Analysis Section -->
+        <div id="sentimentAnalysisSection" class="card shadow mb-4 analysis-section" style="display: none;">
+            <div class="card-header bg-gradient-elegant-gray text-white d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">
+                    <i class="fas fa-brain"></i> Sentiment Analysis
+                </h3>
+                <button id="startSentimentAnalysis" class="btn btn-primary btn-md shadow">
+                    <i class="fas fa-brain"></i> Analyze Sentiment
+                </button>
+            </div>
+            <div class="card-body">
+                <!-- Progress Section -->
+                <div id="analysisProgress" class="progress-container">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="sr-only">Loading...</span>
+                        </div>
+                        <h5 id="progressStatus">Initializing analysis...</h5>
+                        <div class="progress mt-3" style="height: 25px; width: 300px; margin: 0 auto;">
+                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                 role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                <span id="progressText">0%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Results Section (hidden initially) -->
+                <div id="analysisResults" style="display: none;">
+                    <!-- Overall Sentiment -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="alert alert-info">
+                                <h4 class="alert-heading"><i class="fas fa-chart-line"></i> Overall Sentiment</h4>
+                                <p id="overallSentiment" class="mb-0"></p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    
+                    <!-- Charts Row -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Sentiment Distribution</h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="sentimentPieChart" width="400" height="400"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Summary -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="mb-0"><i class="fas fa-robot"></i> AI-Generated Summary</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="aiSummary" class="lead"></div>
+                            <hr>
+                            <h6><i class="fas fa-cloud"></i> Comment Word Cloud:</h6>
+                            <div class="word-cloud-controls">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="zoom-controls">
+                                            <button id="zoomOut" class="btn btn-outline-secondary zoom-btn" title="Zoom Out">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <span id="zoomLevel" class="badge badge-info">100%</span>
+                                            <button id="zoomIn" class="btn btn-outline-secondary zoom-btn" title="Zoom In">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group mb-0">
+                                            <label for="wordCount" class="form-label small">Max Words:</label>
+                                            <select id="wordCount" class="form-control form-control-sm">
+                                                <option value="25">25 words</option>
+                                                <option value="50" selected>50 words</option>
+                                                <option value="75">75 words</option>
+                                                <option value="100">100 words</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="wordCloudContainer" class="mb-3 text-center">
+                                <canvas id="wordCloud" width="600" height="300" style="border: 1px solid #ddd; border-radius: 8px;"></canvas>
+                            </div>
+                            <h6><i class="fas fa-chart-line"></i> Engagement Metrics:</h6>
+                            <ul id="engagementMetrics"></ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Sentiment Timeline -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-clock"></i> Sentiment Timeline</h5>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="sentimentTimelineChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Sample Comments by Sentiment -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0"><i class="fas fa-comments"></i> Sample Comments by Sentiment</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <h6 class="sentiment-positive"><i class="fas fa-smile"></i> Positive</h6>
+                                    <div id="positiveSamples" class="small"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6 class="sentiment-neutral"><i class="fas fa-meh"></i> Neutral</h6>
+                                    <div id="neutralSamples" class="small"></div>
+                                </div>
+                                <div class="col-md-4">
+                                    <h6 class="sentiment-negative"><i class="fas fa-frown"></i> Negative</h6>
+                                    <div id="negativeSamples" class="small"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -165,4 +386,602 @@
         </div>
     </div>
 </div>
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js for visualization -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- WordCloud2.js for word cloud visualization -->
+<script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
+
+<script>
+// Global variables
+let analysisId = null;
+let statusCheckInterval = null;
+let charts = {};
+let currentWordCloudData = [];
+let zoomLevel = 1.0;
+let maxWords = 50;
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    const startButton = document.getElementById('startSentimentAnalysis');
+    const startButtonMain = document.getElementById('startSentimentAnalysisMain');
+    
+    if (startButton) {
+        startButton.addEventListener('click', startSentimentAnalysis);
+    }
+    if (startButtonMain) {
+        startButtonMain.addEventListener('click', startSentimentAnalysis);
+    }
+    
+    // Word cloud control event listeners
+    const zoomInBtn = document.getElementById('zoomIn');
+    const zoomOutBtn = document.getElementById('zoomOut');
+    const wordCountSelect = document.getElementById('wordCount');
+    
+    if (zoomInBtn) {
+        zoomInBtn.addEventListener('click', function() {
+            zoomLevel = Math.min(zoomLevel + 0.25, 3.0);
+            updateZoomDisplay();
+            if (currentWordCloudData.length > 0) {
+                renderWordCloudWithZoom();
+            }
+        });
+    }
+    
+    if (zoomOutBtn) {
+        zoomOutBtn.addEventListener('click', function() {
+            zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
+            updateZoomDisplay();
+            if (currentWordCloudData.length > 0) {
+                renderWordCloudWithZoom();
+            }
+        });
+    }
+    
+    if (wordCountSelect) {
+        wordCountSelect.addEventListener('change', function() {
+            maxWords = parseInt(this.value);
+            if (currentWordCloudData.length > 0) {
+                renderWordCloudWithZoom();
+            }
+        });
+    }
+});
+
+function updateZoomDisplay() {
+    const zoomLevelSpan = document.getElementById('zoomLevel');
+    if (zoomLevelSpan) {
+        zoomLevelSpan.textContent = Math.round(zoomLevel * 100) + '%';
+    }
+}
+
+function renderWordCloudWithZoom() {
+    if (!currentWordCloudData || currentWordCloudData.length === 0) return;
+    
+    const canvas = document.getElementById('wordCloud');
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Apply word count limit
+    const limitedData = currentWordCloudData.slice(0, maxWords);
+    
+    // Configure and create word cloud with zoom
+    try {
+        WordCloud(canvas, {
+            list: limitedData,
+            gridSize: Math.round(16 * canvas.width / 1024 / zoomLevel),
+            weightFactor: function (size) {
+                return Math.pow(size, 1.2) * canvas.width / 1024 * zoomLevel;
+            },
+            fontFamily: 'Arial, sans-serif',
+            color: function (word, weight) {
+                // Color words based on frequency
+                if (weight > 15) return '#dc3545'; // High frequency - red
+                if (weight > 10) return '#fd7e14'; // Medium-high - orange
+                if (weight > 5) return '#ffc107';  // Medium - yellow
+                return '#28a745'; // Low frequency - green
+            },
+            rotateRatio: 0.3,
+            backgroundColor: '#f8f9fa',
+            shape: 'circle',
+            shrinkToFit: true
+        });
+    } catch (error) {
+        console.error('Error rendering word cloud with zoom:', error);
+    }
+}
+
+function startSentimentAnalysis() {
+    const videoId = '{{ video_id }}';
+    const section = document.getElementById('sentimentAnalysisSection');
+    const progressDiv = document.getElementById('analysisProgress');
+    const resultsDiv = document.getElementById('analysisResults');
+    const startButton = document.getElementById('startSentimentAnalysis');
+    const startButtonMain = document.getElementById('startSentimentAnalysisMain');
+    
+    // Show section and hide results
+    section.style.display = 'block';
+    section.classList.add('active');
+    progressDiv.style.display = 'flex';
+    resultsDiv.style.display = 'none';
+    
+    // Disable both buttons
+    if (startButton) {
+        startButton.disabled = true;
+        startButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+    }
+    if (startButtonMain) {
+        startButtonMain.disabled = true;
+        startButtonMain.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+    }
+    
+    // Scroll to sentiment analysis section
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    
+    // Start analysis
+    fetch(`/api/analyze/sentiment/${videoId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            max_comments: {{ comment_stats.total_comments }}  // Use actual fetched count
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            analysisId = data.analysis_id;
+            if (data.cached) {
+                // If cached, fetch results immediately
+                fetchAnalysisResults();
+            } else {
+                // Start polling for status
+                statusCheckInterval = setInterval(checkAnalysisStatus, 1000);
+            }
+        } else {
+            showError(data.error);
+        }
+    })
+    .catch(error => {
+        showError('Failed to start analysis: ' + error);
+    });
+}
+
+function checkAnalysisStatus() {
+    if (!analysisId) return;
+    
+    fetch(`/api/analyze/status/${analysisId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                updateProgress(data.status);
+                
+                if (data.status.status === 'completed') {
+                    clearInterval(statusCheckInterval);
+                    fetchAnalysisResults();
+                } else if (data.status.status === 'error') {
+                    clearInterval(statusCheckInterval);
+                    showError(data.status.error);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Status check error:', error);
+        });
+}
+
+function updateProgress(status) {
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    const progressStatus = document.getElementById('progressStatus');
+    
+    const progress = status.progress || 0;
+    progressBar.style.width = progress + '%';
+    progressBar.setAttribute('aria-valuenow', progress);
+    progressText.textContent = progress + '%';
+    
+    // Update status text
+    let statusText = 'Processing...';
+    switch(status.status) {
+        case 'fetching_comments':
+            statusText = 'Fetching comments from YouTube...';
+            break;
+        case 'analyzing_sentiment':
+            statusText = `Analyzing sentiment... (${status.current || 0}/${status.total || 0} comments)`;
+            break;
+        case 'generating_summary':
+            statusText = 'Generating AI summary...';
+            break;
+        case 'completed':
+            statusText = 'Analysis complete!';
+            break;
+    }
+    progressStatus.textContent = statusText;
+}
+
+function fetchAnalysisResults() {
+    if (!analysisId) return;
+    
+    fetch(`/api/analyze/results/${analysisId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayResults(data.results);
+            } else {
+                showError(data.error);
+            }
+        })
+        .catch(error => {
+            showError('Failed to fetch results: ' + error);
+        });
+}
+
+function displayResults(results) {
+    const progressDiv = document.getElementById('analysisProgress');
+    const resultsDiv = document.getElementById('analysisResults');
+    const startButton = document.getElementById('startSentimentAnalysis');
+    const startButtonMain = document.getElementById('startSentimentAnalysisMain');
+    
+    // Hide progress, show results
+    progressDiv.style.display = 'none';
+    resultsDiv.style.display = 'block';
+    
+    // Re-enable both buttons
+    if (startButton) {
+        startButton.innerHTML = '<i class="fas fa-sync"></i> Re-analyze';
+        startButton.disabled = false;
+    }
+    if (startButtonMain) {
+        startButtonMain.innerHTML = '<i class="fas fa-sync"></i> Re-analyze';
+        startButtonMain.disabled = false;
+    }
+    
+    // Get sentiment data
+    const sentiment = results.sentiment;
+    
+    // Overall sentiment
+    const overallEl = document.getElementById('overallSentiment');
+    overallEl.innerHTML = `
+        <strong>${sentiment.overall_sentiment}</strong> 
+        (Score: ${sentiment.sentiment_score.toFixed(2)}, 
+        Confidence: ${(sentiment.average_confidence * 100).toFixed(1)}%)
+        <br>
+        <small>Analyzed ${sentiment.total_analyzed} comments using advanced sentiment analysis</small>
+    `;
+    
+    // AI Summary
+    const summary = results.summary;
+    document.getElementById('aiSummary').textContent = summary.summary;
+    
+    // Word cloud will be generated with other charts
+    
+    // Engagement metrics
+    const metricsEl = document.getElementById('engagementMetrics');
+    const metrics = summary.engagement_metrics;
+    if (metrics) {
+        metricsEl.innerHTML = `
+            <li>Total Likes on Comments: ${metrics.total_likes}</li>
+            <li>Average Likes per Comment: ${metrics.average_likes}</li>
+            <li>Reply Rate: ${metrics.reply_rate}%</li>
+            ${metrics.most_liked_comment ? 
+                `<li>Most Liked: "${metrics.most_liked_comment}" (${metrics.most_liked_count} likes)</li>` : ''}
+        `;
+    }
+    
+    // Create charts (with small delay to ensure elements are visible)
+    setTimeout(() => {
+        createSentimentPieChart(sentiment);
+        createTimelineChart(results.timeline);
+        createWordCloud(sentiment.individual_results);
+    }, 100);
+    
+    // Display sample comments
+    displaySampleComments(sentiment.individual_results);
+}
+
+function createSentimentPieChart(sentiment) {
+    try {
+        const ctx = document.getElementById('sentimentPieChart').getContext('2d');
+        
+        if (charts.pie) charts.pie.destroy();
+        
+        charts.pie = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Positive', 'Neutral', 'Negative'],
+                datasets: [{
+                    data: [
+                        sentiment.sentiment_counts.positive,
+                        sentiment.sentiment_counts.neutral,
+                        sentiment.sentiment_counts.negative
+                    ],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',
+                        'rgba(108, 117, 125, 0.8)',
+                        'rgba(220, 53, 69, 0.8)'
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(108, 117, 125, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating pie chart:', error);
+    }
+}
+
+function createTimelineChart(timeline) {
+    try {
+        const ctx = document.getElementById('sentimentTimelineChart').getContext('2d');
+        
+        if (charts.timeline) charts.timeline.destroy();
+        
+        if (!timeline || timeline.length === 0) return;
+        
+        // Process timeline data
+        const labels = [];
+        const positiveData = [];
+        const neutralData = [];
+        const negativeData = [];
+        
+        timeline.slice(0, 30).forEach((item, index) => {
+            labels.push(`Comment ${index + 1}`);
+            positiveData.push(item.score.positive * 100);
+            neutralData.push(item.score.neutral * 100);
+            negativeData.push(item.score.negative * 100);
+        });
+        
+        charts.timeline = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'Positive',
+                        data: positiveData,
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Neutral',
+                        data: neutralData,
+                        borderColor: 'rgba(108, 117, 125, 1)',
+                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Negative',
+                        data: negativeData,
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creating timeline chart:', error);
+    }
+}
+
+function createWordCloud(individualResults) {
+    try {
+        if (!individualResults || individualResults.length === 0) {
+            document.getElementById('wordCloudContainer').innerHTML = 
+                '<p class="text-muted">No data available for word cloud</p>';
+            return;
+        }
+        
+        // Extract and process text from all comments
+        const allText = individualResults.map(result => result.text || '').join(' ');
+        
+        // Process text to get word frequencies
+        const wordFrequencies = processTextForWordCloud(allText);
+        
+        if (wordFrequencies.length === 0) {
+            document.getElementById('wordCloudContainer').innerHTML = 
+                '<p class="text-muted">No significant words found for word cloud</p>';
+            return;
+        }
+        
+        // Store the word cloud data globally for zoom/word count controls
+        currentWordCloudData = wordFrequencies;
+        
+        // Reset zoom level and update display
+        zoomLevel = 1.0;
+        updateZoomDisplay();
+        
+        // Render the word cloud
+        renderWordCloudWithZoom();
+        
+    } catch (error) {
+        console.error('Error creating word cloud:', error);
+        document.getElementById('wordCloudContainer').innerHTML = 
+            '<p class="text-muted">Error generating word cloud</p>';
+    }
+}
+
+function processTextForWordCloud(text) {
+    // Convert to lowercase and remove extra whitespace
+    text = text.toLowerCase().replace(/\s+/g, ' ');
+    
+    // Remove URLs, mentions, hashtags, and special characters
+    text = text.replace(/https?:\/\/[^\s]+/g, '') // URLs
+               .replace(/@[^\s]+/g, '') // mentions
+               .replace(/#[^\s]+/g, '') // hashtags
+               .replace(/[^a-z\s]/g, ' ') // non-alphabetic chars
+               .replace(/\s+/g, ' ') // multiple spaces
+               .trim();
+    
+    // Split into words
+    const words = text.split(' ').filter(word => word.length > 0);
+    
+    // Define stop words to exclude
+    const stopWords = new Set([
+        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
+        'from', 'is', 'was', 'are', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does',
+        'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that',
+        'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us',
+        'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'what', 'which', 'who',
+        'when', 'where', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most',
+        'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than',
+        'too', 'very', 'just', 'now', 'get', 'go', 'know', 'like', 'see', 'think', 'say',
+        'come', 'want', 'look', 'make', 'take', 'good', 'bad', 'great', 'one', 'two', 'first',
+        'last', 'long', 'little', 'much', 'many', 'new', 'old', 'right', 'wrong', 'big', 'small'
+    ]);
+    
+    // Count word frequencies
+    const wordCounts = {};
+    words.forEach(word => {
+        if (word.length > 2 && !stopWords.has(word)) {
+            wordCounts[word] = (wordCounts[word] || 0) + 1;
+        }
+    });
+    
+    // Convert to array and sort by frequency
+    const sortedWords = Object.entries(wordCounts)
+        .sort(([,a], [,b]) => b - a)
+        .slice(0, 100); // Top 100 words (we'll limit display dynamically)
+    
+    // Filter out words that appear only once
+    return sortedWords.filter(([word, count]) => count > 1);
+}
+
+function displaySampleComments(results) {
+    try {
+        if (!results || !Array.isArray(results)) {
+            console.error('Invalid results data for sample comments:', results);
+            return;
+        }
+        
+        const positive = [];
+        const neutral = [];
+        const negative = [];
+    
+    // Categorize comments
+    results.forEach(result => {
+        const comment = {
+            text: result.text,
+            confidence: (result.confidence * 100).toFixed(1)
+        };
+        
+        if (result.predicted_sentiment === 'positive' && positive.length < 3) {
+            positive.push(comment);
+        } else if (result.predicted_sentiment === 'neutral' && neutral.length < 3) {
+            neutral.push(comment);
+        } else if (result.predicted_sentiment === 'negative' && negative.length < 3) {
+            negative.push(comment);
+        }
+    });
+    
+    // Display samples
+    const displaySamples = (samples, elementId) => {
+        const el = document.getElementById(elementId);
+        if (samples.length === 0) {
+            el.innerHTML = '<p class="text-muted">No samples available</p>';
+        } else {
+            el.innerHTML = samples.map(s => `
+                <div class="mb-2 p-2 border rounded">
+                    <p class="mb-1">${s.text}</p>
+                    <small class="text-muted">Confidence: ${s.confidence}%</small>
+                </div>
+            `).join('');
+        }
+    };
+    
+    displaySamples(positive, 'positiveSamples');
+    displaySamples(neutral, 'neutralSamples');
+    displaySamples(negative, 'negativeSamples');
+    } catch (error) {
+        console.error('Error displaying sample comments:', error);
+    }
+}
+
+function showError(error) {
+    const progressDiv = document.getElementById('analysisProgress');
+    const startButton = document.getElementById('startSentimentAnalysis');
+    const startButtonMain = document.getElementById('startSentimentAnalysisMain');
+    
+    progressDiv.innerHTML = `
+        <div class="alert alert-danger">
+            <h5 class="alert-heading">Analysis Error</h5>
+            <p>${error}</p>
+        </div>
+    `;
+    
+    // Re-enable both buttons
+    if (startButton) {
+        startButton.innerHTML = '<i class="fas fa-brain"></i> Retry Analysis';
+        startButton.disabled = false;
+    }
+    if (startButtonMain) {
+        startButtonMain.innerHTML = '<i class="fas fa-brain"></i> Retry Analysis';
+        startButtonMain.disabled = false;
+    }
+    
+    if (statusCheckInterval) {
+        clearInterval(statusCheckInterval);
+    }
+}
+</script>
 {% endblock %}
