@@ -107,9 +107,13 @@ def subscribe_success():
     return redirect(url_for('auth.profile'))
 
 
-@bp.route('/stripe/webhook', methods=['POST'])
+@bp.route('/stripe/webhook', methods=['POST', 'GET', 'HEAD'])
 def stripe_webhook():
-    # Verify the webhook signature
+    # Health check for GET/HEAD to verify deployment and routing
+    if request.method != 'POST':
+        return jsonify({'status': 'ok'}), 200
+
+    # Verify the webhook signature for POST
     payload = request.data
     sig_header = request.headers.get('Stripe-Signature')
     webhook_secret = current_app.config.get('STRIPE_WEBHOOK_SECRET')
