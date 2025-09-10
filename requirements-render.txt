@@ -1,3 +1,7 @@
+# Build tools (required for Python 3.13)
+setuptools>=70.0.0
+wheel>=0.41.0
+
 # Core Flask dependencies
 Flask==2.3.3
 Flask-WTF==1.2.1
