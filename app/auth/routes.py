@@ -67,13 +67,26 @@ def reset_password_request():
         user = User.query.filter_by(email=form.email.data.lower()).first()
         if user:
             try:
-                send_password_reset_email(user)
-                flash('Check your email for instructions to reset your password.', 'info')
+                # Try synchronous first for immediate feedback, fallback to async
+                success = send_password_reset_email(user, use_sync=True)
+                if success:
+                    flash('Check your email for instructions to reset your password.', 'info')
+                    current_app.logger.info(f'Password reset email sent successfully to {user.email}')
+                else:
+                    # Try async as fallback
+                    current_app.logger.warning(f'Sync email failed, trying async for {user.email}')
+                    success = send_password_reset_email(user, use_sync=False)
+                    if success:
+                        flash('Check your email for instructions to reset your password. Email may take a few minutes to arrive.', 'info')
+                    else:
+                        current_app.logger.error(f'Both sync and async email sending failed for {user.email}')
+                        flash('Unable to send password reset email at this time. Please try again later or contact support.', 'danger')
             except Exception as e:
-                current_app.logger.error(f'Failed to send password reset email: {str(e)}')
-                flash('Failed to send password reset email. Please check that email is configured.', 'danger')
+                current_app.logger.error(f'Exception during password reset email process: {str(e)}')
+                flash('Unable to send password reset email. Please try again later.', 'danger')
         else:
             # Don't reveal if the email exists or not for security
+            # But still show success message
             flash('Check your email for instructions to reset your password.', 'info')
         return redirect(url_for('auth.login'))
     return render_template('auth/reset_password_request.html', form=form)
