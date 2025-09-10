@@ -159,8 +159,7 @@
                     <br>
                     <small class="text-muted">
                         <i class="fas fa-clock"></i> Fetch time: {{ "%.2f"|format(comment_stats.fetch_time) }}s | 
-                        <i class="fas fa-tachometer-alt"></i> Speed: {{ "%.1f"|format(comment_stats.comments_per_second) }} comments/sec | 
-                        <i class="fas fa-chart-bar"></i> API quota used: {{ comment_stats.quota_used }} units
+                        <i class="fas fa-tachometer-alt"></i> Speed: {{ "%.1f"|format(comment_stats.comments_per_second) }} comments/sec
                     </small>
                 </div>
                 
@@ -221,6 +220,37 @@
                 
                 <!-- Sentiment Analysis CTA -->
                 <div class="text-center">
+                    <!-- Comment Percentage Selector -->
+                    <div class="card bg-light mb-3" style="max-width: 500px; margin: 0 auto;">
+                        <div class="card-body">
+                            <h6 class="card-title"><i class="fas fa-percentage"></i> Analysis Coverage</h6>
+                            <div class="form-group">
+                                <label for="commentPercentage" class="text-muted small">
+                                    Select how many comments to analyze:
+                                </label>
+                                <div class="input-group">
+                                    <input type="range" 
+                                           class="form-control-range" 
+                                           id="commentPercentageSlider" 
+                                           min="10" 
+                                           max="100" 
+                                           step="10" 
+                                           value="50">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" id="percentageDisplay" style="min-width: 60px;">50%</span>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">
+                                    <i class="fas fa-info-circle"></i> 
+                                    <span id="commentCountEstimate">~{{ (comment_stats.total_comments * 0.5)|int }} comments</span> • 
+                                    <span id="timeEstimate">Est. time: ~{{ ((comment_stats.total_comments * 0.5 / 100) * 2)|round(1) }} seconds</span>
+                                    <br>
+                                    <span class="text-info">💡 Tip: Start with 50% for a good balance of accuracy and speed. Use 100% for comprehensive analysis.</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <button id="startSentimentAnalysisMain" class="btn btn-gradient-primary btn-lg shadow-lg pulse-animation" style="font-size: 1.2rem; padding: 12px 30px;">
                         <i class="fas fa-brain"></i> Analyze Sentiment
                     </button>
@@ -416,6 +446,35 @@ document.addEventListener('DOMContentLoaded', function() {
         startButtonMain.addEventListener('click', startSentimentAnalysis);
     }
     
+    // Percentage slider event listener
+    const percentageSlider = document.getElementById('commentPercentageSlider');
+    if (percentageSlider) {
+        const totalComments = {{ comment_stats.total_comments }};
+        
+        percentageSlider.addEventListener('input', function() {
+            const percentage = this.value;
+            const commentCount = Math.ceil(totalComments * (percentage / 100));
+            const estimatedTime = Math.max(1, Math.round((commentCount / 100) * 2 * 10) / 10); // Estimate ~2 seconds per 100 comments
+            
+            // Update displays
+            document.getElementById('percentageDisplay').textContent = percentage + '%';
+            document.getElementById('commentCountEstimate').textContent = `~${commentCount.toLocaleString()} comments`;
+            document.getElementById('timeEstimate').textContent = `Est. time: ~${estimatedTime} seconds`;
+            
+            // Change tip based on percentage
+            const tipElement = document.querySelector('.text-info');
+            if (tipElement) {
+                if (percentage <= 30) {
+                    tipElement.innerHTML = '💡 Tip: Quick analysis - good for a rapid overview of sentiment.';
+                } else if (percentage <= 70) {
+                    tipElement.innerHTML = '💡 Tip: Balanced analysis - recommended for most use cases.';
+                } else {
+                    tipElement.innerHTML = '💡 Tip: Comprehensive analysis - best accuracy but takes longer.';
+                }
+            }
+        });
+    }
+    
     // Word cloud control event listeners
     const zoomInBtn = document.getElementById('zoomIn');
     const zoomOutBtn = document.getElementById('zoomOut');
@@ -506,6 +565,12 @@ function startSentimentAnalysis() {
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     
+    // Get the selected percentage
+    const percentageSlider = document.getElementById('commentPercentageSlider');
+    const selectedPercentage = percentageSlider ? parseInt(percentageSlider.value) : 50;
+    const totalComments = {{ comment_stats.total_comments }};
+    const commentsToAnalyze = Math.ceil(totalComments * (selectedPercentage / 100));
+    
     // Show section and hide results
     section.style.display = 'block';
     section.classList.add('active');
@@ -525,14 +590,15 @@ function startSentimentAnalysis() {
     // Scroll to sentiment analysis section
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     
-    // Start analysis
+    // Start analysis with selected number of comments
     fetch(`/api/analyze/sentiment/${videoId}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-            max_comments: {{ comment_stats.total_comments }}  // Use actual fetched count
+            max_comments: commentsToAnalyze,  // Use calculated count based on percentage
+            percentage_selected: selectedPercentage  // Send percentage for logging
         })
     })
     .then(response => response.json())
@@ -592,16 +658,16 @@ function updateProgress(status) {
     let statusText = 'Processing...';
     switch(status.status) {
         case 'fetching_comments':
-            statusText = 'Fetching comments from YouTube...';
+            statusText = '🎬 Fetching additional comments from YouTube for analysis...';
             break;
         case 'analyzing_sentiment':
-            statusText = `Analyzing sentiment... (${status.current || 0}/${status.total || 0} comments)`;
+            statusText = `🧠 Analyzing comment contents... (${status.current || 0}/${status.total || 0} comments)`;
             break;
         case 'generating_summary':
-            statusText = 'Generating AI summary...';
+            statusText = '🤖 Our AI is generating results...';
             break;
         case 'completed':
-            statusText = 'Analysis complete!';
+            statusText = '✨ Analysis complete!';
             break;
     }
     progressStatus.textContent = statusText;
@@ -616,7 +682,18 @@ function fetchAnalysisResults() {
             if (data.success) {
                 displayResults(data.results);
             } else {
-                showError(data.error);
+                if (data.restart_needed) {
+                    // Results are missing, restart the analysis
+                    console.error('Results missing, restarting analysis...');
+                    showError(data.error + ' Restarting analysis...');
+                    // Clear the current analysis ID and restart
+                    analysisId = null;
+                    setTimeout(() => {
+                        startSentimentAnalysis();
+                    }, 2000);
+                } else {
+                    showError(data.error + (data.details ? ': ' + data.details : ''));
+                }
             }
         })
         .catch(error => {

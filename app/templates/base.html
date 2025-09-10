@@ -59,9 +59,21 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer mt-auto py-3 bg-light">
+    <footer class="footer mt-auto py-4 bg-light">
         <div class="container text-center">
-            <span class="text-muted">YouTube Sentiment Analyzer © 2024</span>
+            <div class="mb-2">
+                <span class="text-muted">© 2025 <a href="mailto:theresasumma@gmail.com" class="text-decoration-none">Theresa Summa</a></span>
+            </div>
+            <div class="mb-2">
+                <span class="text-muted">Found a bug? <a href="mailto:theresasumma@gmail.com" class="text-decoration-none">Email me</a> URL and screenshots, please.</span>
+            </div>
+            <div class="mb-2">
+                <span class="text-muted">Want to hire me? Check out <a href="https://theresasumma.com" target="_blank" class="text-decoration-none">https://theresasumma.com</a></span>
+            </div>
+            <div>
+                <a href="{{ url_for('main.privacy') }}" class="text-muted text-decoration-none me-3">Privacy Policy</a>
+                <a href="{{ url_for('main.terms') }}" class="text-muted text-decoration-none">Terms of Service</a>
+            </div>
         </div>
     </footer>
 

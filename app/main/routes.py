@@ -146,6 +146,18 @@ def about():
     return render_template('about.html')
 
 
+@bp.route('/privacy')
+def privacy():
+    """Privacy policy page."""
+    return render_template('privacy.html')
+
+
+@bp.route('/terms')
+def terms():
+    """Terms of service page."""
+    return render_template('terms.html')
+
+
 @bp.route('/api/comments/<video_id>')
 def api_get_comments(video_id):
     """
@@ -313,8 +325,10 @@ def api_analyze_sentiment(video_id):
         data = request.get_json() or {}
         max_comments = data.get('max_comments', 100)
         
-        # Store analysis status
-        analysis_id = f"sentiment_{video_id}_{max_comments}"
+        # Store analysis status - use rounded value for consistency
+        # Round to nearest 10 to avoid cache misses from small variations
+        rounded_max = ((max_comments + 5) // 10) * 10
+        analysis_id = f"sentiment_{video_id}_{rounded_max}"
         
         # Check if analysis already exists in cache
         cached_result = cache.get('sentiment_analysis', analysis_id)
@@ -356,12 +370,15 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
     Run sentiment analysis in background.
     """
     try:
+        print(f"Starting sentiment analysis for {video_id} with {max_comments} comments, ID: {analysis_id}")
+        
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'fetching_comments', 'progress': 10}, ttl_hours=1)
         
         # Fetch comments
         youtube_service = YouTubeService()
         comments = youtube_service.get_all_comments_flat(video_id, max_comments=max_comments)
+        print(f"Fetched {len(comments)} comments for analysis")
         
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'analyzing_sentiment', 'progress': 30}, ttl_hours=1)
@@ -377,15 +394,19 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
                       'current': current, 'total': total}, ttl_hours=1)
         
         # Analyze sentiment
+        comment_texts = [c['text'] for c in comments]
+        print(f"Analyzing sentiment for {len(comment_texts)} comments...")
         sentiment_results = analyzer.analyze_batch(
-            [c['text'] for c in comments],
+            comment_texts,
             progress_callback=progress_callback
         )
+        print(f"Sentiment analysis complete. Overall: {sentiment_results.get('overall_sentiment', 'unknown')}")
         
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'generating_summary', 'progress': 85}, ttl_hours=1)
         
         # Generate summary
+        print("Generating summary...")
         summarizer = CommentSummarizer(use_openai=os.getenv('OPENAI_API_KEY') is not None)
         summary_results = summarizer.generate_summary(comments, sentiment_results)
         
@@ -403,15 +424,26 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         }
         
         # Cache results
-        cache.set('sentiment_analysis', analysis_id, results, ttl_hours=24)  # Cache for 24 hours
+        success = cache.set('sentiment_analysis', analysis_id, results, ttl_hours=24)  # Cache for 24 hours
         
-        # Update status to completed
-        cache.set('analysis_status', analysis_id, {'status': 'completed', 'progress': 100}, ttl_hours=1)
+        if success:
+            print(f"Results cached successfully for {analysis_id}")
+            # Update status to completed only after results are cached
+            cache.set('analysis_status', analysis_id, {'status': 'completed', 'progress': 100}, ttl_hours=1)
+            print(f"Analysis completed for {analysis_id}")
+        else:
+            print(f"ERROR: Failed to cache results for {analysis_id}")
+            raise Exception("Failed to cache analysis results")
         
     except Exception as e:
+        error_msg = str(e)
+        print(f"ERROR in sentiment analysis for {analysis_id}: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
         # Update status to error
         cache.set('analysis_status', analysis_id, 
-                 {'status': 'error', 'progress': 0, 'error': str(e)}, ttl_hours=1)
+                 {'status': 'error', 'progress': 0, 'error': error_msg}, ttl_hours=1)
 
 
 @bp.route('/api/analyze/status/<analysis_id>')
@@ -450,8 +482,17 @@ def api_analysis_results(analysis_id):
         if not status:
             return jsonify({
                 'success': False,
-                'error': 'Analysis not found'
+                'error': 'Analysis not found',
+                'details': f'No status found for {analysis_id}'
             }), 404
+        
+        if status.get('status') == 'error':
+            return jsonify({
+                'success': False,
+                'error': 'Analysis failed',
+                'details': status.get('error', 'Unknown error'),
+                'status': status
+            }), 500
         
         if status.get('status') != 'completed':
             return jsonify({
@@ -463,9 +504,15 @@ def api_analysis_results(analysis_id):
         # Get results
         results = cache.get('sentiment_analysis', analysis_id)
         if not results:
+            # Log this issue
+            print(f"WARNING: Status shows completed but no results found for {analysis_id}")
+            print(f"Status: {status}")
+            
+            # Try to restart the analysis
             return jsonify({
                 'success': False,
-                'error': 'Results not found'
+                'error': 'Results not found despite completed status. Please try again.',
+                'restart_needed': True
             }), 404
         
         return jsonify({
