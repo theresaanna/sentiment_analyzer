@@ -3,7 +3,8 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.auth import bp
 from app import db
 from app.models import User
-from app.auth.forms import RegisterForm, LoginForm
+from app.auth.forms import RegisterForm, LoginForm, PasswordResetRequestForm, PasswordResetForm
+from app.email import send_password_reset_email
 import stripe
 
 
@@ -55,6 +56,44 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('main.index'))
+
+
+@bp.route('/reset_password_request', methods=['GET', 'POST'])
+def reset_password_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    form = PasswordResetRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data.lower()).first()
+        if user:
+            try:
+                send_password_reset_email(user)
+                flash('Check your email for instructions to reset your password.', 'info')
+            except Exception as e:
+                current_app.logger.error(f'Failed to send password reset email: {str(e)}')
+                flash('Failed to send password reset email. Please check that email is configured.', 'danger')
+        else:
+            # Don't reveal if the email exists or not for security
+            flash('Check your email for instructions to reset your password.', 'info')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password_request.html', form=form)
+
+
+@bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('main.index'))
+    user = User.verify_reset_password_token(token)
+    if not user:
+        flash('Invalid or expired password reset link.', 'danger')
+        return redirect(url_for('main.index'))
+    form = PasswordResetForm()
+    if form.validate_on_submit():
+        user.set_password(form.password.data)
+        db.session.commit()
+        flash('Your password has been reset. You can now log in with your new password.', 'success')
+        return redirect(url_for('auth.login'))
+    return render_template('auth/reset_password.html', form=form)
 
 
 @bp.route('/profile')
