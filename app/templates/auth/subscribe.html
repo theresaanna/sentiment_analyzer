@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Subscribe - YouTube Sentiment Analyzer{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-10 col-lg-8">
+    <div class="card shadow">
+      <div class="card-header bg-gradient-elegant-gray text-white">
+        <h3 class="mb-0">Subscribe</h3>
+      </div>
+      <div class="card-body">
+        {% if current_user.is_subscribed %}
+          <div class="alert alert-success">You already have an active membership.</div>
+        {% else %}
+          <p class="text-muted">Subscribe for $10/month to unlock full analysis controls and your dashboard.</p>
+          <div class="border rounded p-3 d-flex flex-column">
+            <h5><i class="fab fa-cc-stripe"></i> Stripe</h5>
+            <p class="small text-muted">Pay with card, Apple Pay, or Google Pay via Stripe Checkout.</p>
+            <button id="stripeCheckout" class="btn btn-primary mt-auto">Subscribe with Stripe</button>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Stripe Checkout
+const stripeBtn = document.getElementById('stripeCheckout');
+if (stripeBtn) {
+  stripeBtn.addEventListener('click', async () => {
+    const res = await fetch('{{ url_for('auth.create_checkout_session') }}', {method: 'POST'});
+    const data = await res.json();
+    if (data.url) { window.location = data.url; }
+    else if (data.error) { alert('Stripe error: ' + data.error); }
+  });
+}
+</script>
+{% endblock %}
