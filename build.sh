@@ -8,6 +8,10 @@ python --version
 echo "Pip version:"
 pip --version
 
+# Favor wheels and avoid isolated build envs that miss setuptools
+export PIP_PREFER_BINARY=1
+export PIP_NO_BUILD_ISOLATION=1
+
 # Ensure we have the latest build tools
 echo "Installing build tools..."
 python -m pip install --upgrade pip==25.2

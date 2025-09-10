@@ -3,7 +3,7 @@ services:
   - type: web
     name: sentiment-analyzer
     runtime: python
-    runtime_version: python-3.11.10
+    runtime_version: 3.11.10
     region: oregon # You can change to: ohio, frankfurt, singapore
     plan: free # Options: free, starter ($7/mo), standard ($25/mo)
     
@@ -18,6 +18,12 @@ services:
     
     # Environment variables
     envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.10
+      - key: PIP_NO_BUILD_ISOLATION
+        value: "1"
+      - key: PIP_PREFER_BINARY
+        value: "1"
       # Flask configuration
       - key: FLASK_ENV
         value: production
