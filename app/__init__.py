@@ -5,10 +5,12 @@ from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_migrate import Migrate
 from app.config import Config
 
 # Initialize extensions (without app)
 db = SQLAlchemy()
+migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.login_message_category = 'info'
@@ -24,9 +26,10 @@ def create_app(config_class=Config):
         CORS(app, origins=['http://localhost:3000', 'http://localhost:3002'])
     else:
         CORS(app, origins=['https://web-production-6a064.up.railway.app'])
-    
+
     # Initialize extensions with app
     db.init_app(app)
+    migrate.init_app(app, db)
     login_manager.init_app(app)
 
     # Register blueprints
@@ -36,11 +39,15 @@ def create_app(config_class=Config):
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
 
-    # Create database tables if they don't exist
+    # Import models for migrations
     with app.app_context():
         try:
             from app.models import User  # noqa: F401
-            db.create_all()
+            # Note: db.create_all() is now handled by migrations
+            # Only create tables if migrations folder doesn't exist
+            import os
+            if not os.path.exists('migrations'):
+                db.create_all()
         except Exception as e:
             print(f"Warning: could not initialize database: {e}")
     

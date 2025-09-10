@@ -181,8 +181,23 @@ requirements_updated.txt
 dump.rdb
 *.rdb
 
-# Backup files
+# Backup files and directories
 *.bak
 *.backup
 *.tmp
 *.temp
+backups/
+*.gz
+*.sql
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.sqlite-journal
+*.sqlite3-journal
+*.db.before_restore_*
+
+# Migration temporary files
+migrations/versions/*.pyc
