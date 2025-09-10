@@ -1,3 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+
 # Build tools (required for Python 3.13)
 setuptools>=70.0.0
 wheel>=0.41.0
@@ -23,7 +25,9 @@ numpy==1.24.3
 
 # Sentiment analysis and ML
 transformers==4.36.2
-torch==2.1.2
+torch==2.1.2+cpu
+# Pin torchvision to CPU variant to avoid GPU/CUDA deps pulled by some packages
+torchvision==0.16.2+cpu
 scikit-learn==1.3.2
 tokenizers==0.15.2
 sentence-transformers==2.2.2
