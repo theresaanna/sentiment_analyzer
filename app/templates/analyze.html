@@ -223,8 +223,12 @@
                     <!-- Comment Percentage Selector -->
                     <div class="card bg-light mb-3" style="max-width: 500px; margin: 0 auto;">
                         <div class="card-body">
-                            <h6 class="card-title"><i class="fas fa-percentage"></i> Analysis Coverage</h6>
-                            <div class="form-group">
+                            <h6 class="card-title d-flex align-items-center"><i class="fas fa-percentage me-2"></i> Analysis Coverage
+                                {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
+                                  <span class="badge bg-secondary ms-2">Members</span>
+                                {% endif %}
+                            </h6>
+                            <div class="form-group {% if not (current_user.is_authenticated and current_user.is_subscribed) %}opacity-50{% endif %}">
                                 <label for="commentPercentage" class="text-muted small">
                                     Select how many comments to analyze:
                                 </label>
@@ -235,7 +239,7 @@
                                            min="10" 
                                            max="100" 
                                            step="10" 
-                                           value="50">
+                                           value="50" {% if not (current_user.is_authenticated and current_user.is_subscribed) %}disabled{% endif %}>
                                     <div class="input-group-append">
                                         <span class="input-group-text" id="percentageDisplay" style="min-width: 60px;">50%</span>
                                     </div>
@@ -245,7 +249,11 @@
                                     <span id="commentCountEstimate">~{{ (comment_stats.total_comments * 0.5)|int }} comments</span> • 
                                     <span id="timeEstimate">Est. time: ~{{ ((comment_stats.total_comments * 0.5 / 100) * 2)|round(1) }} seconds</span>
                                     <br>
-                                    <span class="text-info">💡 Tip: Start with 50% for a good balance of accuracy and speed. Use 100% for comprehensive analysis.</span>
+                                    {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
+                                      <span>Locked at 50% for free users. <a href="{{ url_for('auth.subscribe') }}">Subscribe</a> to unlock full control.</span>
+                                    {% else %}
+                                      <span class="text-info">💡 Tip: Start with 50% for a good balance of accuracy and speed. Use 100% for comprehensive analysis.</span>
+                                    {% endif %}
                                 </small>
                             </div>
                         </div>
