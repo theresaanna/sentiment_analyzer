@@ -102,6 +102,12 @@ def reset_password_request():
     return render_template('auth/reset_password_request.html', form=form)
 
 
+@bp.route('/version')
+def version_check():
+    """Check what version of code is deployed."""
+    return "<pre>DATABASE_BASED_RESET_SYSTEM_V2_DEPLOYED</pre>"
+
+
 @bp.route('/debug_config')
 def debug_config():
     """Temporary debug endpoint to check web server configuration."""
