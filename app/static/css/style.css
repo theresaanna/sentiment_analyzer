@@ -222,15 +222,20 @@ code {
     animation: fadeIn 0.5s ease-in-out;
 }
 
-/* Sentiment colors (for future use) */
+/* Sentiment colors aligned with pie chart */
 .sentiment-positive {
-    color: var(--success-color);
+    color: #198754; /* border green used in charts */
+}
+
+/* Sample comments card body spacing */
+.samples-card-body {
+    padding: 2rem 0;
 }
 
 .sentiment-neutral {
-    color: var(--warning-color);
+    color: #A0A5AA; /* neutral border gray used in charts */
 }
 
 .sentiment-negative {
-    color: var(--danger-color);
+    color: #B02A37; /* border red used in charts */
 }

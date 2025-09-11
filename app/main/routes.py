@@ -11,7 +11,8 @@ from app.utils.youtube import extract_video_id, build_youtube_url
 from app.services import YouTubeService
 from app.services.enhanced_youtube_service import EnhancedYouTubeService, analyze_comment_coverage
 from app.cache import cache
-from app.science import SentimentAnalyzer, CommentSummarizer
+from app.science import SentimentAnalyzer
+from app.science.comment_summarizer import EnhancedCommentSummarizer
 
 # Import fast routes to register them
 try:
@@ -324,11 +325,14 @@ def api_analyze_sentiment(video_id):
         # Get analysis parameters
         data = request.get_json() or {}
         max_comments = data.get('max_comments', 100)
+        percentage_selected = data.get('percentage_selected', 10)
         
-        # Store analysis status - use rounded value for consistency
-        # Round to nearest 10 to avoid cache misses from small variations
-        rounded_max = ((max_comments + 5) // 10) * 10
-        analysis_id = f"sentiment_{video_id}_{rounded_max}"
+        # Generate analysis_id based on percentage and video_id for consistency
+        # This ensures the same ID is used regardless of exact comment count
+        analysis_id = f"sentiment_{video_id}_{percentage_selected}pct_{max_comments}"
+        
+        print(f"API: Received request - video_id: {video_id}, max_comments: {max_comments}, percentage: {percentage_selected}")
+        print(f"API: Generated analysis_id: {analysis_id}")
         
         # Check if analysis already exists in cache
         cached_result = cache.get('sentiment_analysis', analysis_id)
@@ -375,8 +379,11 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'fetching_comments', 'progress': 10}, ttl_hours=1)
         
-        # Fetch comments
+        # Fetch video info for context
         youtube_service = YouTubeService()
+        video_info = youtube_service.get_video_info(video_id)
+        
+        # Fetch comments
         comments = youtube_service.get_all_comments_flat(video_id, max_comments=max_comments)
         print(f"Fetched {len(comments)} comments for analysis")
         
@@ -400,18 +407,69 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
             comment_texts,
             progress_callback=progress_callback
         )
+        
+        # Add comment IDs to individual results for YouTube linking
+        if 'individual_results' in sentiment_results:
+            for i, result in enumerate(sentiment_results['individual_results']):
+                if i < len(comments):
+                    result['comment_id'] = comments[i].get('id', comments[i].get('comment_id', None))
+        
         print(f"Sentiment analysis complete. Overall: {sentiment_results.get('overall_sentiment', 'unknown')}")
         
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'generating_summary', 'progress': 85}, ttl_hours=1)
         
-        # Generate summary
-        print("Generating summary...")
-        summarizer = CommentSummarizer(use_openai=os.getenv('OPENAI_API_KEY') is not None)
-        summary_results = summarizer.generate_summary(comments, sentiment_results)
+        # Generate enhanced summary with video context
+        print("Generating enhanced summary with intelligent filtering...")
+        summarizer = EnhancedCommentSummarizer(use_openai=os.getenv('OPENAI_API_KEY') is not None)
+        summary_results = summarizer.generate_enhanced_summary(comments, sentiment_results, video_info)
+        
+        # Debug: Check if social media themes were generated
+        print(f"DEBUG: Summary keys: {list(summary_results.keys())}")
+        if 'social_media_themes' in summary_results:
+            themes_count = len(summary_results['social_media_themes'].get('themes', []))
+            print(f"DEBUG: Generated {themes_count} social media themes")
+        else:
+            print("DEBUG: No social_media_themes found in summary_results")
         
         # Get sentiment timeline
         timeline = analyzer.get_sentiment_timeline(comments[:50])  # Limit timeline to 50 comments
+        
+        # Calculate updated comment statistics based on analyzed comments
+        unique_commenters = set()
+        commenter_frequency = {}
+        total_length = 0
+        replies_count = 0
+        
+        for comment in comments:
+            unique_commenters.add(comment.get('author_channel_id', comment.get('author', 'unknown')))
+            author = comment.get('author', 'Anonymous')
+            commenter_frequency[author] = commenter_frequency.get(author, 0) + 1
+            total_length += len(comment.get('text', ''))
+            if comment.get('is_reply', False):
+                replies_count += 1
+        
+        # Find top commenters
+        top_commenters = sorted(
+            commenter_frequency.items(), 
+            key=lambda x: x[1], 
+            reverse=True
+        )[:5]
+        
+        # Calculate averages
+        avg_comment_length = round(total_length / len(comments)) if comments else 0
+        top_level_count = len(comments) - replies_count
+        
+        # Updated stats based on analyzed dataset
+        updated_stats = {
+            'total_analyzed': len(comments),
+            'unique_commenters': len(unique_commenters),
+            'avg_comment_length': avg_comment_length,
+            'replies_count': replies_count,
+            'top_level_count': top_level_count,
+            'top_commenters': top_commenters,
+            'analysis_depth_percentage': round((len(comments) / video_info.get('statistics', {}).get('comments', len(comments))) * 100, 1) if video_info else 100
+        }
         
         # Prepare final results
         results = {
@@ -420,8 +478,19 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
             'sentiment': sentiment_results,
             'summary': summary_results,
             'timeline': timeline,
-            'comments_sample': comments[:10]  # Include sample of analyzed comments
+            'comments_sample': comments[:10],  # Include sample of analyzed comments
+            'updated_stats': updated_stats  # Include updated statistics
         }
+        
+        # Debug: Check final results before caching
+        print(f"DEBUG: Final results keys: {list(results.keys())}")
+        if 'summary' in results:
+            summary_keys = list(results['summary'].keys())
+            print(f"DEBUG: Final summary keys: {summary_keys}")
+            if 'social_media_themes' in results['summary']:
+                print(f"DEBUG: Social media themes preserved in final results")
+            else:
+                print(f"DEBUG: Social media themes MISSING from final results")
         
         # Cache results
         success = cache.set('sentiment_analysis', analysis_id, results, ttl_hours=24)  # Cache for 24 hours
@@ -452,7 +521,28 @@ def api_analysis_status(analysis_id):
     Get the status of a sentiment analysis job.
     """
     try:
+        print(f"Status check for analysis_id: {analysis_id}")
         status = cache.get('analysis_status', analysis_id)
+        
+        # Backward compatibility: try old format if new format not found
+        if not status and '_pct_' not in analysis_id:
+            # Try to extract video_id from old format: sentiment_<video_id>_<number>
+            if analysis_id.startswith('sentiment_'):
+                # Remove 'sentiment_' prefix and get the rest
+                remainder = analysis_id[10:]  # len('sentiment_') = 10
+                # Find the last underscore (before the number)
+                last_underscore = remainder.rfind('_')
+                if last_underscore > 0:
+                    video_id = remainder[:last_underscore]
+                    number_str = remainder[last_underscore + 1:]
+                    # Try common rounded values
+                    for rounded in [50, 100, 200, 500, 1000]:
+                        old_id = f"sentiment_{video_id}_{rounded}"
+                        status = cache.get('analysis_status', old_id)
+                        if status:
+                            print(f"Found status with old format: {old_id}")
+                            break
+        
         if not status:
             return jsonify({
                 'success': False,
@@ -477,8 +567,25 @@ def api_analysis_results(analysis_id):
     Get the results of a completed sentiment analysis.
     """
     try:
+        print(f"Results request for analysis_id: {analysis_id}")
         # Check if analysis is complete
         status = cache.get('analysis_status', analysis_id)
+        
+        # Backward compatibility: try old format if new format not found
+        actual_id = analysis_id
+        if not status and '_pct_' not in analysis_id:
+            if analysis_id.startswith('sentiment_'):
+                remainder = analysis_id[10:]
+                last_underscore = remainder.rfind('_')
+                if last_underscore > 0:
+                    video_id = remainder[:last_underscore]
+                    for rounded in [50, 100, 200, 500, 1000]:
+                        old_id = f"sentiment_{video_id}_{rounded}"
+                        status = cache.get('analysis_status', old_id)
+                        if status:
+                            actual_id = old_id
+                            print(f"Found status with old format: {old_id}")
+                            break
         if not status:
             return jsonify({
                 'success': False,
@@ -501,8 +608,8 @@ def api_analysis_results(analysis_id):
                 'status': status
             }), 202
         
-        # Get results
-        results = cache.get('sentiment_analysis', analysis_id)
+        # Get results using the actual ID (might be different after backward compat check)
+        results = cache.get('sentiment_analysis', actual_id)
         if not results:
             # Log this issue
             print(f"WARNING: Status shows completed but no results found for {analysis_id}")
@@ -514,6 +621,16 @@ def api_analysis_results(analysis_id):
                 'error': 'Results not found despite completed status. Please try again.',
                 'restart_needed': True
             }), 404
+        
+        # Debug: Check retrieved results from cache
+        print(f"DEBUG: Retrieved results keys: {list(results.keys())}")
+        if 'summary' in results:
+            summary_keys = list(results['summary'].keys())
+            print(f"DEBUG: Retrieved summary keys: {summary_keys}")
+            if 'social_media_themes' in results['summary']:
+                print(f"DEBUG: Social media themes found in retrieved results")
+            else:
+                print(f"DEBUG: Social media themes MISSING from retrieved results")
         
         return jsonify({
             'success': True,

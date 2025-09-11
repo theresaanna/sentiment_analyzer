@@ -46,6 +46,55 @@
         }
     }
     
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    /* Updated stats highlighting */
+    .updated-badge {
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    .stats-value.updated {
+        animation: pulse 1s ease-in-out;
+        color: #10b981 !important;
+        transition: color 0.3s ease;
+    }
+    
+    /* Free analysis button styling */
+    .vibe-button.free-analysis {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-size: 1.1rem;
+        padding: 14px 28px;
+    }
+    
+    .free-analysis-info {
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        border: 2px solid #e0e7ff;
+        border-radius: 12px;
+        padding: 12px 20px;
+        margin-top: 15px;
+        font-size: 0.95rem;
+    }
+    
+    .free-analysis-info strong {
+        color: #5a67d8;
+        font-size: 1rem;
+    }
+    
+    .free-analysis-info small {
+        display: block;
+        margin-top: 5px;
+        color: #6b7280;
+    }
+    
     /* Word cloud controls */
     .word-cloud-controls {
         background: #f8f9fa;
@@ -70,6 +119,189 @@
         align-items: center;
         justify-content: center;
         font-size: 18px;
+    }
+    
+    /* Enhanced summary styling */
+    #aiSummary {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+    
+    #aiSummary .alert, #aiSummary .card {
+        font-size: 15px;
+    }
+    
+    #aiSummary .theme-content .badge {
+        font-size: 13px;
+        padding: 5px 10px;
+        margin-right: 5px;
+    }
+    
+    #aiSummary .blockquote-sm {
+        font-size: 14px;
+        border-left: 3px solid #dee2e6;
+        padding-left: 10px;
+    }
+    
+    #aiSummary .controversy-content {
+        font-size: 14px;
+    }
+    
+    #aiSummary ul li {
+        margin-bottom: 8px;
+    }
+    
+    .alert-heading {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 10px;
+    }
+    
+    .card-title {
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    /* Compact stats card styling */
+    .stats-card {
+        padding: 0.75rem;
+    }
+    
+    .stats-card .stats-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+    }
+    
+    .stats-card .stats-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-bottom: 0;
+        white-space: nowrap;
+    }
+    
+    .stats-card .stats-icon {
+        font-size: 0.75rem;
+        margin-right: 0.25rem;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .stats-card .stats-value {
+            font-size: 1.25rem;
+        }
+        .stats-card .stats-label {
+            font-size: 0.8rem;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .stats-card {
+            padding: 0.5rem;
+        }
+        .stats-card .stats-value {
+            font-size: 1.1rem;
+        }
+    }
+    
+    /* Word cloud responsive styling */
+    #wordCloudContainer {
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    
+    #wordCloud {
+        display: block;
+        margin: 0 auto;
+        background: linear-gradient(135deg, #f5f7fa 0%, #f8f9ff 100%);
+    }
+    
+    /* Key Discussion Themes enhanced styling */
+    .theme-grid {
+        margin-top: 1rem;
+    }
+    
+    .theme-item {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border: 1px solid #e3e6f0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .theme-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-color: #c3c9e0;
+    }
+    
+    .theme-item .badge {
+        font-size: 16px;
+        padding: 8px 14px;
+        margin-right: 12px;
+        font-weight: 700;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .theme-item strong {
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Color differentiation for high vs moderate relevance */
+    .theme-item-high strong {
+        color: #6f42c1;
+        background: linear-gradient(90deg, #6f42c1, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .theme-item-moderate strong {
+        color: #4c6ef5;
+        background: linear-gradient(90deg, #4c6ef5, #5a67d8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .badge-danger {
+        background: linear-gradient(135deg, #8b5cf6 0%, #6f42c1 100%);
+        border: none;
+    }
+    
+    .badge-warning {
+        background: linear-gradient(135deg, #5a67d8 0%, #4c6ef5 100%);
+        border: none;
+    }
+    
+    /* Mobile responsive for themes */
+    @media (max-width: 768px) {
+        .theme-item strong {
+            font-size: 20px;
+        }
+        .theme-item .badge {
+            font-size: 14px;
+            padding: 6px 10px;
+        }
+        .theme-item {
+            padding: 10px 14px;
+        }
+    }
+    
+    @media (max-width: 576px) {
+        .theme-item strong {
+            font-size: 18px;
+        }
+        .theme-item .badge {
+            font-size: 13px;
+            padding: 5px 8px;
+        }
     }
 </style>
 {% endblock %}
@@ -98,7 +330,7 @@
                     <div class="col-md-6">
                         <p><strong><i class="fas fa-tv"></i> Channel:</strong> {{ video_info.channel }}</p>
                         <p><strong><i class="fas fa-calendar"></i> Published:</strong> {{ video_info.published_at[:10] }}</p>
-                        <p><strong><i class="fas fa-clock"></i> Duration:</strong> {{ video_info.duration }}</p>
+                        <p><strong><i class="fas fa-clock"></i> Duration:</strong> {{ video_info.duration | format_duration }}</p>
                     </div>
                     <div class="col-md-6">
                         <p><strong><i class="fas fa-link"></i> URL:</strong> <a href="{{ video_url }}" target="_blank" rel="noopener">Watch on YouTube</a></p>
@@ -107,36 +339,36 @@
                 </div>
                 
                 <!-- Video Statistics Cards -->
-                <div class="row text-center">
-                    <div class="col-md-3 mb-3">
+                <div class="row">
+                    <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="card-title text-primary">{{ "{:,}".format(video_info.statistics.views) }}</h4>
-                                <p class="card-text"><i class="fas fa-eye"></i> Views</p>
+                            <div class="card-body stats-card">
+                                <div class="stats-value text-primary">{{ "{:,}".format(video_info.statistics.views) }}</div>
+                                <p class="stats-label"><i class="fas fa-eye stats-icon"></i>Views</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="card-title text-success">{{ "{:,}".format(video_info.statistics.likes) }}</h4>
-                                <p class="card-text"><i class="fas fa-thumbs-up"></i> Likes</p>
+                            <div class="card-body stats-card">
+                                <div class="stats-value text-success">{{ "{:,}".format(video_info.statistics.likes) }}</div>
+                                <p class="stats-label"><i class="fas fa-thumbs-up stats-icon"></i>Likes</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="card-title text-info">{{ "{:,}".format(video_info.statistics.comments) }}</h4>
-                                <p class="card-text"><i class="fas fa-comment"></i> Total Comments</p>
+                            <div class="card-body stats-card">
+                                <div class="stats-value text-info">{{ "{:,}".format(video_info.statistics.comments) }}</div>
+                                <p class="stats-label"><i class="fas fa-comment stats-icon"></i>Comments</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="card-title text-warning">{{ "%.2f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</h4>
-                                <p class="card-text"><i class="fas fa-percentage"></i> Engagement</p>
+                            <div class="card-body stats-card">
+                                <div class="stats-value text-warning">{{ "%.2f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</div>
+                                <p class="stats-label"><i class="fas fa-percentage stats-icon"></i>Engagement</p>
                             </div>
                         </div>
                     </div>
@@ -161,39 +393,63 @@
                         <i class="fas fa-clock"></i> Fetch time: {{ "%.2f"|format(comment_stats.fetch_time) }}s | 
                         <i class="fas fa-tachometer-alt"></i> Speed: {{ "%.1f"|format(comment_stats.comments_per_second) }} comments/sec
                     </small>
+                    {% if not current_user.is_authenticated %}
+                    <div class="pro-analysis-message">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-star mr-2"></i>
+                            <small class="text-primary font-weight-bold">
+                                📈 <strong>Pro Analysis</strong> can fetch up to 100% of comments with advanced filtering and prioritization. 
+                                <a href="{{ url_for('auth.login') }}">Sign in</a> or 
+                                <a href="{{ url_for('auth.subscribe') }}">upgrade to Pro</a> 
+                                for comprehensive comment coverage.
+                            </small>
+                        </div>
+                    </div>
+                    {% elif not current_user.is_subscribed %}
+                    <div class="pro-analysis-message">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-star mr-2"></i>
+                            <small class="text-primary font-weight-bold">
+                                📈 <strong>Pro Analysis</strong> can fetch up to 100% of comments with adjustable depth and advanced filtering. 
+                                <a href="{{ url_for('auth.subscribe') }}">Upgrade to Pro</a> 
+                                to maximize comment coverage and get deeper insights.
+                            </small>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
                 
                 <!-- Comment Statistics Cards -->
-                <div class="row text-center mb-4">
-                    <div class="col-md-3 mb-3">
+                <div class="row mb-4">
+                    <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="card-title text-primary">{{ comment_stats.unique_commenters }}</h4>
-                                <p class="card-text"><i class="fas fa-users"></i> Unique Commenters</p>
+                            <div class="card-body stats-card">
+                                <div class="stats-value text-primary">{{ comment_stats.unique_commenters }}</div>
+                                <p class="stats-label"><i class="fas fa-users stats-icon"></i>Unique Commenters</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="card-title text-success">{{ comment_stats.avg_comment_length }}</h4>
-                                <p class="card-text"><i class="fas fa-text-width"></i> Avg Length (chars)</p>
+                            <div class="card-body stats-card">
+                                <div class="stats-value text-success">{{ comment_stats.avg_comment_length }}</div>
+                                <p class="stats-label"><i class="fas fa-text-width stats-icon"></i>Avg Length</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="card-title text-info">{{ comment_stats.top_level_count }}</h4>
-                                <p class="card-text"><i class="fas fa-comment-dots"></i> Top-level</p>
+                            <div class="card-body stats-card">
+                                <div class="stats-value text-info">{{ comment_stats.top_level_count }}</div>
+                                <p class="stats-label"><i class="fas fa-comment-dots stats-icon"></i>Top-level</p>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-3 mb-3">
+                    <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
-                            <div class="card-body">
-                                <h4 class="card-title text-warning">{{ comment_stats.replies_count }}</h4>
-                                <p class="card-text"><i class="fas fa-reply"></i> Replies</p>
+                            <div class="card-body stats-card">
+                                <div class="stats-value text-warning">{{ comment_stats.replies_count }}</div>
+                                <p class="stats-label"><i class="fas fa-reply stats-icon"></i>Replies</p>
                             </div>
                         </div>
                     </div>
@@ -238,8 +494,9 @@
                                 <div class="coverage-locked">
                                     <div class="locked-overlay">
                                         <span class="lock-icon">🔒</span>
-                                        <h6>Unlock Advanced Analysis</h6>
-                                        <p>Get full control over analysis depth with VibeCheckAI Pro</p>
+                                        <h6>Premium Feature: Choose Your Analysis Depth</h6>
+                                        <p class="mb-2"><strong>Free users:</strong> 10% sample analysis (up to 100 comments)</p>
+                                        <p class="mb-3"><strong>Pro users:</strong> Analyze 10% to 100% of all comments</p>
                                         <a href="{{ url_for('auth.subscribe') }}" class="vibe-button small">
                                             <span class="button-icon">⭐</span>
                                             <span class="button-text">Upgrade to Pro - $10/month</span>
@@ -247,10 +504,10 @@
                                     </div>
                                     <div class="coverage-preview locked">
                                         <div class="slider-container">
-                                            <label class="slider-label">Analysis Depth</label>
-                                            <input type="range" class="coverage-slider" disabled value="50">
+                                            <label class="slider-label">Analysis Depth <span style="color: #10b981; font-weight: 600;">(Free: 10%)</span></label>
+                                            <input type="range" class="coverage-slider" disabled value="10">
                                             <div class="slider-values">
-                                                <span>10%</span>
+                                                <span style="color: #10b981; font-weight: 600;">10% ✓</span>
                                                 <span class="current-value">50%</span>
                                                 <span>100%</span>
                                             </div>
@@ -258,11 +515,11 @@
                                         <div class="coverage-stats">
                                             <div class="stat-badge locked">
                                                 <span class="stat-label">Comments</span>
-                                                <span class="stat-value">{{ (comment_stats.total_comments * 0.5)|int }}</span>
+                                                <span class="stat-value" style="color: #10b981; font-weight: 600;">{{ [comment_stats.total_comments * 0.1, 100]|min|int }}</span>
                                             </div>
                                             <div class="stat-badge locked">
                                                 <span class="stat-label">Time</span>
-                                                <span class="stat-value">~{{ ((comment_stats.total_comments * 0.5 / 100) * 2)|round(1) }}s</span>
+                                                <span class="stat-value">~{{ (([comment_stats.total_comments * 0.1, 100]|min / 100) * 2)|round(1) }}s</span>
                                             </div>
                                         </div>
                                     </div>
@@ -308,11 +565,34 @@
                         </div>
                     </div>
                     
-                    <button id="startSentimentAnalysisMain" class="vibe-button pulse-animation">
-                        <span class="button-icon">🧠</span>
-                        <span class="button-text">Analyze Sentiment</span>
-                    </button>
-                    <p class="text-muted mt-2 mb-0">Get AI-powered insights into the emotional tone of these comments</p>
+                    {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
+                        <!-- Free User CTA -->
+                        <button id="startSentimentAnalysisMain" class="vibe-button free-analysis pulse-animation">
+                            <span class="button-icon">🧠</span>
+                            <span class="button-text">Start Free Analysis</span>
+                        </button>
+                        <div class="free-analysis-info">
+                            <strong>✨ Try VibeCheckAI Free!</strong>
+                            Your free analysis will include:
+                            <ul class="mb-0 mt-2" style="padding-left: 20px;">
+                                <li>Up to <strong>{{ [comment_stats.total_comments * 0.1, 100]|min|int }}</strong> comments (10% sample, max 100)</li>
+                                <li>Full sentiment breakdown & charts</li>
+                                <li>AI-powered summary & insights</li>
+                                <li>Key discussion themes analysis</li>
+                            </ul>
+                            <small>
+                                <a href="{{ url_for('auth.subscribe') }}" style="color: #5a67d8; text-decoration: underline;">
+                                    Upgrade to Pro</a> to analyze all {{ comment_stats.total_comments }} comments with adjustable depth
+                            </small>
+                        </div>
+                    {% else %}
+                        <!-- Pro User CTA -->
+                        <button id="startSentimentAnalysisMain" class="vibe-button pulse-animation">
+                            <span class="button-icon">🧠</span>
+                            <span class="button-text">Analyze Sentiment</span>
+                        </button>
+                        <p class="text-muted mt-2 mb-0">Get AI-powered insights into the emotional tone of these comments</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -362,7 +642,7 @@
                     <div class="row mb-4">
                         <div class="col-md-12">
                             <div class="card">
-                                <div class="card-header">
+<div class="card-header header-muted-blue">
                                     <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Sentiment Distribution</h5>
                                 </div>
                                 <div class="card-body">
@@ -374,50 +654,17 @@
                     
                     <!-- AI Summary -->
                     <div class="card mb-4">
-                        <div class="card-header bg-info text-white">
-                            <h5 class="mb-0"><i class="fas fa-robot"></i> AI-Generated Summary</h5>
+<div class="card-header header-muted-blue">
+                            <h5 class="mb-0"><i class="fas fa-robot"></i> AI Analysis Summary</h5>
                         </div>
                         <div class="card-body">
                             <div id="aiSummary" class="lead"></div>
-                            <hr>
-                            <h6><i class="fas fa-cloud"></i> Comment Word Cloud:</h6>
-                            <div class="word-cloud-controls">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="zoom-controls">
-                                            <button id="zoomOut" class="btn btn-outline-secondary zoom-btn" title="Zoom Out">
-                                                <i class="fas fa-minus"></i>
-                                            </button>
-                                            <span id="zoomLevel" class="badge badge-info">100%</span>
-                                            <button id="zoomIn" class="btn btn-outline-secondary zoom-btn" title="Zoom In">
-                                                <i class="fas fa-plus"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-group mb-0">
-                                            <label for="wordCount" class="form-label small">Max Words:</label>
-                                            <select id="wordCount" class="form-control form-control-sm">
-                                                <option value="25">25 words</option>
-                                                <option value="50" selected>50 words</option>
-                                                <option value="75">75 words</option>
-                                                <option value="100">100 words</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div id="wordCloudContainer" class="mb-3 text-center">
-                                <canvas id="wordCloud" width="600" height="300" style="border: 1px solid #ddd; border-radius: 8px;"></canvas>
-                            </div>
-                            <h6><i class="fas fa-chart-line"></i> Engagement Metrics:</h6>
-                            <ul id="engagementMetrics"></ul>
                         </div>
                     </div>
                     
                     <!-- Sentiment Timeline -->
                     <div class="card mb-4">
-                        <div class="card-header">
+<div class="card-header header-muted-blue">
                             <h5 class="mb-0"><i class="fas fa-clock"></i> Sentiment Timeline</h5>
                         </div>
                         <div class="card-body">
@@ -427,12 +674,12 @@
                     
                     <!-- Sample Comments by Sentiment -->
                     <div class="card">
-                        <div class="card-header">
+<div class="card-header header-muted-blue">
                             <h5 class="mb-0"><i class="fas fa-comments"></i> Sample Comments by Sentiment</h5>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body samples-card-body">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-4 pl-0">
                                     <h6 class="sentiment-positive"><i class="fas fa-smile"></i> Positive</h6>
                                     <div id="positiveSamples" class="small"></div>
                                 </div>
@@ -440,7 +687,7 @@
                                     <h6 class="sentiment-neutral"><i class="fas fa-meh"></i> Neutral</h6>
                                     <div id="neutralSamples" class="small"></div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 pr-0">
                                     <h6 class="sentiment-negative"><i class="fas fa-frown"></i> Negative</h6>
                                     <div id="negativeSamples" class="small"></div>
                                 </div>
@@ -489,9 +736,6 @@
 let analysisId = null;
 let statusCheckInterval = null;
 let charts = {};
-let currentWordCloudData = [];
-let zoomLevel = 1.0;
-let maxWords = 50;
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
@@ -546,85 +790,198 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Word cloud control event listeners
-    const zoomInBtn = document.getElementById('zoomIn');
-    const zoomOutBtn = document.getElementById('zoomOut');
-    const wordCountSelect = document.getElementById('wordCount');
-    
-    if (zoomInBtn) {
-        zoomInBtn.addEventListener('click', function() {
-            zoomLevel = Math.min(zoomLevel + 0.25, 3.0);
-            updateZoomDisplay();
-            if (currentWordCloudData.length > 0) {
-                renderWordCloudWithZoom();
-            }
-        });
-    }
-    
-    if (zoomOutBtn) {
-        zoomOutBtn.addEventListener('click', function() {
-            zoomLevel = Math.max(zoomLevel - 0.25, 0.5);
-            updateZoomDisplay();
-            if (currentWordCloudData.length > 0) {
-                renderWordCloudWithZoom();
-            }
-        });
-    }
-    
-    if (wordCountSelect) {
-        wordCountSelect.addEventListener('change', function() {
-            maxWords = parseInt(this.value);
-            if (currentWordCloudData.length > 0) {
-                renderWordCloudWithZoom();
-            }
-        });
-    }
 });
 
-function updateZoomDisplay() {
-    const zoomLevelSpan = document.getElementById('zoomLevel');
-    if (zoomLevelSpan) {
-        zoomLevelSpan.textContent = Math.round(zoomLevel * 100) + '%';
+
+function formatEnhancedSummary(insights) {
+    // Convert the detailed insights into well-formatted HTML
+    if (!insights) return '';
+    
+    // Split by sections and format each
+    const lines = insights.split('\n');
+    let html = '';
+    let inSection = false;
+    let inThemeSection = false;
+    
+    lines.forEach(line => {
+        // Skip empty lines
+        if (!line.trim()) {
+            if (inSection) {
+                html += '</div>';
+                inSection = false;
+            }
+            return;
+        }
+        
+        // Format main section headers with emojis
+        if (line.includes('📊 SENTIMENT LANDSCAPE:')) {
+            if (inSection) html += '</div>';
+            const content = line.replace('📊 SENTIMENT LANDSCAPE:', '').trim();
+            html += `
+                <div class="alert alert-info mb-3">
+                    <h6 class="alert-heading"><i class="fas fa-chart-pie"></i> Sentiment Landscape</h6>
+                    <p class="mb-0">${content}</p>
+            `;
+            inSection = true;
+        }
+        else if (line.includes('🎯 KEY DISCUSSION THEMES:')) {
+            // Skip rendering this section here; themes are rendered by the dedicated component
+            if (inSection) {
+                html += '</div>';
+                inSection = false;
+            }
+            inThemeSection = false;
+            // Do not output anything for this section
+        }
+        // Skip sub-items (remove text without headers)
+        else if (line.trim().startsWith('-')) {
+            // intentionally omitted
+        }
+        // Format numbered items (themes)
+        else if (inThemeSection && line.match(/^\s+\d+\./)) {
+            const content = line.trim();
+            const parts = content.match(/^(\d+)\. '([^']+)' - (.+) \(score: ([\d.]+)\)/);
+            if (parts) {
+                const [, num, theme, relevance, score] = parts;
+                // Skip "Emerging topic" - only show High and Moderate relevance
+                if (!relevance.includes('Emerging')) {
+                    const isHigh = relevance.includes('High');
+                    const badgeClass = isHigh ? 'badge-danger' : 'badge-warning';
+                    const iconClass = isHigh ? 'fas fa-fire' : 'fas fa-star';
+                    const themeClass = isHigh ? 'theme-item-high' : 'theme-item-moderate';
+                    // Start row div if needed
+                    if (!html.includes('theme-grid')) {
+                        html += '<div class="row theme-grid">';
+                    }
+                    html += `
+                        <div class="col-md-6 mb-3">
+                            <div class="theme-item ${themeClass}">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge ${badgeClass}">
+                                        <i class="${iconClass} mr-1"></i>${num}
+                                    </span>
+                                    <strong>${theme}</strong>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                html += `<div class="ml-3">${content}</div>`;
+            }
+        }
+        // Skip regular text lines without headers between sections
+        else if (line.trim()) {
+            // intentionally omitted
+        }
+    });
+    
+    // Close any open sections
+    if (inSection) {
+        // Close theme grid if open
+        if (inThemeSection && html.includes('theme-grid')) {
+            html += '</div>'; // Close row
+            html += '</div>'; // Close theme-content
+        }
+        if (html.includes('<ul') && !html.endsWith('</ul>')) {
+            html += '</ul>';
+        }
+        if (!inThemeSection) {
+            html += '</div>'; // Close alert or other containers
+        }
+        if (html.includes('card-body')) {
+            html += '</div></div>'; // Close card-body and card
+        }
     }
+    
+    return html;
 }
 
-function renderWordCloudWithZoom() {
-    if (!currentWordCloudData || currentWordCloudData.length === 0) return;
+
+function updateCommentStatistics(stats) {
+    // Only update if we have stats and Pro users analyzed more than originally fetched
+    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
+    if (!stats || !isProUser) return;
     
-    const canvas = document.getElementById('wordCloud');
-    if (!canvas) return;
+    // Add a visual indicator that stats have been updated
+    const commentAnalysisHeaders = document.querySelectorAll('.card-header-vibe h3');
+    const commentAnalysisHeader = commentAnalysisHeaders[1]; // Second header is Comment Analysis
+    if (commentAnalysisHeader && !commentAnalysisHeader.querySelector('.updated-badge')) {
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-success ml-2 updated-badge';
+        badge.textContent = 'Updated';
+        badge.style.fontSize = '0.6em';
+        badge.style.verticalAlign = 'middle';
+        badge.style.animation = 'fadeIn 0.5s';
+        commentAnalysisHeader.appendChild(badge);
+    }
     
-    const ctx = canvas.getContext('2d');
+    // Update the alert with analyzed count
+    const alertInfo = document.querySelector('.alert-info');
+    if (alertInfo && stats.total_analyzed) {
+        const newAlertContent = `
+            <i class="fas fa-info-circle"></i> 
+            <strong>Analysis Updated:</strong> Analyzed <strong>${stats.total_analyzed}</strong> comments 
+            (<strong>${stats.analysis_depth_percentage}%</strong> of total available)
+            <br>
+            <small class="text-muted">
+                <i class="fas fa-chart-line"></i> Statistics below reflect the expanded analysis dataset
+            </small>
+        `;
+        alertInfo.innerHTML = newAlertContent;
+        alertInfo.classList.add('alert-success');
+        alertInfo.classList.remove('alert-info');
+    }
     
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Update individual stat cards with animation
+    const updateStatCard = (selector, value, isFormattedNumber = false) => {
+        const element = document.querySelector(selector);
+        if (element) {
+            const oldValue = element.textContent;
+            if (isFormattedNumber) {
+                element.textContent = value.toLocaleString();
+            } else {
+                element.textContent = value;
+            }
+            // Add highlight effect if value changed
+            if (oldValue !== element.textContent) {
+                element.style.animation = 'pulse 1s';
+                element.style.color = '#10b981';
+                setTimeout(() => {
+                    element.style.animation = '';
+                    element.style.color = '';
+                }, 1000);
+            }
+        }
+    };
     
-    // Apply word count limit
-    const limitedData = currentWordCloudData.slice(0, maxWords);
+    // Update each statistic - target specific comment stats cards (skip video stats)
+    const commentStatsSection = document.querySelectorAll('.vibe-card')[1]; // Second vibe-card is Comment Analysis
+    if (commentStatsSection) {
+        const statsCards = commentStatsSection.querySelectorAll('.stats-card');
+        if (statsCards.length >= 4) {
+            updateStatCard('.vibe-card:nth-of-type(2) .row:nth-of-type(2) .col-md-6:nth-child(1) .stats-value', stats.unique_commenters, true);
+            updateStatCard('.vibe-card:nth-of-type(2) .row:nth-of-type(2) .col-md-6:nth-child(2) .stats-value', stats.avg_comment_length);
+            updateStatCard('.vibe-card:nth-of-type(2) .row:nth-of-type(2) .col-md-6:nth-child(3) .stats-value', stats.top_level_count, true);
+            updateStatCard('.vibe-card:nth-of-type(2) .row:nth-of-type(2) .col-md-6:nth-child(4) .stats-value', stats.replies_count, true);
+        }
+    }
     
-    // Configure and create word cloud with zoom
-    try {
-        WordCloud(canvas, {
-            list: limitedData,
-            gridSize: Math.round(16 * canvas.width / 1024 / zoomLevel),
-            weightFactor: function (size) {
-                return Math.pow(size, 1.2) * canvas.width / 1024 * zoomLevel;
-            },
-            fontFamily: 'Arial, sans-serif',
-            color: function (word, weight) {
-                // Color words based on frequency
-                if (weight > 15) return '#dc3545'; // High frequency - red
-                if (weight > 10) return '#fd7e14'; // Medium-high - orange
-                if (weight > 5) return '#ffc107';  // Medium - yellow
-                return '#28a745'; // Low frequency - green
-            },
-            rotateRatio: 0.3,
-            backgroundColor: '#f8f9fa',
-            shape: 'circle',
-            shrinkToFit: true
-        });
-    } catch (error) {
-        console.error('Error rendering word cloud with zoom:', error);
+    // Update top commenters if present
+    if (stats.top_commenters && stats.top_commenters.length > 0) {
+        const topCommentersContainer = document.querySelector('.list-group-flush');
+        if (topCommentersContainer) {
+            topCommentersContainer.innerHTML = '';
+            stats.top_commenters.forEach((commenter, index) => {
+                const li = document.createElement('li');
+                li.className = 'list-group-item d-flex justify-content-between align-items-center';
+                li.innerHTML = `
+                    <span><strong>#${index + 1}</strong> ${commenter[0]}</span>
+                    <span class="badge badge-primary badge-pill">${commenter[1]} comments</span>
+                `;
+                topCommentersContainer.appendChild(li);
+            });
+        }
     }
 }
 
@@ -636,11 +993,15 @@ function startSentimentAnalysis() {
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     
-    // Get the selected percentage
+    // Get the selected percentage - 10% for free users, slider value for pro users
+    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
     const percentageSlider = document.getElementById('commentPercentageSlider');
-    const selectedPercentage = percentageSlider ? parseInt(percentageSlider.value) : 50;
+    const selectedPercentage = isProUser && percentageSlider ? parseInt(percentageSlider.value) : 10;
     const totalComments = {{ comment_stats.total_comments }};
-    const commentsToAnalyze = Math.ceil(totalComments * (selectedPercentage / 100));
+    const maxFreeComments = 100; // Cap free analysis at 100 comments
+    const commentsToAnalyze = isProUser ? 
+        Math.ceil(totalComments * (selectedPercentage / 100)) : 
+        Math.min(Math.ceil(totalComments * 0.1), maxFreeComments);
     
     // Show section and hide results
     section.style.display = 'block';
@@ -773,10 +1134,17 @@ function fetchAnalysisResults() {
 }
 
 function displayResults(results) {
+    console.log('displayResults called with:', results);
     const progressDiv = document.getElementById('analysisProgress');
     const resultsDiv = document.getElementById('analysisResults');
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
+    const videoId = '{{ video_id }}';
+    
+    // Update comment statistics if Pro user analyzed more comments
+    if (results.updated_stats) {
+        updateCommentStatistics(results.updated_stats);
+    }
     
     // Hide progress, show results
     progressDiv.style.display = 'none';
@@ -805,30 +1173,103 @@ function displayResults(results) {
         <small>Analyzed ${sentiment.total_analyzed} comments using advanced sentiment analysis</small>
     `;
     
-    // AI Summary
+    // AI Summary with Enhanced Details
     const summary = results.summary;
-    document.getElementById('aiSummary').textContent = summary.summary;
+    const aiSummaryEl = document.getElementById('aiSummary');
     
-    // Word cloud will be generated with other charts
-    
-    // Engagement metrics
-    const metricsEl = document.getElementById('engagementMetrics');
-    const metrics = summary.engagement_metrics;
-    if (metrics) {
-        metricsEl.innerHTML = `
-            <li>Total Likes on Comments: ${metrics.total_likes}</li>
-            <li>Average Likes per Comment: ${metrics.average_likes}</li>
-            <li>Reply Rate: ${metrics.reply_rate}%</li>
-            ${metrics.most_liked_comment ? 
-                `<li>Most Liked: "${metrics.most_liked_comment}" (${metrics.most_liked_count} likes)</li>` : ''}
-        `;
+    // Format the enhanced summary for better readability
+    if (summary.detailed_insights) {
+        const insights = summary.detailed_insights;
+        
+        // Check for any reception type sections
+        const receptionTypes = [
+            { marker: '⚡ CONTROVERSY DETECTED:', type: 'controversy', icon: 'fas fa-bolt', alertClass: 'alert-warning' },
+            { marker: '🎆 OVERWHELMINGLY POSITIVE RECEPTION:', type: 'positive', icon: 'fas fa-star', alertClass: 'alert-success' },
+            { marker: '✅ POSITIVE RECEPTION:', type: 'positive', icon: 'fas fa-check-circle', alertClass: 'alert-success' },
+            { marker: '🤔 MIXED RECEPTION:', type: 'mixed', icon: 'fas fa-balance-scale', alertClass: 'alert-info' },
+            { marker: '⚠️ CRITICAL RECEPTION:', type: 'critical', icon: 'fas fa-exclamation-triangle', alertClass: 'alert-danger' }
+        ];
+        
+        let mainInsights = insights;
+        let receptionContent = null;
+        let receptionType = null;
+        
+        // Find which reception type is in the insights
+        for (const reception of receptionTypes) {
+            const index = insights.indexOf(reception.marker);
+            if (index > -1) {
+                mainInsights = insights.substring(0, index).trim();
+                const receptionSection = insights.substring(index);
+                receptionType = reception;
+                
+                // Extract reception details
+                const lines = receptionSection.split('\n');
+                let receptionHtml = '';
+                for (let i = 1; i < lines.length && i < 5; i++) {
+                    if (lines[i].trim()) {
+                        receptionHtml += `<p class="mb-2">${lines[i].trim()}</p>`;
+                    }
+                }
+                
+                // Add controversial topics with links if it's controversy type
+                if (reception.type === 'controversy' && summary.controversy_analysis && 
+                    summary.controversy_analysis.topics && summary.controversy_analysis.topics.length > 0) {
+                    
+                    const controversialComments = summary.controversy_analysis.topics
+                        .filter(topic => topic.comment_id)
+                        .slice(0, 3);
+                    
+                    if (controversialComments.length > 0) {
+                        receptionHtml += '<div class="mt-3"><strong>Examples of divisive comments:</strong></div>';
+                        controversialComments.forEach(topic => {
+                            const commentSnippet = topic.text.substring(0, 100) + '...';
+                            receptionHtml += `
+                                <div class="mt-2 p-2 bg-light rounded">
+                                    <p class="mb-0 small text-muted">
+                                        <em>"${commentSnippet}"</em>
+                                    </p>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+                
+                if (receptionHtml) {
+                    // Create reception alert box with appropriate styling
+                    const heading = reception.marker.replace(/[:]/g, '').replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
+                    receptionContent = `
+                        <div class="alert ${reception.alertClass} mb-4">
+                            <h5 class="alert-heading"><i class="${reception.icon}"></i> ${heading}</h5>
+                            ${receptionHtml}
+                        </div>
+                    `;
+                }
+                break;
+            }
+        }
+        
+        // Display main insights
+        aiSummaryEl.innerHTML = formatEnhancedSummary(mainInsights);
+
+        // Append Most Mentioned Concepts box (green) using available data
+        const conceptsHTML = buildMostMentionedConceptsHTML(summary);
+        if (conceptsHTML) {
+            aiSummaryEl.innerHTML += conceptsHTML;
+        }
+        
+        // Add reception box after main summary if it exists
+        if (receptionContent) {
+            aiSummaryEl.innerHTML += receptionContent;
+        }
+    } else {
+        // Fallback to plain summary
+        aiSummaryEl.textContent = summary.summary;
     }
     
     // Create charts (with small delay to ensure elements are visible)
     setTimeout(() => {
         createSentimentPieChart(sentiment);
         createTimelineChart(results.timeline);
-        createWordCloud(sentiment.individual_results);
     }, 100);
     
     // Display sample comments
@@ -852,14 +1293,19 @@ function createSentimentPieChart(sentiment) {
                         sentiment.sentiment_counts.negative
                     ],
                     backgroundColor: [
-                        'rgba(40, 167, 69, 0.8)',
-                        'rgba(108, 117, 125, 0.8)',
-                        'rgba(220, 53, 69, 0.8)'
+                        // Positive: match the green background used by Most Mentioned Concepts (Bootstrap alert-success bg)
+                        'rgba(209, 231, 221, 0.9)',
+                        // Neutral: lighter gray
+                        'rgba(206, 212, 218, 0.9)',
+                        // Negative: complementary red to the green above
+                        'rgba(227, 93, 106, 0.85)'
                     ],
                     borderColor: [
-                        'rgba(40, 167, 69, 1)',
-                        'rgba(108, 117, 125, 1)',
-                        'rgba(220, 53, 69, 1)'
+                        // Positive border: Bootstrap success
+                        'rgba(25, 135, 84, 1)',
+                        'rgba(160, 165, 170, 1)',
+                        // Negative border: deeper complementary red
+                        'rgba(176, 42, 55, 1)'
                     ],
                     borderWidth: 2
                 }]
@@ -890,6 +1336,51 @@ function createSentimentPieChart(sentiment) {
     }
 }
 
+function buildMostMentionedConceptsHTML(summary) {
+    try {
+        if (!summary) return '';
+
+        // Prefer social_media_themes if available
+        let items = [];
+        if (summary.social_media_themes && Array.isArray(summary.social_media_themes.themes)) {
+            items = summary.social_media_themes.themes.map(t => ({
+                word: t.word || t.term || t.key || '',
+                percent: typeof t.percentage === 'number' ? t.percentage : (typeof t.score === 'number' ? t.score * 100 : 0)
+            }));
+        } else if (Array.isArray(summary.intelligent_themes)) {
+            // intelligent_themes is typically [ [word, score], ... ]
+            items = summary.intelligent_themes.map(t => ({
+                word: Array.isArray(t) ? t[0] : (t.word || t || ''),
+                percent: Array.isArray(t) && typeof t[1] === 'number' ? t[1] * 100 : (typeof t.score === 'number' ? t.score * 100 : 0)
+            }));
+        }
+
+        // Clean and sort
+        items = items
+            .filter(i => i.word && typeof i.percent === 'number')
+            .sort((a, b) => b.percent - a.percent)
+            .slice(0, 10);
+
+        if (items.length === 0) return '';
+
+        // Build green alert styled like Sentiment Landscape
+        let html = '';
+        html += '<div class="alert alert-success mb-3">';
+        html += '<h6 class="alert-heading"><i class="fas fa-tags"></i> Most Mentioned Concepts</h6>';
+        html += '<ul class="mb-0">';
+        items.forEach((it, idx) => {
+            const pct = Math.round(it.percent);
+            html += `<li class="small">${idx + 1}. <strong>${it.word}</strong> — ${pct}%</li>`;
+        });
+        html += '</ul>';
+        html += '</div>';
+        return html;
+    } catch (e) {
+        console.error('Error building Most Mentioned Concepts:', e);
+        return '';
+    }
+}
+
 function createTimelineChart(timeline) {
     try {
         const ctx = document.getElementById('sentimentTimelineChart').getContext('2d');
@@ -898,14 +1389,33 @@ function createTimelineChart(timeline) {
         
         if (!timeline || timeline.length === 0) return;
         
-        // Process timeline data
+        // Process timeline data with more meaningful labels
         const labels = [];
         const positiveData = [];
         const neutralData = [];
         const negativeData = [];
         
-        timeline.slice(0, 30).forEach((item, index) => {
-            labels.push(`Comment ${index + 1}`);
+        const sampleSize = Math.min(timeline.length, 30);
+        const groupSize = Math.ceil(sampleSize / 10); // Create ~10 groups
+        
+        timeline.slice(0, sampleSize).forEach((item, index) => {
+            // Create time-based or grouped labels
+            if (index === 0) {
+                labels.push('Early');
+            } else if (index === Math.floor(sampleSize / 4)) {
+                labels.push('25%');
+            } else if (index === Math.floor(sampleSize / 2)) {
+                labels.push('Midpoint');
+            } else if (index === Math.floor(sampleSize * 3 / 4)) {
+                labels.push('75%');
+            } else if (index === sampleSize - 1) {
+                labels.push('Recent');
+            } else if (index % groupSize === 0) {
+                labels.push(`${Math.round((index / sampleSize) * 100)}%`);
+            } else {
+                labels.push(''); // Empty label for intermediate points
+            }
+            
             positiveData.push(item.score.positive * 100);
             neutralData.push(item.score.neutral * 100);
             negativeData.push(item.score.negative * 100);
@@ -917,24 +1427,24 @@ function createTimelineChart(timeline) {
                 labels: labels,
                 datasets: [
                     {
-                        label: 'Positive',
+label: 'Positive',
                         data: positiveData,
-                        borderColor: 'rgba(40, 167, 69, 1)',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        borderColor: 'rgba(25, 135, 84, 1)',
+                        backgroundColor: 'rgba(209, 231, 221, 0.35)',
                         tension: 0.4
                     },
                     {
-                        label: 'Neutral',
+label: 'Neutral',
                         data: neutralData,
-                        borderColor: 'rgba(108, 117, 125, 1)',
-                        backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                        borderColor: 'rgba(160, 165, 170, 1)',
+                        backgroundColor: 'rgba(206, 212, 218, 0.35)',
                         tension: 0.4
                     },
                     {
-                        label: 'Negative',
+label: 'Negative',
                         data: negativeData,
-                        borderColor: 'rgba(220, 53, 69, 1)',
-                        backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                        borderColor: 'rgba(176, 42, 55, 1)',
+                        backgroundColor: 'rgba(227, 93, 106, 0.25)',
                         tension: 0.4
                     }
                 ]
@@ -943,9 +1453,32 @@ function createTimelineChart(timeline) {
                 responsive: true,
                 maintainAspectRatio: false,
                 scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Comment Timeline (Early → Recent)',
+                            font: {
+                                size: 12
+                            }
+                        },
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 0,
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
                     y: {
                         beginAtZero: true,
                         max: 100,
+                        title: {
+                            display: true,
+                            text: 'Sentiment Score',
+                            font: {
+                                size: 12
+                            }
+                        },
                         ticks: {
                             callback: function(value) {
                                 return value + '%';
@@ -953,14 +1486,45 @@ function createTimelineChart(timeline) {
                         }
                     }
                 },
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
                 plugins: {
                     legend: {
                         position: 'bottom',
                     },
                     tooltip: {
+                        mode: 'index',
+                        intersect: false,
                         callbacks: {
+                            title: function(tooltipItems) {
+                                const index = tooltipItems[0].dataIndex;
+                                const total = tooltipItems[0].chart.data.labels.length;
+                                const position = tooltipItems[0].label || `Position ${index + 1}/${total}`;
+                                return `Timeline: ${position}`;
+                            },
                             label: function(context) {
-                                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                                const label = context.dataset.label;
+                                const value = context.parsed.y.toFixed(1);
+                                const emoji = label === 'Positive' ? '😊' : label === 'Negative' ? '😔' : '😐';
+                                return `${emoji} ${label}: ${value}%`;
+                            },
+                            afterLabel: function(context) {
+                                // Show dominant sentiment at this point
+                                if (context.datasetIndex === 0) { // Only show once
+                                    const datasets = context.chart.data.datasets;
+                                    const index = context.dataIndex;
+                                    const positive = datasets[0].data[index];
+                                    const neutral = datasets[1].data[index];
+                                    const negative = datasets[2].data[index];
+                                    
+                                    let dominant = 'Neutral';
+                                    if (positive > neutral && positive > negative) dominant = 'Positive';
+                                    else if (negative > neutral && negative > positive) dominant = 'Negative';
+                                    
+                                    return `\nDominant: ${dominant}`;
+                                }
                             }
                         }
                     }
@@ -972,88 +1536,6 @@ function createTimelineChart(timeline) {
     }
 }
 
-function createWordCloud(individualResults) {
-    try {
-        if (!individualResults || individualResults.length === 0) {
-            document.getElementById('wordCloudContainer').innerHTML = 
-                '<p class="text-muted">No data available for word cloud</p>';
-            return;
-        }
-        
-        // Extract and process text from all comments
-        const allText = individualResults.map(result => result.text || '').join(' ');
-        
-        // Process text to get word frequencies
-        const wordFrequencies = processTextForWordCloud(allText);
-        
-        if (wordFrequencies.length === 0) {
-            document.getElementById('wordCloudContainer').innerHTML = 
-                '<p class="text-muted">No significant words found for word cloud</p>';
-            return;
-        }
-        
-        // Store the word cloud data globally for zoom/word count controls
-        currentWordCloudData = wordFrequencies;
-        
-        // Reset zoom level and update display
-        zoomLevel = 1.0;
-        updateZoomDisplay();
-        
-        // Render the word cloud
-        renderWordCloudWithZoom();
-        
-    } catch (error) {
-        console.error('Error creating word cloud:', error);
-        document.getElementById('wordCloudContainer').innerHTML = 
-            '<p class="text-muted">Error generating word cloud</p>';
-    }
-}
-
-function processTextForWordCloud(text) {
-    // Convert to lowercase and remove extra whitespace
-    text = text.toLowerCase().replace(/\s+/g, ' ');
-    
-    // Remove URLs, mentions, hashtags, and special characters
-    text = text.replace(/https?:\/\/[^\s]+/g, '') // URLs
-               .replace(/@[^\s]+/g, '') // mentions
-               .replace(/#[^\s]+/g, '') // hashtags
-               .replace(/[^a-z\s]/g, ' ') // non-alphabetic chars
-               .replace(/\s+/g, ' ') // multiple spaces
-               .trim();
-    
-    // Split into words
-    const words = text.split(' ').filter(word => word.length > 0);
-    
-    // Define stop words to exclude
-    const stopWords = new Set([
-        'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by',
-        'from', 'is', 'was', 'are', 'were', 'been', 'be', 'have', 'has', 'had', 'do', 'does',
-        'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that',
-        'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us',
-        'them', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'what', 'which', 'who',
-        'when', 'where', 'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most',
-        'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same', 'so', 'than',
-        'too', 'very', 'just', 'now', 'get', 'go', 'know', 'like', 'see', 'think', 'say',
-        'come', 'want', 'look', 'make', 'take', 'good', 'bad', 'great', 'one', 'two', 'first',
-        'last', 'long', 'little', 'much', 'many', 'new', 'old', 'right', 'wrong', 'big', 'small'
-    ]);
-    
-    // Count word frequencies
-    const wordCounts = {};
-    words.forEach(word => {
-        if (word.length > 2 && !stopWords.has(word)) {
-            wordCounts[word] = (wordCounts[word] || 0) + 1;
-        }
-    });
-    
-    // Convert to array and sort by frequency
-    const sortedWords = Object.entries(wordCounts)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 100); // Top 100 words (we'll limit display dynamically)
-    
-    // Filter out words that appear only once
-    return sortedWords.filter(([word, count]) => count > 1);
-}
 
 function displaySampleComments(results) {
     try {
@@ -1062,6 +1544,7 @@ function displaySampleComments(results) {
             return;
         }
         
+        const videoId = '{{ video_id }}';
         const positive = [];
         const neutral = [];
         const negative = [];
@@ -1070,7 +1553,8 @@ function displaySampleComments(results) {
     results.forEach(result => {
         const comment = {
             text: result.text,
-            confidence: (result.confidence * 100).toFixed(1)
+            confidence: (result.confidence * 100).toFixed(1),
+            commentId: result.comment_id || null
         };
         
         if (result.predicted_sentiment === 'positive' && positive.length < 3) {
@@ -1082,18 +1566,20 @@ function displaySampleComments(results) {
         }
     });
     
-    // Display samples
+    // Display samples with YouTube links
     const displaySamples = (samples, elementId) => {
         const el = document.getElementById(elementId);
         if (samples.length === 0) {
             el.innerHTML = '<p class="text-muted">No samples available</p>';
         } else {
-            el.innerHTML = samples.map(s => `
-                <div class="mb-2 p-2 border rounded">
-                    <p class="mb-1">${s.text}</p>
-                    <small class="text-muted">Confidence: ${s.confidence}%</small>
-                </div>
-            `).join('');
+            el.innerHTML = samples.map(s => {
+                return `
+                    <div class="mb-2 p-2 border rounded">
+                        <p class="mb-1">${s.text}</p>
+                        <small class="text-muted">Confidence: ${s.confidence}%</small>
+                    </div>
+                `;
+            }).join('');
         }
     };
     

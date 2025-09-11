@@ -35,6 +35,10 @@ def create_app(config_class=Config):
     # Initialize Flask-Mail
     from app.email import mail
     mail.init_app(app)
+    
+    # Register custom Jinja2 filters
+    from app.filters import register_filters
+    register_filters(app)
 
     # Register blueprints
     from app.main import bp as main_bp
