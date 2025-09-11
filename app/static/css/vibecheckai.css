@@ -106,7 +106,7 @@ main {
 }
 
 .nav-pro-cta {
-    background: var(--accent-gradient);
+    background: linear-gradient(45deg, #ffd700, #ff8a00);
     border-radius: 20px;
     padding: 8px 16px !important;
     margin-left: 10px;
@@ -117,7 +117,7 @@ main {
 
 .nav-pro-cta:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);
+    box-shadow: 0 4px 15px rgba(255, 138, 0, 0.4);
 }
 
 .nav-pro-icon {
@@ -208,7 +208,7 @@ main {
 /* Pro Badge */
 .pro-badge {
     display: inline-block;
-    background: var(--accent-gradient);
+    background: linear-gradient(45deg, #ffd700, #ff8a00);
     color: white;
     padding: 4px 12px;
     border-radius: 20px;
@@ -218,6 +218,19 @@ main {
     letter-spacing: 1px;
     vertical-align: super;
     animation: glow 2s ease-in-out infinite;
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 10px rgba(255, 138, 0, 0.5); }
+    50% { box-shadow: 0 0 20px rgba(255, 138, 0, 0.8); }
+}
+    color: #7a4e00;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    font-weight: 800;
+    margin-left: 6px;
+    vertical-align: middle;
 }
 
 @keyframes glow {
@@ -698,7 +711,7 @@ main {
 
 .pro-badge-inline {
     display: inline-block;
-    background: var(--accent-gradient);
+    background: linear-gradient(45deg, #ffd700, #ff8a00);
     color: white;
     padding: 3px 10px;
     border-radius: 15px;
@@ -706,7 +719,7 @@ main {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    animation: glow 2s ease-in-out infinite;
+    box-shadow: 0 2px 8px rgba(255, 138, 0, 0.3);
 }
 
 .coverage-body {
@@ -903,7 +916,7 @@ main {
     top: -15px;
     left: 50%;
     transform: translateX(-50%);
-    background: var(--accent-gradient);
+    background: linear-gradient(45deg, #ffd700, #ff8a00);
     color: white;
     padding: 5px 20px;
     border-radius: 20px;
@@ -911,6 +924,7 @@ main {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
+    box-shadow: 0 2px 10px rgba(255, 138, 0, 0.4);
 }
 
 .plan-header {
@@ -989,6 +1003,33 @@ main {
     min-height: calc(100vh - 200px);
     position: relative;
     z-index: 1;
+}
+
+.profile-info {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.membership-badge {
+    display: inline-block;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.membership-badge.pro {
+    background: linear-gradient(45deg, #ffd700, #ff8a00);
+    color: white;
+    box-shadow: 0 2px 10px rgba(255, 138, 0, 0.3);
+}
+
+.membership-badge.free {
+    background: #e2e8f0;
+    color: var(--text-secondary);
 }
 
 /* Auth Pages Styles */

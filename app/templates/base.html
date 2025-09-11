@@ -45,15 +45,20 @@
                     </li>
                     {% if current_user.is_authenticated %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.profile') }}">Profile</a>
+                            <a class="nav-link" href="{{ url_for('auth.profile') }}">
+                                Profile
+                                {% if current_user.is_subscribed %}
+                                    <span class="pro-badge-small">PRO</span>
+                                {% endif %}
+                            </a>
                         </li>
-                {% if not current_user.is_subscribed %}
-                <li class="nav-item">
-                    <a class="nav-link nav-pro-cta" href="{{ url_for('auth.subscribe') }}">
-                        <span class="nav-pro-icon">⭐</span> Go Pro
-                    </a>
-                </li>
-                {% endif %}
+                        {% if not current_user.is_subscribed %}
+                        <li class="nav-item">
+                            <a class="nav-link nav-pro-cta" href="{{ url_for('auth.subscribe') }}">
+                                <span class="nav-pro-icon">⭐</span> Go Pro
+                            </a>
+                        </li>
+                        {% endif %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                         </li>
