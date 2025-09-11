@@ -124,6 +124,42 @@ def debug_config():
     return f"<pre>{str(debug_info)}</pre>"
 
 
+@bp.route('/test_token/<token>')
+def test_token(token):
+    """Test token verification directly in web server environment."""
+    import jwt
+    import time
+    import traceback
+    
+    result = {
+        'token_preview': f'{token[:50]}...',
+        'server_time': time.time(),
+        'secret_key': f'{current_app.config["SECRET_KEY"][:10]}...{current_app.config["SECRET_KEY"][-10:]}'
+    }
+    
+    try:
+        # Direct JWT decode test
+        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
+        result['jwt_decode'] = 'SUCCESS'
+        result['payload'] = payload
+        result['expires_at'] = payload.get('exp')
+        result['time_remaining'] = payload.get('exp', 0) - time.time()
+        
+        # User verification test
+        user = User.verify_reset_password_token(token)
+        result['user_verification'] = f'SUCCESS - {user.email}' if user else 'FAILED'
+        
+    except jwt.ExpiredSignatureError as e:
+        result['jwt_decode'] = f'EXPIRED: {str(e)}'
+    except jwt.InvalidTokenError as e:
+        result['jwt_decode'] = f'INVALID: {str(e)}'
+    except Exception as e:
+        result['jwt_decode'] = f'ERROR: {str(e)}'
+        result['traceback'] = traceback.format_exc()
+        
+    return f"<pre>{str(result)}</pre>"
+
+
 @bp.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
