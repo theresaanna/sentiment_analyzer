@@ -39,15 +39,46 @@ class User(UserMixin, db.Model):
     def verify_reset_password_token(token):
         """Verify a password reset token and return the user if valid."""
         try:
+            # Add debugging
+            current_app.logger.info(f'🔍 Verifying token: {token[:50]}...')
+            
             payload = jwt.decode(
                 token,
                 current_app.config['SECRET_KEY'],
                 algorithms=['HS256']
             )
             user_id = payload['reset_password']
-        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError, KeyError):
+            current_app.logger.info(f'✅ Token decoded successfully for user_id: {user_id}')
+            
+            # Check expiration manually for debugging
+            from datetime import datetime
+            exp_timestamp = payload.get('exp')
+            if exp_timestamp:
+                exp_datetime = datetime.utcfromtimestamp(exp_timestamp)
+                now_utc = datetime.utcnow()
+                current_app.logger.info(f'⏰ Token expires at: {exp_datetime} UTC')
+                current_app.logger.info(f'⏰ Current time is: {now_utc} UTC')
+                current_app.logger.info(f'⏰ Time remaining: {exp_datetime - now_utc}')
+            
+            user = User.query.get(user_id)
+            if user:
+                current_app.logger.info(f'✅ User found: {user.email}')
+            else:
+                current_app.logger.error(f'❌ No user found with ID: {user_id}')
+            return user
+            
+        except jwt.ExpiredSignatureError as e:
+            current_app.logger.warning(f'⏰ Token expired: {str(e)}')
             return None
-        return User.query.get(user_id)
+        except jwt.InvalidTokenError as e:
+            current_app.logger.error(f'❌ Invalid token: {str(e)}')
+            return None
+        except KeyError as e:
+            current_app.logger.error(f'❌ Missing key in token payload: {str(e)}')
+            return None
+        except Exception as e:
+            current_app.logger.error(f'❌ Unexpected error verifying token: {str(e)}')
+            return None
 
 
 @login_manager.user_loader
