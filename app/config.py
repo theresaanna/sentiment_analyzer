@@ -16,6 +16,11 @@ class Config:
     # Flask settings
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     TESTING = False
+    
+    # Server configuration for URL generation in emails
+    SERVER_NAME = os.environ.get('SERVER_NAME')
+    APPLICATION_ROOT = os.environ.get('APPLICATION_ROOT', '/')
+    PREFERRED_URL_SCHEME = os.environ.get('PREFERRED_URL_SCHEME', 'https')
 
     # Database
     database_url = os.environ.get('DATABASE_URL')
