@@ -41,27 +41,58 @@ class User(UserMixin, db.Model):
     @staticmethod
     def verify_reset_password_token(token):
         """Verify a password reset token and return the user if valid."""
+        import time
+        
         try:
-            # Add debugging
             current_app.logger.info(f'🔍 Verifying token: {token[:50]}...')
             
-            payload = jwt.decode(
-                token,
-                current_app.config['SECRET_KEY'],
-                algorithms=['HS256']
-            )
-            user_id = payload['reset_password']
-            current_app.logger.info(f'✅ Token decoded successfully for user_id: {user_id}')
+            # Try multiple verification approaches for maximum compatibility
+            payload = None
             
-            # Check expiration manually for debugging
-            from datetime import datetime
-            exp_timestamp = payload.get('exp')
-            if exp_timestamp:
-                exp_datetime = datetime.utcfromtimestamp(exp_timestamp)
-                now_utc = datetime.utcnow()
-                current_app.logger.info(f'⏰ Token expires at: {exp_datetime} UTC')
-                current_app.logger.info(f'⏰ Current time is: {now_utc} UTC')
-                current_app.logger.info(f'⏰ Time remaining: {exp_datetime - now_utc}')
+            # Method 1: Standard JWT decode
+            try:
+                payload = jwt.decode(
+                    token,
+                    current_app.config['SECRET_KEY'],
+                    algorithms=['HS256']
+                )
+                current_app.logger.info('✅ Standard JWT decode successful')
+            except jwt.ExpiredSignatureError:
+                # Method 2: Decode without verification to check if it's just expired
+                try:
+                    unverified_payload = jwt.decode(
+                        token,
+                        options={"verify_signature": False, "verify_exp": False}
+                    )
+                    exp_time = unverified_payload.get('exp', 0)
+                    current_time = time.time()
+                    
+                    current_app.logger.warning(f'⏰ Token expired. Exp: {exp_time}, Now: {current_time}, Diff: {exp_time - current_time}')
+                    
+                    # Give a small grace period (5 minutes) for clock differences
+                    if (exp_time - current_time) > -300:  # Less than 5 minutes expired
+                        current_app.logger.info('🕐 Token recently expired, allowing with grace period')
+                        payload = unverified_payload
+                    else:
+                        current_app.logger.warning('⏰ Token too old, rejecting')
+                        return None
+                        
+                except Exception as e:
+                    current_app.logger.error(f'❌ Failed to decode unverified token: {e}')
+                    return None
+            except Exception as e:
+                current_app.logger.error(f'❌ JWT decode failed: {str(e)}')
+                return None
+            
+            if not payload:
+                return None
+                
+            user_id = payload.get('reset_password')
+            if not user_id:
+                current_app.logger.error('❌ No user_id in token payload')
+                return None
+                
+            current_app.logger.info(f'✅ Token decoded successfully for user_id: {user_id}')
             
             user = User.query.get(user_id)
             if user:
@@ -70,15 +101,6 @@ class User(UserMixin, db.Model):
                 current_app.logger.error(f'❌ No user found with ID: {user_id}')
             return user
             
-        except jwt.ExpiredSignatureError as e:
-            current_app.logger.warning(f'⏰ Token expired: {str(e)}')
-            return None
-        except jwt.InvalidTokenError as e:
-            current_app.logger.error(f'❌ Invalid token: {str(e)}')
-            return None
-        except KeyError as e:
-            current_app.logger.error(f'❌ Missing key in token payload: {str(e)}')
-            return None
         except Exception as e:
             current_app.logger.error(f'❌ Unexpected error verifying token: {str(e)}')
             return None
