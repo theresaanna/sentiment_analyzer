@@ -23,8 +23,8 @@ class User(UserMixin, db.Model):
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
     
-    def get_reset_password_token(self, expires_in=600):
-        """Generate a password reset token that expires in `expires_in` seconds."""
+    def get_reset_password_token(self, expires_in=1800):
+        """Generate a password reset token that expires in `expires_in` seconds (default: 30 minutes)."""
         payload = {
             'reset_password': self.id,
             'exp': datetime.utcnow() + timedelta(seconds=expires_in)
