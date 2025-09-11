@@ -171,7 +171,7 @@ def reset_password(token):
     form = PasswordResetForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)
-        db.session.commit()
+        user.clear_reset_token()  # Clear the token after successful use
         flash('Your password has been reset. You can now log in with your new password.', 'success')
         return redirect(url_for('auth.login'))
     return render_template('auth/reset_password.html', form=form)
