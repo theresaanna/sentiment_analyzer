@@ -42,3 +42,6 @@ python-dateutil==2.8.2
 
 # Production server
 gunicorn==21.2.0
+
+# PostgreSQL driver (binary)
+psycopg2-binary==2.9.9
