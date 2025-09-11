@@ -102,68 +102,7 @@ def reset_password_request():
     return render_template('auth/reset_password_request.html', form=form)
 
 
-@bp.route('/version')
-def version_check():
-    """Check what version of code is deployed."""
-    return "<pre>DATABASE_BASED_RESET_SYSTEM_V2_DEPLOYED</pre>"
-
-
-@bp.route('/debug_config')
-def debug_config():
-    """Temporary debug endpoint to check web server configuration."""
-    import os
-    from datetime import datetime
-    
-    secret_key = current_app.config.get('SECRET_KEY', 'NOT_SET')
-    env_secret = os.environ.get('SECRET_KEY', 'NOT_SET_IN_ENV')
-    
-    debug_info = {
-        'secret_key_app': f'{secret_key[:10]}...{secret_key[-10:]}' if secret_key != 'NOT_SET' else 'NOT_SET',
-        'secret_key_env': f'{env_secret[:10]}...{env_secret[-10:]}' if env_secret != 'NOT_SET_IN_ENV' else 'NOT_SET_IN_ENV',
-        'keys_match': secret_key == env_secret,
-        'current_utc': datetime.utcnow().isoformat(),
-        'server_name': current_app.config.get('SERVER_NAME', 'NOT_SET'),
-        'flask_env': os.environ.get('FLASK_ENV', 'NOT_SET'),
-        'app_name': current_app.name
-    }
-    
-    return f"<pre>{str(debug_info)}</pre>"
-
-
-@bp.route('/test_token/<token>')
-def test_token(token):
-    """Test token verification directly in web server environment."""
-    import jwt
-    import time
-    import traceback
-    
-    result = {
-        'token_preview': f'{token[:50]}...',
-        'server_time': time.time(),
-        'secret_key': f'{current_app.config["SECRET_KEY"][:10]}...{current_app.config["SECRET_KEY"][-10:]}'
-    }
-    
-    try:
-        # Direct JWT decode test
-        payload = jwt.decode(token, current_app.config['SECRET_KEY'], algorithms=['HS256'])
-        result['jwt_decode'] = 'SUCCESS'
-        result['payload'] = payload
-        result['expires_at'] = payload.get('exp')
-        result['time_remaining'] = payload.get('exp', 0) - time.time()
-        
-        # User verification test
-        user = User.verify_reset_password_token(token)
-        result['user_verification'] = f'SUCCESS - {user.email}' if user else 'FAILED'
-        
-    except jwt.ExpiredSignatureError as e:
-        result['jwt_decode'] = f'EXPIRED: {str(e)}'
-    except jwt.InvalidTokenError as e:
-        result['jwt_decode'] = f'INVALID: {str(e)}'
-    except Exception as e:
-        result['jwt_decode'] = f'ERROR: {str(e)}'
-        result['traceback'] = traceback.format_exc()
-        
-    return f"<pre>{str(result)}</pre>"
+# Debug endpoints removed for clean deployment
 
 
 @bp.route('/reset_password/<token>', methods=['GET', 'POST'])
