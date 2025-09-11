@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}YouTube Sentiment Analyzer{% endblock %}</title>
+    <title>{% block title %}VibeCheckAI - Know Your Audience's Real Feelings{% endblock %}</title>
+    
+    <!-- Favicon with emoji -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -13,15 +21,16 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vibecheckai.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-gradient-elegant-gray">
+    <nav class="navbar navbar-expand-lg navbar-dark vibecheckai-nav">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('main.index') }}">
-                <i class="fab fa-youtube"></i> Sentiment Analyzer
+                <span class="nav-logo-emoji">✨</span> VibeCheckAI
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -38,11 +47,13 @@
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.profile') }}">Profile</a>
                         </li>
-                        {% if not current_user.is_subscribed %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ url_for('auth.subscribe') }}">Subscribe</a>
-                        </li>
-                        {% endif %}
+                {% if not current_user.is_subscribed %}
+                <li class="nav-item">
+                    <a class="nav-link nav-pro-cta" href="{{ url_for('auth.subscribe') }}">
+                        <span class="nav-pro-icon">⭐</span> Go Pro
+                    </a>
+                </li>
+                {% endif %}
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                         </li>
@@ -76,20 +87,23 @@
     </main>
 
     <!-- Footer -->
-    <footer class="footer mt-auto py-4 bg-light">
-        <div class="container text-center">
-            <div class="mb-2">
-                <span class="text-muted">© 2025 <a href="mailto:theresasumma@gmail.com" class="text-decoration-none">Theresa Summa</a></span>
+    <footer class="vibe-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <span class="footer-emoji">✨</span> VibeCheckAI
             </div>
-            <div class="mb-2">
-                <span class="text-muted">Found a bug? <a href="mailto:theresasumma@gmail.com" class="text-decoration-none">Email me</a> URL and screenshots, please.</span>
+            
+            <div class="footer-links">
+                <a href="{{ url_for('main.privacy') }}" class="footer-link">Privacy</a>
+                <a href="{{ url_for('main.terms') }}" class="footer-link">Terms</a>
+                <a href="mailto:theresasumma@gmail.com" class="footer-link">Contact</a>
+                <a href="https://theresasumma.com" target="_blank" class="footer-link">Portfolio</a>
             </div>
-            <div class="mb-2">
-                <span class="text-muted">Want to hire me? Check out <a href="https://theresasumma.com" target="_blank" class="text-decoration-none">https://theresasumma.com</a></span>
-            </div>
-            <div>
-                <a href="{{ url_for('main.privacy') }}" class="text-muted text-decoration-none me-3">Privacy Policy</a>
-                <a href="{{ url_for('main.terms') }}" class="text-muted text-decoration-none">Terms of Service</a>
+            
+            <div class="footer-divider"></div>
+            
+            <div class="footer-copyright">
+                © 2025 VibeCheckAI by Theresa Summa. Made with 💜 for content creators.
             </div>
         </div>
     </footer>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Analyze - YouTube Sentiment Analyzer{% endblock %}
+{% block title %}Analysis Results - VibeCheckAI{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -75,14 +75,14 @@
 {% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-12">
+<div class="analyze-page">
+    <div class="container">
         {% if success %}
         <!-- Video Embed and Info -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-gradient-elegant-gray text-white">
+        <div class="vibe-card mb-4">
+            <div class="card-header-vibe">
                 <h3 class="mb-0">
-                    <i class="fab fa-youtube"></i> {{ video_info.title }}
+                    <span class="emoji-icon">📺</span> {{ video_info.title }}
                 </h3>
             </div>
             <div class="card-body">
@@ -145,10 +145,10 @@
         </div>
         
         <!-- Comment Analysis -->
-        <div class="card shadow mb-4">
-            <div class="card-header bg-gradient-elegant-gray text-white">
+        <div class="vibe-card mb-4">
+            <div class="card-header-vibe">
                 <h3 class="mb-0">
-                    <i class="fas fa-comments"></i> Comment Analysis
+                    <span class="emoji-icon">💬</span> Comment Analysis
                 </h3>
             </div>
             <div class="card-body">
@@ -220,47 +220,97 @@
                 
                 <!-- Sentiment Analysis CTA -->
                 <div class="text-center">
-                    <!-- Comment Percentage Selector -->
-                    <div class="card bg-light mb-3" style="max-width: 500px; margin: 0 auto;">
-                        <div class="card-body">
-                            <h6 class="card-title d-flex align-items-center"><i class="fas fa-percentage me-2"></i> Analysis Coverage
+                    <!-- Analysis Coverage Section -->
+                    <div class="coverage-card mb-4">
+                        <div class="coverage-header">
+                            <h5 class="coverage-title">
+                                <span class="coverage-icon">📊</span>
+                                Analysis Coverage
                                 {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
-                                  <span class="badge bg-secondary ms-2">Members</span>
+                                    <span class="pro-badge-inline">PRO</span>
                                 {% endif %}
-                            </h6>
-                            <div class="form-group {% if not (current_user.is_authenticated and current_user.is_subscribed) %}opacity-50{% endif %}">
-                                <label for="commentPercentage" class="text-muted small">
-                                    Select how many comments to analyze:
-                                </label>
-                                <div class="input-group">
-                                    <input type="range" 
-                                           class="form-control-range" 
-                                           id="commentPercentageSlider" 
-                                           min="10" 
-                                           max="100" 
-                                           step="10" 
-                                           value="50" {% if not (current_user.is_authenticated and current_user.is_subscribed) %}disabled{% endif %}>
-                                    <div class="input-group-append">
-                                        <span class="input-group-text" id="percentageDisplay" style="min-width: 60px;">50%</span>
+                            </h5>
+                        </div>
+                        
+                        <div class="coverage-body">
+                            {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
+                                <!-- Locked State for Free Users -->
+                                <div class="coverage-locked">
+                                    <div class="locked-overlay">
+                                        <span class="lock-icon">🔒</span>
+                                        <h6>Unlock Advanced Analysis</h6>
+                                        <p>Get full control over analysis depth with VibeCheckAI Pro</p>
+                                        <a href="{{ url_for('auth.subscribe') }}" class="vibe-button small">
+                                            <span class="button-icon">⭐</span>
+                                            <span class="button-text">Upgrade to Pro - $10/month</span>
+                                        </a>
+                                    </div>
+                                    <div class="coverage-preview locked">
+                                        <div class="slider-container">
+                                            <label class="slider-label">Analysis Depth</label>
+                                            <input type="range" class="coverage-slider" disabled value="50">
+                                            <div class="slider-values">
+                                                <span>10%</span>
+                                                <span class="current-value">50%</span>
+                                                <span>100%</span>
+                                            </div>
+                                        </div>
+                                        <div class="coverage-stats">
+                                            <div class="stat-badge locked">
+                                                <span class="stat-label">Comments</span>
+                                                <span class="stat-value">{{ (comment_stats.total_comments * 0.5)|int }}</span>
+                                            </div>
+                                            <div class="stat-badge locked">
+                                                <span class="stat-label">Time</span>
+                                                <span class="stat-value">~{{ ((comment_stats.total_comments * 0.5 / 100) * 2)|round(1) }}s</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <small class="form-text text-muted">
-                                    <i class="fas fa-info-circle"></i> 
-                                    <span id="commentCountEstimate">~{{ (comment_stats.total_comments * 0.5)|int }} comments</span> • 
-                                    <span id="timeEstimate">Est. time: ~{{ ((comment_stats.total_comments * 0.5 / 100) * 2)|round(1) }} seconds</span>
-                                    <br>
-                                    {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
-                                      <span>Locked at 50% for free users. <a href="{{ url_for('auth.subscribe') }}">Subscribe</a> to unlock full control.</span>
-                                    {% else %}
-                                      <span class="text-info">💡 Tip: Start with 50% for a good balance of accuracy and speed. Use 100% for comprehensive analysis.</span>
-                                    {% endif %}
-                                </small>
-                            </div>
+                            {% else %}
+                                <!-- Unlocked State for Pro Users -->
+                                <div class="coverage-unlocked">
+                                    <div class="slider-container">
+                                        <label class="slider-label">Analysis Depth</label>
+                                        <input type="range" 
+                                               class="coverage-slider" 
+                                               id="commentPercentageSlider" 
+                                               min="10" 
+                                               max="100" 
+                                               step="10" 
+                                               value="50">
+                                        <div class="slider-values">
+                                            <span>10%</span>
+                                            <span class="current-value" id="percentageDisplay">50%</span>
+                                            <span>100%</span>
+                                        </div>
+                                    </div>
+                                    <div class="coverage-stats">
+                                        <div class="stat-badge">
+                                            <span class="stat-label">Comments</span>
+                                            <span class="stat-value" id="commentCountEstimate">{{ (comment_stats.total_comments * 0.5)|int }}</span>
+                                        </div>
+                                        <div class="stat-badge">
+                                            <span class="stat-label">Est. Time</span>
+                                            <span class="stat-value" id="timeEstimate">~{{ ((comment_stats.total_comments * 0.5 / 100) * 2)|round(1) }}s</span>
+                                        </div>
+                                        <div class="stat-badge">
+                                            <span class="stat-label">Accuracy</span>
+                                            <span class="stat-value" id="accuracyEstimate">Good</span>
+                                        </div>
+                                    </div>
+                                    <p class="coverage-tip">
+                                        <span class="tip-icon">💡</span>
+                                        <span id="coverageTip">Balanced analysis - recommended for most use cases</span>
+                                    </p>
+                                </div>
+                            {% endif %}
                         </div>
                     </div>
                     
-                    <button id="startSentimentAnalysisMain" class="btn btn-gradient-primary btn-lg shadow-lg pulse-animation" style="font-size: 1.2rem; padding: 12px 30px;">
-                        <i class="fas fa-brain"></i> Analyze Sentiment
+                    <button id="startSentimentAnalysisMain" class="vibe-button pulse-animation">
+                        <span class="button-icon">🧠</span>
+                        <span class="button-text">Analyze Sentiment</span>
                     </button>
                     <p class="text-muted mt-2 mb-0">Get AI-powered insights into the emotional tone of these comments</p>
                 </div>
@@ -268,13 +318,14 @@
         </div>
         
         <!-- Sentiment Analysis Section -->
-        <div id="sentimentAnalysisSection" class="card shadow mb-4 analysis-section" style="display: none;">
-            <div class="card-header bg-gradient-elegant-gray text-white d-flex justify-content-between align-items-center">
+        <div id="sentimentAnalysisSection" class="vibe-card mb-4 analysis-section" style="display: none;">
+            <div class="card-header-vibe d-flex justify-content-between align-items-center">
                 <h3 class="mb-0">
-                    <i class="fas fa-brain"></i> Sentiment Analysis
+                    <span class="emoji-icon">🧠</span> Sentiment Analysis
                 </h3>
-                <button id="startSentimentAnalysis" class="btn btn-primary btn-md shadow">
-                    <i class="fas fa-brain"></i> Analyze Sentiment
+                <button id="startSentimentAnalysis" class="vibe-button small">
+                    <span class="button-icon">🧠</span>
+                    <span class="button-text">Analyze Sentiment</span>
                 </button>
             </div>
             <div class="card-body">
@@ -418,8 +469,8 @@
         {% endif %}
         
         <div class="text-center mt-4">
-            <a href="{{ url_for('main.index') }}" class="btn btn-gradient-gray">
-                <i class="fas fa-arrow-left"></i> Analyze Another Video
+            <a href="{{ url_for('main.index') }}" class="vibe-button secondary">
+                <span class="button-icon">⬅</span> Analyze Another Video
             </a>
         </div>
     </div>
@@ -454,7 +505,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startButtonMain.addEventListener('click', startSentimentAnalysis);
     }
     
-    // Percentage slider event listener
+    // Percentage slider event listener for Pro users
     const percentageSlider = document.getElementById('commentPercentageSlider');
     if (percentageSlider) {
         const totalComments = {{ comment_stats.total_comments }};
@@ -466,18 +517,30 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Update displays
             document.getElementById('percentageDisplay').textContent = percentage + '%';
-            document.getElementById('commentCountEstimate').textContent = `~${commentCount.toLocaleString()} comments`;
-            document.getElementById('timeEstimate').textContent = `Est. time: ~${estimatedTime} seconds`;
+            document.getElementById('commentCountEstimate').textContent = commentCount.toLocaleString();
+            document.getElementById('timeEstimate').textContent = `~${estimatedTime}s`;
             
-            // Change tip based on percentage
-            const tipElement = document.querySelector('.text-info');
-            if (tipElement) {
+            // Update accuracy estimate
+            const accuracyEl = document.getElementById('accuracyEstimate');
+            if (accuracyEl) {
                 if (percentage <= 30) {
-                    tipElement.innerHTML = '💡 Tip: Quick analysis - good for a rapid overview of sentiment.';
+                    accuracyEl.textContent = 'Quick';
                 } else if (percentage <= 70) {
-                    tipElement.innerHTML = '💡 Tip: Balanced analysis - recommended for most use cases.';
+                    accuracyEl.textContent = 'Good';
                 } else {
-                    tipElement.innerHTML = '💡 Tip: Comprehensive analysis - best accuracy but takes longer.';
+                    accuracyEl.textContent = 'Best';
+                }
+            }
+            
+            // Update tip
+            const tipEl = document.getElementById('coverageTip');
+            if (tipEl) {
+                if (percentage <= 30) {
+                    tipEl.textContent = 'Quick analysis - good for a rapid overview';
+                } else if (percentage <= 70) {
+                    tipEl.textContent = 'Balanced analysis - recommended for most use cases';
+                } else {
+                    tipEl.textContent = 'Comprehensive analysis - best accuracy';
                 }
             }
         });

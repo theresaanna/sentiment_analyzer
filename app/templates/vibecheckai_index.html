@@ -1,98 +1,66 @@
-{% extends "base.html" %}
+{% extends "vibecheckai_base.html" %}
 
 {% block title %}VibeCheckAI - Know Your Audience's Real Feelings{% endblock %}
 
-{% block extra_css %}
-<style>
-    /* Override main container to be full-width for hero */
-    main.container {
-        max-width: 100%;
-        padding: 0;
-        margin: 0;
-        background: transparent;
-    }
-    
-    /* Sparkle Container */
-    .sparkle-container {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        pointer-events: none;
-        z-index: 100;
-    }
-    
-    .sparkle {
-        position: absolute;
-        animation: sparkle-fall linear;
-        pointer-events: none;
-        user-select: none;
-        filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
-    }
-    
-    @keyframes sparkle-fall {
-        to {
-            transform: translateY(110vh) rotate(360deg);
-            opacity: 0;
-        }
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<!-- Sparkle Container -->
-<div class="sparkle-container" id="sparkleContainer"></div>
-
-<!-- Hero Section -->
+<!-- Hero Section with Animated Background -->
 <div class="hero-section">
-    <!-- Main Logo and Title -->
-    <div class="text-center mb-5 animate-in">
-        <div class="logo-wrapper">
-            <div class="logo-circle">
-                <span class="logo-emoji">✨</span>
-            </div>
-            <h1 class="hero-title">
-                VibeCheck<span class="gradient-text">AI</span>
-                <span class="pro-badge">PRO</span>
-            </h1>
-        </div>
-        <p class="hero-subtitle">
-            Know your audience's real feelings with AI-powered sentiment analysis
-        </p>
+    <div class="sparkle-container">
+        <!-- Sparkles will be added by JavaScript -->
     </div>
-    <!-- Main Input Card -->
-    <div class="vibe-card main-card animate-in-delayed">
+    
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <!-- Main Logo and Title -->
+                <div class="text-center mb-5 animate-in">
+                    <div class="logo-wrapper">
+                        <div class="logo-circle">
+                            <span class="logo-emoji">✨</span>
+                        </div>
+                    </div>
+                    <h1 class="hero-title">
+                        VibeCheck<span class="gradient-text">AI</span>
+                        <span class="pro-badge">PRO</span>
+                    </h1>
+                    <p class="hero-subtitle">
+                        Know your audience's real feelings with AI-powered sentiment analysis
+                    </p>
+                </div>
+
+                <!-- Main Input Card -->
+                <div class="vibe-card main-card animate-in-delayed">
                     <!-- Platform Pills -->
                     <div class="platform-pills mb-4">
-                        <button type="button" class="platform-pill active" data-platform="youtube">
+                        <button class="platform-pill active" data-platform="youtube">
                             <span class="pill-icon">📺</span>
                             <span>YouTube</span>
                         </button>
-                        <button type="button" class="platform-pill coming-soon" data-platform="instagram" disabled>
+                        <button class="platform-pill" data-platform="instagram">
                             <span class="pill-icon">📸</span>
                             <span>Instagram</span>
-                            <span class="coming-soon-badge">Soon</span>
                         </button>
-                        <button type="button" class="platform-pill coming-soon" data-platform="tiktok" disabled>
+                        <button class="platform-pill" data-platform="tiktok">
                             <span class="pill-icon">🎵</span>
                             <span>TikTok</span>
-                            <span class="coming-soon-badge">Soon</span>
                         </button>
-                        <button type="button" class="platform-pill coming-soon" data-platform="twitter" disabled>
+                        <button class="platform-pill" data-platform="twitter">
                             <span class="pill-icon">🐦</span>
                             <span>Twitter/X</span>
-                            <span class="coming-soon-badge">Soon</span>
                         </button>
-                        <button type="button" class="platform-pill coming-soon" data-platform="reddit" disabled>
+                        <button class="platform-pill" data-platform="reddit">
                             <span class="pill-icon">🤖</span>
                             <span>Reddit</span>
+                        </button>
+                        <button class="platform-pill coming-soon" data-platform="facebook">
+                            <span class="pill-icon">👥</span>
+                            <span>Facebook</span>
                             <span class="coming-soon-badge">Soon</span>
                         </button>
                     </div>
 
                     <!-- URL Input Form -->
-                    <form method="POST" action="{{ url_for('main.index') }}" id="vibeCheckForm" novalidate>
+                    <form method="POST" action="{{ url_for('main.index') }}" id="vibeCheckForm">
                         {{ form.hidden_tag() }}
                         
                         <div class="input-wrapper">
@@ -112,13 +80,8 @@
                                 </div>
                             {% endif %}
                             
-                            <div class="url-example-box">
-                                <div class="example-label">📺 YouTube URL Examples:</div>
-                                <div class="example-urls">
-                                    <code class="example-url">https://www.youtube.com/watch?v=dQw4w9WgXcQ</code>
-                                    <span class="example-or">or</span>
-                                    <code class="example-url">https://youtu.be/dQw4w9WgXcQ</code>
-                                </div>
+                            <div class="input-hint">
+                                <span id="platformHint">Example: https://youtube.com/watch?v=...</span>
                             </div>
                         </div>
 
@@ -148,8 +111,13 @@
                             <span class="stat-icon">🔒</span>
                             <span class="stat-text">Privacy First</span>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
 <!-- Features Section -->
 <div class="features-section">
     <div class="container">
@@ -212,7 +180,116 @@
     </div>
 </div>
 
+<!-- How It Works -->
+<div class="how-it-works-section">
+    <div class="container">
+        <h2 class="section-title text-center mb-5">
+            How it works
+        </h2>
+        
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="steps-container">
+                    <div class="step-item">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>Choose Platform</h4>
+                            <p>Select your social media platform</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-connector"></div>
+                    
+                    <div class="step-item">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>Paste URL</h4>
+                            <p>Drop in your content link</p>
+                        </div>
+                    </div>
+                    
+                    <div class="step-connector"></div>
+                    
+                    <div class="step-item">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>Get Insights</h4>
+                            <p>Receive instant sentiment analysis</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+<div class="cta-section">
+    <div class="container text-center">
+        <h2 class="cta-title">
+            Ready to understand your audience better?
+        </h2>
+        <p class="cta-subtitle">
+            Join thousands of creators using VibeCheckAI to improve their content
+        </p>
+        <button class="vibe-button large" onclick="document.getElementById('urlInput').focus()">
+            <span class="button-content">
+                <span class="button-icon">✨</span>
+                <span class="button-text">Start Free Vibe Check</span>
+            </span>
+        </button>
+    </div>
+</div>
+
 <script>
+// Platform switching
+document.querySelectorAll('.platform-pill').forEach(pill => {
+    pill.addEventListener('click', function(e) {
+        if (this.classList.contains('coming-soon')) {
+            e.preventDefault();
+            return;
+        }
+        
+        // Update active state
+        document.querySelectorAll('.platform-pill').forEach(p => p.classList.remove('active'));
+        this.classList.add('active');
+        
+        // Update input placeholder and label
+        const platform = this.dataset.platform;
+        const urlInput = document.getElementById('urlInput');
+        const platformLabel = document.getElementById('platformLabel');
+        const platformHint = document.getElementById('platformHint');
+        
+        const platformInfo = {
+            youtube: {
+                label: 'YouTube',
+                hint: 'Example: https://youtube.com/watch?v=...'
+            },
+            instagram: {
+                label: 'Instagram',
+                hint: 'Example: https://instagram.com/p/...'
+            },
+            tiktok: {
+                label: 'TikTok',
+                hint: 'Example: https://tiktok.com/@user/video/...'
+            },
+            twitter: {
+                label: 'Twitter/X',
+                hint: 'Example: https://twitter.com/user/status/...'
+            },
+            reddit: {
+                label: 'Reddit',
+                hint: 'Example: https://reddit.com/r/subreddit/comments/...'
+            }
+        };
+        
+        if (platformInfo[platform]) {
+            platformLabel.textContent = platformInfo[platform].label;
+            platformHint.textContent = platformInfo[platform].hint;
+        }
+    });
+});
+
 // Form submission
 document.getElementById('vibeCheckForm').addEventListener('submit', function(e) {
     const btn = document.getElementById('analyzeBtn');
@@ -221,7 +298,7 @@ document.getElementById('vibeCheckForm').addEventListener('submit', function(e) 
 
 // Create sparkles
 function createSparkle() {
-    const sparkleContainer = document.getElementById('sparkleContainer');
+    const sparkleContainer = document.querySelector('.sparkle-container');
     if (!sparkleContainer) return;
     
     const sparkles = ['✨', '⭐', '💫', '🌟'];

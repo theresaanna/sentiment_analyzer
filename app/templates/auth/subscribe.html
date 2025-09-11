@@ -1,23 +1,80 @@
 {% extends "base.html" %}
-{% block title %}Subscribe - YouTube Sentiment Analyzer{% endblock %}
+{% block title %}Go Pro - VibeCheckAI{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-10 col-lg-8">
-    <div class="card shadow">
-      <div class="card-header bg-gradient-elegant-gray text-white">
-        <h3 class="mb-0">Subscribe</h3>
-      </div>
-      <div class="card-body">
-        {% if current_user.is_subscribed %}
-          <div class="alert alert-success">You already have an active membership.</div>
-        {% else %}
-          <p class="text-muted">Subscribe for $10/month to unlock full analysis controls and your dashboard.</p>
-          <div class="border rounded p-3 d-flex flex-column">
-            <h5><i class="fab fa-cc-stripe"></i> Stripe</h5>
-            <p class="small text-muted">Pay with card, Apple Pay, or Google Pay via Stripe Checkout.</p>
-            <button id="stripeCheckout" class="btn btn-primary mt-auto">Subscribe with Stripe</button>
+<div class="profile-page">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-10 col-lg-8">
+        <div class="vibe-card">
+          <div class="card-header-vibe">
+            <h3 class="mb-0">
+              <span class="emoji-icon">⭐</span> Upgrade to VibeCheckAI Pro
+            </h3>
           </div>
-        {% endif %}
+          <div class="card-body">
+            {% if current_user.is_subscribed %}
+              <div class="pro-active-badge">
+                <span class="badge-icon">✅</span>
+                <h4>You're a Pro Member!</h4>
+                <p>You have full access to all VibeCheckAI features.</p>
+              </div>
+            {% else %}
+              <!-- Pricing Card -->
+              <div class="pricing-comparison">
+                <div class="row g-4">
+                  <!-- Free Plan -->
+                  <div class="col-md-6">
+                    <div class="plan-card free">
+                      <div class="plan-header">
+                        <h4 class="plan-name">Free</h4>
+                        <div class="plan-price">
+                          <span class="price-amount">$0</span>
+                          <span class="price-period">/month</span>
+                        </div>
+                      </div>
+                      <ul class="plan-features">
+                        <li><span class="feature-icon">✅</span> Basic sentiment analysis</li>
+                        <li><span class="feature-icon">✅</span> 50% comment coverage</li>
+                        <li><span class="feature-icon">✅</span> Standard processing speed</li>
+                        <li><span class="feature-icon">❌</span> Advanced coverage control</li>
+                        <li><span class="feature-icon">❌</span> Custom dashboard</li>
+                        <li><span class="feature-icon">❌</span> Priority support</li>
+                      </ul>
+                    </div>
+                  </div>
+                  
+                  <!-- Pro Plan -->
+                  <div class="col-md-6">
+                    <div class="plan-card pro featured">
+                      <div class="plan-badge">BEST VALUE</div>
+                      <div class="plan-header">
+                        <h4 class="plan-name">Pro</h4>
+                        <div class="plan-price">
+                          <span class="price-amount">$10</span>
+                          <span class="price-period">/month</span>
+                        </div>
+                      </div>
+                      <ul class="plan-features">
+                        <li><span class="feature-icon">✅</span> Advanced sentiment analysis</li>
+                        <li><span class="feature-icon">✅</span> 10-100% coverage control</li>
+                        <li><span class="feature-icon">✅</span> Priority processing</li>
+                        <li><span class="feature-icon">✅</span> Full coverage control</li>
+                        <li><span class="feature-icon">✅</span> Custom dashboard <span class="coming-soon-text">coming soon</span></li>
+                        <li><span class="feature-icon">✅</span> Priority support</li>
+                      </ul>
+                      <div class="plan-cta">
+                        <button id="stripeCheckout" class="vibe-button">
+                          <span class="button-icon">💳</span>
+                          <span class="button-text">Start Pro Subscription</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
   </div>
