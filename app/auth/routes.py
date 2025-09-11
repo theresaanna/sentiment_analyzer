@@ -102,6 +102,28 @@ def reset_password_request():
     return render_template('auth/reset_password_request.html', form=form)
 
 
+@bp.route('/debug_config')
+def debug_config():
+    """Temporary debug endpoint to check web server configuration."""
+    import os
+    from datetime import datetime
+    
+    secret_key = current_app.config.get('SECRET_KEY', 'NOT_SET')
+    env_secret = os.environ.get('SECRET_KEY', 'NOT_SET_IN_ENV')
+    
+    debug_info = {
+        'secret_key_app': f'{secret_key[:10]}...{secret_key[-10:]}' if secret_key != 'NOT_SET' else 'NOT_SET',
+        'secret_key_env': f'{env_secret[:10]}...{env_secret[-10:]}' if env_secret != 'NOT_SET_IN_ENV' else 'NOT_SET_IN_ENV',
+        'keys_match': secret_key == env_secret,
+        'current_utc': datetime.utcnow().isoformat(),
+        'server_name': current_app.config.get('SERVER_NAME', 'NOT_SET'),
+        'flask_env': os.environ.get('FLASK_ENV', 'NOT_SET'),
+        'app_name': current_app.name
+    }
+    
+    return f"<pre>{str(debug_info)}</pre>"
+
+
 @bp.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
