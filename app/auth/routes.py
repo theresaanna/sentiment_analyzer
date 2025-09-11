@@ -64,31 +64,41 @@ def reset_password_request():
         return redirect(url_for('main.index'))
     form = PasswordResetRequestForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()
+        email_input = form.email.data.lower().strip()
+        current_app.logger.info(f'Password reset request received for email: {email_input}')
+        
+        user = User.query.filter_by(email=email_input).first()
         if user:
+            current_app.logger.info(f'Found user for password reset: {user.email} (ID: {user.id})')
             try:
                 # Try synchronous first for immediate feedback, fallback to async
+                current_app.logger.info(f'Attempting to send password reset email to {user.email}')
                 success = send_password_reset_email(user, use_sync=True)
                 if success:
                     flash('Check your email for instructions to reset your password.', 'info')
-                    current_app.logger.info(f'Password reset email sent successfully to {user.email}')
+                    current_app.logger.info(f'✅ Password reset email sent successfully to {user.email}')
                 else:
                     # Try async as fallback
                     current_app.logger.warning(f'Sync email failed, trying async for {user.email}')
                     success = send_password_reset_email(user, use_sync=False)
                     if success:
                         flash('Check your email for instructions to reset your password. Email may take a few minutes to arrive.', 'info')
+                        current_app.logger.info(f'✅ Password reset email queued for {user.email}')
                     else:
-                        current_app.logger.error(f'Both sync and async email sending failed for {user.email}')
+                        current_app.logger.error(f'❌ Both sync and async email sending failed for {user.email}')
                         flash('Unable to send password reset email at this time. Please try again later or contact support.', 'danger')
             except Exception as e:
-                current_app.logger.error(f'Exception during password reset email process: {str(e)}')
+                current_app.logger.error(f'❌ Exception during password reset email process for {user.email}: {str(e)}')
                 flash('Unable to send password reset email. Please try again later.', 'danger')
         else:
             # Don't reveal if the email exists or not for security
             # But still show success message
+            current_app.logger.warning(f'Password reset requested for non-existent email: {email_input}')
             flash('Check your email for instructions to reset your password.', 'info')
         return redirect(url_for('auth.login'))
+    else:
+        if form.errors:
+            current_app.logger.warning(f'Password reset form validation failed: {form.errors}')
     return render_template('auth/reset_password_request.html', form=form)
 
 
