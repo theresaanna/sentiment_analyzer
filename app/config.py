@@ -3,6 +3,7 @@ Configuration settings for the Flask application.
 """
 import os
 from dotenv import load_dotenv
+from urllib.parse import urlparse, urlunparse
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 load_dotenv(os.path.join(os.path.dirname(basedir), '.env'))
@@ -27,6 +28,29 @@ class Config:
     if database_url and database_url.startswith('postgres://'):
         # Railway uses postgres:// but SQLAlchemy needs postgresql://
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+    # If using Railway's internal Postgres and DB name isn't 'railway',
+    # assume the default DB name 'railway' (common case) to avoid "does not exist" errors
+    try:
+        if database_url:
+            parsed = urlparse(database_url)
+            host = parsed.hostname
+            dbname = (parsed.path or '').lstrip('/')
+            if host == 'postgres.railway.internal' and dbname and dbname != 'railway':
+                corrected = urlunparse((
+                    parsed.scheme,
+                    parsed.netloc,
+                    '/railway',
+                    parsed.params,
+                    parsed.query,
+                    parsed.fragment
+                ))
+                database_url = corrected
+                # Keep process env consistent for downstream users
+                os.environ['DATABASE_URL'] = database_url
+    except Exception:
+        # Best-effort; if parsing fails, continue with original URL
+        pass
     
     SQLALCHEMY_DATABASE_URI = database_url or \
         'sqlite:///' + os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app.db')

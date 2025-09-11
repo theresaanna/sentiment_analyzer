@@ -15,6 +15,17 @@ if db_url and db_url.startswith('postgres://'):
     os.environ['DATABASE_URL'] = db_url.replace('postgres://', 'postgresql://', 1)
     logger.info("Fixed DATABASE_URL for PostgreSQL compatibility")
 
+# Log sanitized DB target to aid debugging (no credentials)
+try:
+    from urllib.parse import urlparse
+    parsed = urlparse(os.environ.get('DATABASE_URL', ''))
+    host = parsed.hostname
+    dbname = (parsed.path or '').lstrip('/')
+    if host and dbname:
+        logger.info(f"Database target: host={host}, db={dbname}")
+except Exception:
+    pass
+
 from app import create_app, db
 from app.models import User
 
