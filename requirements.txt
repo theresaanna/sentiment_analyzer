@@ -60,3 +60,7 @@ gunicorn==21.2.0
 
 # Backup scheduling
 schedule==1.2.0
+
+# PostgreSQL driver
+psycopg2-binary==2.9.9
+psycopg[binary]==3.2.1

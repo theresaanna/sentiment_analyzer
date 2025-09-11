@@ -52,6 +52,15 @@ class Config:
         # Best-effort; if parsing fails, continue with original URL
         pass
     
+    # Prefer psycopg3 driver if available
+    try:
+        import psycopg  # noqa: F401
+        if database_url and database_url.startswith('postgresql://'):
+            database_url = database_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+    except Exception:
+        # psycopg not installed; fallback to default driver (psycopg2)
+        pass
+
     SQLALCHEMY_DATABASE_URI = database_url or \
         'sqlite:///' + os.path.join(os.path.dirname(os.path.dirname(__file__)), 'app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False

@@ -46,3 +46,4 @@ gunicorn==21.2.0
 
 # PostgreSQL driver (binary)
 psycopg2-binary==2.9.9
+psycopg[binary]==3.2.1
