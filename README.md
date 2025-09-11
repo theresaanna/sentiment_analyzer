@@ -42,8 +42,11 @@ pip install -r requirements.txt
 
 # 4. Set up environment variables
 cp .env.example .env
-# Edit .env and add your YouTube API key:
+# Edit .env and add your YouTube API key and Google OAuth credentials:
 # YOUTUBE_API_KEY=your-actual-api-key-here
+# GOOGLE_CLIENT_ID=your-google-client-id
+# GOOGLE_CLIENT_SECRET=your-google-client-secret
+# (Optional) OAUTH_REDIRECT_URI=http://localhost:8000/auth/google/callback
 
 # 5. Run the application
 python run.py
@@ -80,7 +83,10 @@ pip install -r requirements.txt
 4. Configure environment variables:
 ```bash
 cp .env.example .env
-# Edit .env and add your YouTube API key
+# Edit .env and add your YouTube API key and Google OAuth credentials
+# GOOGLE_CLIENT_ID=your-google-client-id
+# GOOGLE_CLIENT_SECRET=your-google-client-secret
+# (Optional) OAUTH_REDIRECT_URI=http://localhost:8000/auth/google/callback
 ```
 
 5. Run the application:

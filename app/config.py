@@ -77,6 +77,12 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', MAIL_USERNAME)
 
+    # Google OAuth (Login)
+    GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+    GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+    # Optional: override the computed redirect URI
+    OAUTH_REDIRECT_URI = os.environ.get('OAUTH_REDIRECT_URI')
+
 
 class DevelopmentConfig(Config):
     """Development configuration."""

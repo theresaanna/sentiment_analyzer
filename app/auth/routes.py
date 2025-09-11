@@ -3,9 +3,71 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.auth import bp
 from app import db
 from app.models import User
-from app.auth.forms import RegisterForm, LoginForm, PasswordResetRequestForm, PasswordResetForm
-from app.email import send_password_reset_email
+from authlib.integrations.flask_client import OAuth
 import stripe
+import os
+
+# Initialize OAuth container (lazy)
+oauth = OAuth()
+
+def _get_google_client():
+    oauth.init_app(current_app)
+    if 'google' not in getattr(oauth, '_clients', {}):
+        client_id = current_app.config.get('GOOGLE_CLIENT_ID')
+        client_secret = current_app.config.get('GOOGLE_CLIENT_SECRET')
+        if not client_id or not client_secret:
+            current_app.logger.error('Google OAuth is not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.')
+        oauth.register(
+            name='google',
+            client_id=client_id,
+            client_secret=client_secret,
+            server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+            api_base_url='https://openidconnect.googleapis.com/v1/',
+            client_kwargs={'scope': 'openid email profile'}
+        )
+    return oauth.create_client('google')
+
+@bp.route('/google/callback')
+def google_callback():
+    google = _get_google_client()
+    try:
+        token = google.authorize_access_token()
+        resp = google.get('userinfo')
+        userinfo = resp.json() if resp else None
+    except Exception as e:
+        current_app.logger.error(f'Google OAuth callback error: {e}')
+        flash('Failed to authenticate with Google.', 'danger')
+        return redirect(url_for('main.index'))
+
+    if not userinfo or not userinfo.get('email'):
+        flash('Google did not provide an email address.', 'danger')
+        return redirect(url_for('main.index'))
+
+    email = userinfo['email'].lower()
+    name = userinfo.get('name') or email.split('@')[0]
+
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        user = User(name=name, email=email, provider='google')
+        user.set_password(os.urandom(16).hex())
+        db.session.add(user)
+        db.session.commit()
+    else:
+        updated = False
+        if user.name != name and name:
+            user.name = name
+            updated = True
+        if user.provider != 'google':
+            user.provider = 'google'
+            updated = True
+        if updated:
+            db.session.commit()
+
+    login_user(user)
+    flash('Logged in with Google.', 'success')
+
+    next_url = request.args.get('next')
+    return redirect(next_url or url_for('main.index'))
 
 
 @bp.before_app_request
@@ -14,40 +76,27 @@ def configure_stripe_and_context():
     stripe.api_key = current_app.config.get('STRIPE_SECRET_KEY')
 
 
-@bp.route('/register', methods=['GET', 'POST'])
+@bp.route('/__disabled_register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
-    form = RegisterForm()
-    if form.validate_on_submit():
-        # Create user
-        if User.query.filter_by(email=form.email.data.lower()).first():
-            flash('Email already registered. Please login instead.', 'warning')
-            return redirect(url_for('auth.login'))
-        user = User(name=form.name.data.strip(), email=form.email.data.lower())
-        user.set_password(form.password.data)
-        db.session.add(user)
-        db.session.commit()
-        login_user(user)
-        flash('Account created. Please choose a subscription to continue.', 'success')
-        return redirect(url_for('auth.subscribe'))
-    return render_template('auth/register.html', form=form)
+    flash('Registration is no longer required. Please sign in with Google.', 'info')
+    return redirect(url_for('auth.login'))
 
 
-@bp.route('/login', methods=['GET', 'POST'])
+@bp.route('/login')
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data.lower()).first()
-        if user and user.check_password(form.password.data):
-            login_user(user)
-            flash('Logged in successfully.', 'success')
-            next_page = request.args.get('next')
-            return redirect(next_page or url_for('main.index'))
-        flash('Invalid email or password.', 'danger')
-    return render_template('auth/login.html', form=form)
+    google = _get_google_client()
+    redirect_uri = current_app.config.get('OAUTH_REDIRECT_URI') or url_for('auth.google_callback', _external=True)
+    next_url = request.args.get('next')
+    if next_url:
+        redirect_uri = url_for('auth.google_callback', _external=True, next=next_url)
+    try:
+        return google.authorize_redirect(redirect_uri)
+    except Exception as e:
+        current_app.logger.error(f'Google authorize redirect failed: {e}')
+        flash('Authentication is temporarily unavailable. Please try again later.', 'danger')
+        return redirect(url_for('main.index'))
 
 
 @bp.route('/logout')
@@ -58,68 +107,19 @@ def logout():
     return redirect(url_for('main.index'))
 
 
-@bp.route('/reset_password_request', methods=['GET', 'POST'])
+@bp.route('/__disabled_reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
-    form = PasswordResetRequestForm()
-    if form.validate_on_submit():
-        email_input = form.email.data.lower().strip()
-        current_app.logger.info(f'Password reset request received for email: {email_input}')
-        
-        user = User.query.filter_by(email=email_input).first()
-        if user:
-            current_app.logger.info(f'Found user for password reset: {user.email} (ID: {user.id})')
-            try:
-                # Try synchronous first for immediate feedback, fallback to async
-                current_app.logger.info(f'Attempting to send password reset email to {user.email}')
-                success = send_password_reset_email(user, use_sync=True)
-                if success:
-                    flash('Check your email for instructions to reset your password.', 'info')
-                    current_app.logger.info(f'✅ Password reset email sent successfully to {user.email}')
-                else:
-                    # Try async as fallback
-                    current_app.logger.warning(f'Sync email failed, trying async for {user.email}')
-                    success = send_password_reset_email(user, use_sync=False)
-                    if success:
-                        flash('Check your email for instructions to reset your password. Email may take a few minutes to arrive.', 'info')
-                        current_app.logger.info(f'✅ Password reset email queued for {user.email}')
-                    else:
-                        current_app.logger.error(f'❌ Both sync and async email sending failed for {user.email}')
-                        flash('Unable to send password reset email at this time. Please try again later or contact support.', 'danger')
-            except Exception as e:
-                current_app.logger.error(f'❌ Exception during password reset email process for {user.email}: {str(e)}')
-                flash('Unable to send password reset email. Please try again later.', 'danger')
-        else:
-            # Don't reveal if the email exists or not for security
-            # But still show success message
-            current_app.logger.warning(f'Password reset requested for non-existent email: {email_input}')
-            flash('Check your email for instructions to reset your password.', 'info')
-        return redirect(url_for('auth.login'))
-    else:
-        if form.errors:
-            current_app.logger.warning(f'Password reset form validation failed: {form.errors}')
-    return render_template('auth/reset_password_request.html', form=form)
+    flash('Password reset is not available. Please sign in with Google.', 'info')
+    return redirect(url_for('auth.login'))
 
 
 # Debug endpoints removed for clean deployment
 
 
-@bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+@bp.route('/__disabled_reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
-    user = User.verify_reset_password_token(token)
-    if not user:
-        flash('Invalid or expired password reset link.', 'danger')
-        return redirect(url_for('main.index'))
-    form = PasswordResetForm()
-    if form.validate_on_submit():
-        user.set_password(form.password.data)
-        user.clear_reset_token()  # Clear the token after successful use
-        flash('Your password has been reset. You can now log in with your new password.', 'success')
-        return redirect(url_for('auth.login'))
-    return render_template('auth/reset_password.html', form=form)
+    flash('Password reset is not available. Please sign in with Google.', 'info')
+    return redirect(url_for('auth.login'))
 
 
 @bp.route('/profile')
