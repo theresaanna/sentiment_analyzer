@@ -1,9 +1,15 @@
-# Railway Deployment Checklist
+# Railway Deployment Guide
 
-## 🚀 Automatic Steps (handled by Railway)
+## 🚀 Automatic Migration Setup
+
+The project is now configured to automatically run database migrations on every Railway deployment!
+
+### What happens on each deployment:
 - ✅ Code deployment from GitHub main branch
 - ✅ Installing Python dependencies from requirements.txt
-- ✅ Running release command (database migrations)
+- ✅ **Automatic database migrations** via `release` command
+- ✅ Complete schema verification and table creation
+- ✅ Non-interactive deployment (no hanging prompts)
 
 ## 🔧 Manual Setup Required
 
@@ -51,12 +57,27 @@ Railway doesn't include Redis by default. You need to:
 1. Use Redis Cloud, Upstash, or another provider
 2. Add `REDIS_URL` manually to Railway variables
 
-### 3. Database Migration
-With the updated Procfile, migrations will run automatically on each deploy via the `release` command.
+### 3. Automatic Database Migration
+
+**Now fully automated!** The Procfile has been updated to use our enhanced migration script:
+
+```
+release: python scripts/deploy_production_db.py --non-interactive
+web: gunicorn run:app
+worker: python scripts/preload_worker.py
+```
+
+This script:
+- ✅ Checks current migration status
+- ✅ Runs all pending migrations
+- ✅ Verifies all tables exist and are accessible
+- ✅ Creates missing tables automatically
+- ✅ Runs in non-interactive mode (perfect for CI/CD)
+- ✅ Provides detailed logging
 
 To run manually if needed:
 ```bash
-railway run flask db upgrade
+railway run python scripts/deploy_production_db.py --non-interactive
 ```
 
 ### 4. New Tables Added
