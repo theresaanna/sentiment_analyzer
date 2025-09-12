@@ -33,4 +33,5 @@ RUN chmod +x railway_check_env.py || true
 EXPOSE 8000
 
 # Use shell form to allow environment variable substitution
-CMD sh -c "gunicorn --bind 0.0.0.0:${PORT:-8000} run:app"
+# Run startup script first, then start gunicorn
+CMD sh -c "python scripts/railway_startup.py && gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 4 --worker-class gthread run:app"
