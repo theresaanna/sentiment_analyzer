@@ -1,13 +1,51 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "DOCKERFILE",
-    "dockerfilePath": "Dockerfile"
+    "builder": "NIXPACKS",
+    "nixpacksPlan": {
+      "providers": ["python"],
+      "phases": {
+        "setup": {
+          "nixPkgs": ["python310", "gcc", "postgresql"]
+        },
+        "install": {
+          "cmds": [
+            "pip install --upgrade pip",
+            "pip install -r requirements.txt",
+            "echo 'Downloading ML models during build...'",
+            "python -c 'from transformers import AutoTokenizer, AutoModelForSequenceClassification; AutoTokenizer.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\"); AutoModelForSequenceClassification.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\")'",
+            "python -c 'from transformers import pipeline; pipeline(\"sentiment-analysis\", model=\"distilbert-base-uncased-finetuned-sst-2-english\")'"
+          ]
+        }
+      }
+    }
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "sh -c \"python scripts/deploy_production_db.py --non-interactive && gunicorn --bind 0.0.0.0:${PORT:-8000} run:app\"",
+    "startCommand": "python scripts/railway_startup.py && gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 4 --worker-class gthread run:app",
     "restartPolicyType": "ON_FAILURE",
-    "restartPolicyMaxRetries": 10
+    "restartPolicyMaxRetries": 10,
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 30,
+    "region": "us-west1"
+  },
+  "variables": {
+    "$schema": "https://railway.app/variables.schema.json",
+    "SKIP_MODEL_PRELOAD": {
+      "description": "Skip model preloading during migrations",
+      "default": "false"
+    },
+    "RAILWAY_MINIMAL_MODELS": {
+      "description": "Load only essential models to save memory",
+      "default": "false"
+    },
+    "MODEL_CACHE_DIR": {
+      "description": "Directory for model cache",
+      "default": "/app/model_cache"
+    },
+    "TRANSFORMERS_CACHE": {
+      "description": "Transformers library cache directory",
+      "default": "/app/.cache/huggingface"
+    }
   }
 }

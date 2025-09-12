@@ -36,7 +36,7 @@ def setup_cache_directories():
         Path(os.environ.get('MODEL_CACHE_DIR', '/app/model_cache')),
         Path(os.environ.get('TRANSFORMERS_CACHE', '/app/.cache/huggingface')),
         Path('model_cache'),
-        Path('models')
+        Path('../models')
     ]
 
     for cache_dir in cache_dirs:

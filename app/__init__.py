@@ -1,6 +1,9 @@
 """
 YouTube Sentiment Analyzer Flask Application
+Modified to preload ML models at startup for better performance on Railway
 """
+import os
+import logging
 from flask import Flask
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -15,12 +18,56 @@ login_manager = LoginManager()
 login_manager.login_view = 'auth.login'
 login_manager.login_message_category = 'info'
 
+logger = logging.getLogger(__name__)
+
+
+def preload_models():
+    """Preload ML models at application startup."""
+    try:
+        # Import model manager
+        from app.utils.model_manager import get_model_manager
+
+        model_manager = get_model_manager()
+
+        # Check if we should skip model preloading (for migrations, etc.)
+        if os.environ.get('SKIP_MODEL_PRELOAD'):
+            logger.info("Skipping model preloading (SKIP_MODEL_PRELOAD is set)")
+            return
+
+        # For Railway deployment, check available memory
+        if os.environ.get('RAILWAY_ENVIRONMENT'):
+            # Use minimal models on Railway if specified
+            if os.environ.get('RAILWAY_MINIMAL_MODELS'):
+                logger.info("Loading minimal model set for Railway deployment")
+                os.environ['MINIMAL_MODELS'] = '1'
+
+        # Preload all models
+        logger.info("Starting model preloading...")
+        model_manager.preload_all_models()
+
+        # Log statistics
+        stats = model_manager.get_model_stats()
+        logger.info(f"Models loaded: {stats.get('loaded_models', [])}")
+        logger.info(f"Total load time: {sum(stats.get('load_times', {}).values()):.2f}s")
+
+    except Exception as e:
+        logger.error(f"Failed to preload models: {e}")
+        # Don't crash the app if model preloading fails
+        # Models will be loaded on-demand instead
+
 
 def create_app(config_class=Config):
     """Application factory pattern for Flask app creation."""
     app = Flask(__name__)
     app.config.from_object(config_class)
-    
+
+    # Setup logging
+    if not app.debug:
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+
     # Enable CORS for all routes
     if app.config.get('DEBUG', False):
         CORS(app, origins=['http://localhost:3000', 'http://localhost:3002'])
@@ -31,11 +78,11 @@ def create_app(config_class=Config):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
-    
+
     # Initialize Flask-Mail
     from app.email import mail
     mail.init_app(app)
-    
+
     # Register custom Jinja2 filters
     from app.filters import register_filters
     register_filters(app)
@@ -55,6 +102,48 @@ def create_app(config_class=Config):
             # This is safe to run even with migrations
             db.create_all()
         except Exception as e:
-            print(f"Warning: could not initialize database: {e}")
-    
+            logger.warning(f"Could not initialize database: {e}")
+
+    # Preload ML models after app context is established
+    # This runs once at startup, not per request
+    with app.app_context():
+        preload_models()
+
+    # Add health check endpoint for Railway
+    @app.route('/health')
+    def health_check():
+        """Health check endpoint for Railway."""
+        try:
+            # Check database connection
+            db.session.execute('SELECT 1')
+
+            # Check model status
+            from app.utils.model_manager import get_model_manager
+            model_manager = get_model_manager()
+            stats = model_manager.get_model_stats()
+
+            return {
+                'status': 'healthy',
+                'database': 'connected',
+                'models_loaded': len(stats.get('loaded_models', [])),
+                'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
+            }, 200
+        except Exception as e:
+            logger.error(f"Health check failed: {e}")
+            return {
+                'status': 'unhealthy',
+                'error': str(e)
+            }, 503
+
+    # Add model stats endpoint (for debugging)
+    @app.route('/api/model-stats')
+    def model_stats():
+        """Get model loading statistics."""
+        try:
+            from app.utils.model_manager import get_model_manager
+            model_manager = get_model_manager()
+            return model_manager.get_model_stats(), 200
+        except Exception as e:
+            return {'error': str(e)}, 500
+
     return app
