@@ -13,24 +13,24 @@ WORKDIR /app
 
 # Copy requirements first for better caching
 COPY requirements.txt .
-COPY requirements-build.txt .
 
 # Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
 
 # Make scripts executable
-RUN chmod +x railway_build.sh
-RUN chmod +x scripts/deploy_production_db.py
+RUN chmod +x railway_build.sh || true
+RUN chmod +x scripts/deploy_production_db.py || true
+RUN chmod +x railway_check_env.py || true
 
-# Run build script
-RUN ./railway_build.sh
+# Note: Migrations will run via Procfile release command
+# Not during Docker build
 
-# Expose port
+# Railway will use PORT environment variable
 EXPOSE 8000
 
-# Default command (can be overridden by Railway)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "run:app"]
+# Use shell form to allow environment variable substitution
+CMD gunicorn --bind 0.0.0.0:${PORT:-8000} run:app
