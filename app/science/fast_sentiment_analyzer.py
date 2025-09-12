@@ -3,7 +3,12 @@ Fast Sentiment Analyzer using centralized Model Manager
 Optimized for speed with model caching
 """
 import logging
-from typing import List, Dict, Optional, Callable
+import time
+import torch
+import torch.nn.functional as F
+from typing import List, Dict, Optional, Callable, Any
+from concurrent.futures import ThreadPoolExecutor
+from queue import Queue
 import numpy as np
 from app.cache import cache
 from app.utils.model_manager import get_model_manager
@@ -18,10 +23,27 @@ class FastSentimentAnalyzer:
         """Initialize the fast sentiment analyzer."""
         self.model_manager = get_model_manager()
         self.max_length = 512
+        self.batch_size = 32
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Get pipeline on initialization (it will be cached)
         self.pipeline = self.model_manager.get_fast_sentiment_pipeline()
-        logger.info("Fast sentiment analyzer initialized with cached model")
+        
+        # Try to get the underlying model and tokenizer for GPU optimization
+        self.model = None
+        self.tokenizer = None
+        self.label_mapping = {'POSITIVE': 'positive', 'NEGATIVE': 'negative', 'NEUTRAL': 'neutral'}
+        
+        try:
+            if hasattr(self.pipeline, 'model'):
+                self.model = self.pipeline.model
+                self.tokenizer = self.pipeline.tokenizer
+                if self.model and torch.cuda.is_available():
+                    self.model.to(self.device)
+        except Exception as e:
+            logger.warning(f"Could not extract model for GPU optimization: {e}")
+        
+        logger.info(f"Fast sentiment analyzer initialized with device: {self.device}")
 
     def _preprocess_texts(self, texts: List[str]) -> List[str]:
         """
@@ -208,6 +230,212 @@ class FastSentimentAnalyzer:
                 filtered.append(text)
 
         return filtered
+    
+    def analyze_batch_gpu_optimized(self, 
+                                   texts: List[str],
+                                   max_length: int = 512) -> List[Dict[str, Any]]:
+        """
+        GPU-optimized batch processing using tensor batching.
+        
+        Args:
+            texts: List of texts to analyze
+            max_length: Maximum sequence length
+            
+        Returns:
+            List of sentiment results
+        """
+        if not texts:
+            return []
+        
+        # Fall back to pipeline if model/tokenizer not available
+        if not self.model or not self.tokenizer:
+            results = self.pipeline(texts)
+            formatted_results = []
+            for i, result in enumerate(results):
+                label = result['label'].lower()
+                if 'pos' in label:
+                    label = 'positive'
+                elif 'neg' in label:
+                    label = 'negative'
+                else:
+                    label = 'neutral'
+                
+                formatted_results.append({
+                    'text': texts[i],
+                    'sentiment': label,
+                    'confidence': result['score'],
+                    'method': 'pipeline_batch'
+                })
+            return formatted_results
+        
+        # Tokenize all texts at once
+        encoded = self.tokenizer(
+            texts,
+            padding=True,
+            truncation=True,
+            max_length=max_length,
+            return_tensors="pt"
+        )
+        
+        # Move to GPU if available
+        encoded = {k: v.to(self.device) for k, v in encoded.items()}
+        
+        # Perform inference with no gradient calculation
+        with torch.no_grad():
+            # Use mixed precision if available
+            if torch.cuda.is_available():
+                try:
+                    with torch.cuda.amp.autocast():
+                        outputs = self.model(**encoded)
+                except:
+                    outputs = self.model(**encoded)
+            else:
+                outputs = self.model(**encoded)
+        
+        # Process outputs
+        logits = outputs.logits
+        probabilities = F.softmax(logits, dim=-1)
+        predictions = torch.argmax(logits, dim=-1)
+        
+        # Convert to CPU for processing
+        probabilities = probabilities.cpu().numpy()
+        predictions = predictions.cpu().numpy()
+        
+        # Format results
+        results = []
+        for i, (text, pred, probs) in enumerate(zip(texts, predictions, probabilities)):
+            # Map prediction to label
+            if hasattr(self.model.config, 'id2label'):
+                sentiment_label = self.model.config.id2label[pred]
+                sentiment = self.label_mapping.get(sentiment_label, 'neutral')
+            else:
+                sentiment = ['negative', 'neutral', 'positive'][pred] if pred < 3 else 'neutral'
+            
+            result = {
+                'text': text,
+                'sentiment': sentiment,
+                'confidence': float(probs[pred]),
+                'probabilities': {
+                    'negative': float(probs[0]) if len(probs) > 0 else 0,
+                    'neutral': float(probs[1]) if len(probs) > 1 else 0,
+                    'positive': float(probs[2]) if len(probs) > 2 else 0
+                },
+                'method': 'gpu_optimized_batch'
+            }
+            results.append(result)
+        
+        return results
+    
+    def analyze_with_prefetch(self,
+                             texts: List[str],
+                             prefetch_size: int = 2) -> List[Dict[str, Any]]:
+        """
+        Analyze with data prefetching for improved throughput.
+        
+        Args:
+            texts: List of texts to analyze
+            prefetch_size: Number of batches to prefetch
+            
+        Returns:
+            List of analysis results
+        """
+        if not self.tokenizer:
+            # Fall back to standard batch processing
+            return self.analyze_batch_gpu_optimized(texts)
+        
+        # Create batches
+        batches = [texts[i:i+self.batch_size] 
+                  for i in range(0, len(texts), self.batch_size)]
+        
+        # Prefetch queue
+        results = []
+        
+        def prefetch_batch(batch):
+            """Prefetch and tokenize batch."""
+            return self.tokenizer(
+                batch,
+                padding=True,
+                truncation=True,
+                max_length=512,
+                return_tensors="pt"
+            )
+        
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            # Start prefetching
+            futures = []
+            for i in range(min(prefetch_size, len(batches))):
+                future = executor.submit(prefetch_batch, batches[i])
+                futures.append(future)
+            
+            batch_idx = 0
+            while batch_idx < len(batches):
+                # Get prefetched batch
+                if futures:
+                    encoded = futures.pop(0).result()
+                    
+                    # Start prefetching next batch
+                    next_idx = batch_idx + prefetch_size
+                    if next_idx < len(batches):
+                        future = executor.submit(prefetch_batch, batches[next_idx])
+                        futures.append(future)
+                    
+                    # Process current batch
+                    encoded = {k: v.to(self.device) for k, v in encoded.items()}
+                    
+                    with torch.no_grad():
+                        outputs = self.model(**encoded)
+                    
+                    # Process outputs
+                    batch_results = self._process_outputs(
+                        outputs, 
+                        batches[batch_idx]
+                    )
+                    results.extend(batch_results)
+                    
+                    batch_idx += 1
+        
+        return results
+    
+    def _process_outputs(self, outputs, texts: List[str]) -> List[Dict[str, Any]]:
+        """
+        Process model outputs into formatted results.
+        
+        Args:
+            outputs: Model outputs
+            texts: Original input texts
+            
+        Returns:
+            List of formatted results
+        """
+        logits = outputs.logits
+        probabilities = F.softmax(logits, dim=-1)
+        predictions = torch.argmax(logits, dim=-1)
+        
+        probabilities = probabilities.cpu().numpy()
+        predictions = predictions.cpu().numpy()
+        
+        results = []
+        for text, pred, probs in zip(texts, predictions, probabilities):
+            if hasattr(self.model.config, 'id2label'):
+                sentiment_label = self.model.config.id2label[pred]
+                sentiment = self.label_mapping.get(sentiment_label, 'neutral')
+            else:
+                sentiment = ['negative', 'neutral', 'positive'][pred] if pred < 3 else 'neutral'
+            
+            result = {
+                'text': text,
+                'sentiment': sentiment,
+                'confidence': float(probs[pred]),
+                'probabilities': {
+                    'negative': float(probs[0]) if len(probs) > 0 else 0,
+                    'neutral': float(probs[1]) if len(probs) > 1 else 0,
+                    'positive': float(probs[2]) if len(probs) > 2 else 0
+                },
+                'method': 'prefetch_batch'
+            }
+            results.append(result)
+        
+        return results
 
 
 # Global instance for reuse across the application

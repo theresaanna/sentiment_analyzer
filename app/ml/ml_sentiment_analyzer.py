@@ -8,9 +8,10 @@ robust sentiment analysis with continuous learning capabilities.
 import os
 import re
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Callable, Generator
 import joblib
 import numpy as np
+import time
 from app.science.sentiment_analyzer import SentimentAnalyzer
 from app.ml.feedback_collector import feedback_manager
 
@@ -405,6 +406,99 @@ class MLSentimentAnalyzer:
                 explanation['factors'].append(f"Subjectivity: {result['subjectivity']:.2f}")
         
         return explanation
+    
+    def analyze_batch_optimized(self, 
+                               texts: List[str],
+                               batch_size: Optional[int] = None,
+                               use_dynamic_batching: bool = True,
+                               progress_callback: Optional[Callable] = None) -> List[Dict[str, Any]]:
+        """
+        Optimized batch analysis with dynamic batching and memory management.
+        
+        Args:
+            texts: List of texts to analyze
+            batch_size: Optional fixed batch size (None for dynamic)
+            use_dynamic_batching: Whether to use dynamic batch sizing
+            progress_callback: Optional callback for progress updates
+            
+        Returns:
+            List of analysis results
+        """
+        from app.ml.batch_processor import BatchInferenceOptimizer, BatchConfig
+        
+        # Configure batch processing
+        config = BatchConfig(
+            optimal_batch_size=batch_size or 32,
+            enable_dynamic_batching=use_dynamic_batching,
+            max_batch_size=128,
+            min_batch_size=8
+        )
+        
+        # Initialize optimizer
+        optimizer = BatchInferenceOptimizer(self, config)
+        
+        # Perform batch prediction
+        results = optimizer.batch_predict(texts, progress_callback)
+        
+        # Get processing stats
+        stats = optimizer.processor.get_stats()
+        print(f"Batch processing stats: {stats}")
+        
+        return results
+    
+    def analyze_streaming(self, 
+                         text_generator,
+                         buffer_size: int = 100,
+                         flush_interval: float = 1.0) -> Generator[List[Dict], None, None]:
+        """
+        Stream processing for real-time analysis of incoming comments.
+        
+        Args:
+            text_generator: Generator yielding texts
+            buffer_size: Size of buffer before processing
+            flush_interval: Time interval to flush buffer
+            
+        Yields:
+            Batches of analysis results
+        """
+        buffer = []
+        last_flush_time = time.time()
+        
+        for text in text_generator:
+            buffer.append(text)
+            
+            # Check if we should process the buffer
+            current_time = time.time()
+            should_flush = (
+                len(buffer) >= buffer_size or 
+                (current_time - last_flush_time) >= flush_interval
+            )
+            
+            if should_flush and buffer:
+                # Process buffer
+                results = self.analyze_batch_optimized(buffer)
+                yield results
+                
+                # Reset buffer
+                buffer = []
+                last_flush_time = current_time
+        
+        # Process remaining items
+        if buffer:
+            results = self.analyze_batch_optimized(buffer)
+            yield results
+    
+    def predict_batch(self, texts: List[str]) -> List[Dict[str, Any]]:
+        """
+        Batch prediction method for compatibility with BatchInferenceOptimizer.
+        
+        Args:
+            texts: List of texts to analyze
+            
+        Returns:
+            List of prediction results
+        """
+        return self.analyze_batch(texts)
 
 
 # Convenience function for easy access

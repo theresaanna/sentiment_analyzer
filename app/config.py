@@ -71,6 +71,27 @@ class Config:
     # Application settings
     MAX_COMMENTS_PER_VIDEO = int(os.environ.get('MAX_COMMENTS_PER_VIDEO', 10000))  # Increased for better analysis
     CACHE_TIMEOUT = int(os.environ.get('CACHE_TIMEOUT', 300))  # 5 minutes
+    
+    # Batch Processing Configuration
+    BATCH_PROCESSING_ENABLED = os.environ.get('BATCH_PROCESSING_ENABLED', 'True').lower() == 'true'
+    DEFAULT_BATCH_SIZE = int(os.environ.get('DEFAULT_BATCH_SIZE', 32))
+    MAX_BATCH_SIZE = int(os.environ.get('MAX_BATCH_SIZE', 128))
+    MIN_BATCH_SIZE = int(os.environ.get('MIN_BATCH_SIZE', 8))
+    DYNAMIC_BATCHING_ENABLED = os.environ.get('DYNAMIC_BATCHING_ENABLED', 'True').lower() == 'true'
+    
+    # GPU Optimization
+    ENABLE_GPU_OPTIMIZATION = os.environ.get('ENABLE_GPU_OPTIMIZATION', 'True').lower() == 'true'
+    ENABLE_MIXED_PRECISION = os.environ.get('ENABLE_MIXED_PRECISION', 'True').lower() == 'true'
+    
+    # Memory Management
+    MEMORY_THRESHOLD = float(os.environ.get('MEMORY_THRESHOLD', 0.8))  # Use max 80% of available memory
+    ENABLE_MEMORY_MONITORING = os.environ.get('ENABLE_MEMORY_MONITORING', 'True').lower() == 'true'
+    
+    # Performance
+    MAX_WORKERS = int(os.environ.get('MAX_WORKERS', 4))
+    PREFETCH_SIZE = int(os.environ.get('PREFETCH_SIZE', 2))
+    BUFFER_SIZE = int(os.environ.get('BUFFER_SIZE', 100))
+    FLUSH_INTERVAL = float(os.environ.get('FLUSH_INTERVAL', 1.0))  # seconds
 
     # Payments (Stripe only)
     STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
