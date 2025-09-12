@@ -33,4 +33,4 @@ RUN chmod +x railway_check_env.py || true
 EXPOSE 8000
 
 # Use shell form to allow environment variable substitution
-CMD gunicorn --bind 0.0.0.0:${PORT:-8000} run:app
+CMD sh -c "gunicorn --bind 0.0.0.0:${PORT:-8000} run:app"
