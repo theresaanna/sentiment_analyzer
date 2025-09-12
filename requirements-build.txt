@@ -1,0 +1,15 @@
+# Essential build dependencies for Railway
+setuptools>=70.0.0
+wheel>=0.41.0
+pip>=25.2
+
+# Core Flask dependencies (minimal for build/migration)
+Flask==2.3.3
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+
+# Database
+psycopg2-binary==2.9.9
+
+# Required for script execution
+python-dotenv==1.0.0

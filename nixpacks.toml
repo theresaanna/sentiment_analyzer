@@ -1,8 +1,11 @@
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip", "postgresql_16", "gcc"]
+
+[phases.install]
+cmds = ["python -m pip install --upgrade pip", "python -m pip install -r requirements.txt"]
+
 [phases.build]
 cmds = ["./railway_build.sh"]
 
-[phases.install]
-cmds = ["pip install -r requirements.txt"]
-
 [start]
-cmd = "python run.py"
+cmd = "gunicorn run:app"
