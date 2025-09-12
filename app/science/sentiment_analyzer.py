@@ -58,7 +58,6 @@ class SentimentAnalyzer:
             except Exception as e:
                 logger.warning(f"Failed to load GB model: {e}")
 
-    @cache.memoize(timeout=3600)  # Cache results for 1 hour
     def analyze_sentiment(self, text: str) -> Dict:
         """
         Analyze sentiment of a single text using cached models.
@@ -69,6 +68,12 @@ class SentimentAnalyzer:
         Returns:
             Dictionary with sentiment label, scores, and confidence
         """
+        # Try to get cached result
+        import hashlib
+        text_hash = hashlib.md5(text.encode()).hexdigest()
+        cached_result = cache.get('sentiment', text_hash)
+        if cached_result:
+            return cached_result
         # Get RoBERTa model from manager (already cached)
         tokenizer, model = self.model_manager.get_roberta_sentiment()
 
@@ -114,7 +119,7 @@ class SentimentAnalyzer:
             except Exception as e:
                 logger.warning(f"GB model prediction failed, using RoBERTa only: {e}")
 
-        return {
+        result = {
             'label': predicted_label,
             'scores': {
                 'negative': float(scores[0]),
@@ -124,6 +129,11 @@ class SentimentAnalyzer:
             'confidence': confidence,
             'model': 'ensemble' if self.gb_model else 'roberta'
         }
+        
+        # Cache the result
+        cache.set('sentiment', text_hash, result, ttl_hours=1)
+        
+        return result
 
     def analyze_batch(self, texts: List[str], use_cache: bool = True) -> List[Dict]:
         """
