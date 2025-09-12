@@ -83,8 +83,14 @@ class InteractiveAnnotator:
     
     def show_comment(self, comment):
         """Display a comment for annotation"""
+        # Calculate running totals
+        annotated_count = sum(1 for c in self.comments if c['sentiment_label'].strip())
+        total_count = len(self.comments)
+        remaining_count = total_count - annotated_count
+        
         print("\n" + "="*80)
-        print(f"📝 Comment #{self.current_index + 1} of {len(self.comments)}")
+        print(f"📝 Comment #{self.current_index + 1} of {total_count}")
+        print(f"📊 Progress: {annotated_count} annotated | {remaining_count} remaining | {total_count} total")
         print("="*80)
         
         # Basic info
@@ -238,9 +244,14 @@ class InteractiveAnnotator:
         """Show annotation progress"""
         annotated = sum(1 for c in self.comments if c['sentiment_label'].strip())
         total = len(self.comments)
+        remaining = total - annotated
         percentage = (annotated / total * 100) if total > 0 else 0
         
-        print(f"\n📊 Progress: {annotated}/{total} ({percentage:.1f}%) annotated")
+        print(f"\n📊 PROGRESS UPDATE:")
+        print(f"   Annotated: {annotated} comments")
+        print(f"   Remaining: {remaining} comments")
+        print(f"   Total: {total} comments")
+        print(f"   Complete: {percentage:.1f}%")
     
     def show_summary(self):
         """Show annotation summary statistics"""
@@ -282,6 +293,16 @@ class InteractiveAnnotator:
         print(f"\n🎯 Starting interactive annotation session")
         print(f"✨ Auto-save enabled - your work is saved after each annotation")
         print(f"Use Ctrl+C anytime to quit")
+        
+        # Show initial progress with total counts
+        annotated_count = sum(1 for c in self.comments if c['sentiment_label'].strip())
+        total_count = len(self.comments)
+        print(f"\n📁 Dataset: {total_count} total comments")
+        if annotated_count > 0:
+            print(f"🔄 Resuming: {annotated_count} already annotated, {total_count - annotated_count} remaining")
+        else:
+            print(f"🎆 Fresh start: {total_count} comments to annotate")
+        
         self.show_progress()
         
         try:
@@ -308,7 +329,14 @@ class InteractiveAnnotator:
                         comment[key] = value
                     
                     self.changes_made = True
+                    
+                    # Calculate updated totals
+                    annotated_count = sum(1 for c in self.comments if c['sentiment_label'].strip())
+                    total_count = len(self.comments)
+                    remaining_count = total_count - annotated_count
+                    
                     print(f"✅ Annotated as {annotation['sentiment_label']}")
+                    print(f"📈 Running total: {annotated_count}/{total_count} annotated ({remaining_count} remaining)")
                     
                     # Auto-save after each annotation
                     self.save_comments(silent=True)
