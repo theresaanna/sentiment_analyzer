@@ -13,6 +13,9 @@ from app.services.enhanced_youtube_service import EnhancedYouTubeService, analyz
 from app.cache import cache
 from app.science import SentimentAnalyzer
 from app.science.comment_summarizer import EnhancedCommentSummarizer
+from app.models import db, SentimentFeedback
+from flask_login import current_user
+import hashlib
 
 # Import fast routes to register them
 try:
@@ -59,7 +62,8 @@ def analyze(video_id):
         
         # Check if data is in cache first
         video_cached = cache.get('video_info', video_id) is not None
-        comments_cached = cache.get('enhanced_comments', f"{video_id}:max:{max_comments}:True:relevance") is not None
+        cache_key = f"{video_id}:max:{max_comments}:True:relevance"
+        comments_cached = cache.get('enhanced_comments', cache_key) is not None
         
         if video_cached:
             cache_status['hits'].append('video_info')
@@ -106,7 +110,8 @@ def analyze(video_id):
         
         # Prepare stats for template with enhanced metrics
         comment_stats = {
-            'total_comments': len(comments),
+            'total_comments': fetch_stats.get('total_comments_available', len(comments)),
+            'fetched_comments': len(comments) if comments_cached else 0,  # Only set if preloaded from cache
             'unique_commenters': len(unique_commenters),
             'avg_comment_length': avg_comment_length,
             'replies_count': replies_count,
@@ -132,10 +137,27 @@ def analyze(video_id):
         
     except Exception as e:
         flash(f'Error analyzing video: {str(e)}', 'danger')
+        # Provide default empty stats to avoid template errors
+        comment_stats = {
+            'total_comments': 0,
+            'fetched_comments': 0,
+            'unique_commenters': 0,
+            'avg_comment_length': 0,
+            'replies_count': 0,
+            'top_level_count': 0,
+            'top_commenters': [],
+            'total_available': 0,
+            'fetch_percentage': 0,
+            'fetch_time': 0,
+            'comments_per_second': 0,
+            'quota_used': 0
+        }
         return render_template(
             'analyze.html',
             video_id=video_id,
             video_url=video_url,
+            comment_stats=comment_stats,
+            video_info=None,
             success=False,
             error=str(e)
         )
@@ -157,6 +179,140 @@ def privacy():
 def terms():
     """Terms of service page."""
     return render_template('terms.html')
+
+
+@bp.route('/api/sentiment-feedback', methods=['GET', 'POST'])
+def api_sentiment_feedback():
+    """
+    API endpoint to collect user feedback on sentiment predictions.
+    This data will be used to improve our models.
+    
+    GET: Retrieve user's feedback for a video
+    POST: Submit new feedback
+    """
+    # Handle GET request - fetch user's feedback for a video
+    if request.method == 'GET':
+        video_id = request.args.get('video_id')
+        if not video_id:
+            return jsonify({
+                'success': False,
+                'error': 'video_id parameter required'
+            }), 400
+        
+        # Get session ID
+        session_id = session.get('feedback_session')
+        
+        # Build query based on authentication
+        if current_user.is_authenticated:
+            # For logged-in users, get feedback by user_id
+            feedback_list = SentimentFeedback.query.filter_by(
+                user_id=current_user.id,
+                video_id=video_id
+            ).all()
+        elif session_id:
+            # For anonymous users, get feedback by session_id
+            feedback_list = SentimentFeedback.query.filter_by(
+                session_id=session_id,
+                video_id=video_id
+            ).all()
+        else:
+            # No feedback to retrieve
+            feedback_list = []
+        
+        # Convert to JSON-serializable format
+        feedback_data = []
+        for fb in feedback_list:
+            feedback_data.append({
+                'comment_text': fb.comment_text,
+                'comment_id': fb.comment_id,
+                'predicted_sentiment': fb.predicted_sentiment,
+                'corrected_sentiment': fb.corrected_sentiment,
+                'confidence_score': fb.confidence_score,
+                'created_at': fb.created_at.isoformat() if fb.created_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'feedback': feedback_data,
+            'total': len(feedback_data)
+        })
+    
+    # Handle POST request - submit new feedback
+    try:
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['video_id', 'comment_text', 'predicted_sentiment', 'corrected_sentiment']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    'success': False,
+                    'error': f'Missing required field: {field}'
+                }), 400
+        
+        # Don't allow same sentiment as correction
+        if data['predicted_sentiment'] == data['corrected_sentiment']:
+            return jsonify({
+                'success': False,
+                'error': 'Corrected sentiment must be different from predicted'
+            }), 400
+        
+        # Get session ID (create if doesn't exist)
+        if 'feedback_session' not in session:
+            import uuid
+            session['feedback_session'] = str(uuid.uuid4())
+        session_id = session['feedback_session']
+        
+        # Hash IP for privacy
+        ip = request.remote_addr or 'unknown'
+        ip_hash = hashlib.sha256(ip.encode()).hexdigest()[:16]
+        
+        # Check for duplicate feedback
+        existing = SentimentFeedback.query.filter_by(
+            session_id=session_id,
+            video_id=data['video_id'],
+            comment_text=data['comment_text']
+        ).first()
+        
+        if existing:
+            return jsonify({
+                'success': False,
+                'error': 'Feedback already submitted for this comment'
+            }), 409
+        
+        # Create feedback record
+        feedback = SentimentFeedback(
+            user_id=current_user.id if current_user.is_authenticated else None,
+            video_id=data['video_id'],
+            comment_id=data.get('comment_id'),
+            comment_text=data['comment_text'],
+            comment_author=data.get('comment_author'),
+            predicted_sentiment=data['predicted_sentiment'],
+            corrected_sentiment=data['corrected_sentiment'],
+            confidence_score=data.get('confidence_score'),
+            session_id=session_id,
+            ip_hash=ip_hash
+        )
+        
+        db.session.add(feedback)
+        db.session.commit()
+        
+        # Track feedback count in this session
+        session['feedback_count'] = session.get('feedback_count', 0) + 1
+        
+        return jsonify({
+            'success': True,
+            'message': 'Thank you for helping us improve our AI!',
+            'feedback_id': feedback.id,
+            'total_feedback': session['feedback_count']
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': f'An error occurred: {str(e)}'
+        }), 500
 
 
 @bp.route('/api/comments/<video_id>')
@@ -344,8 +500,20 @@ def api_analyze_sentiment(video_id):
                 'cached': True
             })
         
-        # Set initial status
-        cache.set('analysis_status', analysis_id, {'status': 'started', 'progress': 0}, ttl_hours=1)
+        # Set initial status with error handling
+        try:
+            cache.set('analysis_status', analysis_id, {'status': 'started', 'progress': 0}, ttl_hours=1)
+        except Exception as e:
+            print(f"Warning: Redis memory issue detected: {e}")
+            # Try to clear some cache space
+            try:
+                cache.clear_pattern('analysis_status:*')
+                cache.set('analysis_status', analysis_id, {'status': 'started', 'progress': 0}, ttl_hours=1)
+            except:
+                return jsonify({
+                    'success': False,
+                    'error': 'Cache memory full. Please try again later or contact support.'
+                }), 507  # 507 Insufficient Storage
         
         # Start analysis in background thread
         thread = threading.Thread(
@@ -387,8 +555,11 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         comments = youtube_service.get_all_comments_flat(video_id, max_comments=max_comments)
         print(f"Fetched {len(comments)} comments for analysis")
         
-        # Update status
-        cache.set('analysis_status', analysis_id, {'status': 'analyzing_sentiment', 'progress': 30}, ttl_hours=1)
+        # Update status with error handling
+        try:
+            cache.set('analysis_status', analysis_id, {'status': 'analyzing_sentiment', 'progress': 30}, ttl_hours=1)
+        except Exception as e:
+            print(f"Warning: Could not update status due to cache issue: {e}")
         
         # Initialize analyzer
         analyzer = SentimentAnalyzer()
@@ -492,17 +663,59 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
             else:
                 print(f"DEBUG: Social media themes MISSING from final results")
         
-        # Cache results
-        success = cache.set('sentiment_analysis', analysis_id, results, ttl_hours=24)  # Cache for 24 hours
+        # Optimize results before caching (remove redundant data)
+        optimized_results = {
+            'sentiment': results['sentiment'],
+            'summary': results['summary'],
+            'timeline': results.get('timeline', [])[:50],  # Limit timeline to 50 points
+        }
         
-        if success:
-            print(f"Results cached successfully for {analysis_id}")
-            # Update status to completed only after results are cached
-            cache.set('analysis_status', analysis_id, {'status': 'completed', 'progress': 100}, ttl_hours=1)
-            print(f"Analysis completed for {analysis_id}")
-        else:
-            print(f"ERROR: Failed to cache results for {analysis_id}")
-            raise Exception("Failed to cache analysis results")
+        # Only include updated_stats if present
+        if 'updated_stats' in results:
+            optimized_results['updated_stats'] = results['updated_stats']
+        
+        # Cache results with shorter TTL and error handling
+        try:
+            success = cache.set('sentiment_analysis', analysis_id, optimized_results, ttl_hours=2)  # Reduced from 24 to 2 hours
+            
+            if success:
+                print(f"Results cached successfully for {analysis_id}")
+                # Update status to completed only after results are cached
+                cache.set('analysis_status', analysis_id, {'status': 'completed', 'progress': 100}, ttl_hours=1)
+                print(f"Analysis completed for {analysis_id}")
+            else:
+                print(f"ERROR: Failed to cache results for {analysis_id}")
+                # Try to clear old cache entries and retry
+                print("Attempting to clear old cache entries...")
+                try:
+                    # Clear old analysis results (older than 30 minutes)
+                    import time
+                    current_time = time.time()
+                    # This is a simplified approach - in production you'd track timestamps
+                    cache.clear_pattern('sentiment_analysis:sentiment_*')
+                    # Retry caching
+                    success = cache.set('sentiment_analysis', analysis_id, optimized_results, ttl_hours=1)
+                    if success:
+                        print(f"Results cached successfully after cleanup for {analysis_id}")
+                        cache.set('analysis_status', analysis_id, {'status': 'completed', 'progress': 100}, ttl_hours=1)
+                    else:
+                        raise Exception("Failed to cache analysis results even after cleanup")
+                except Exception as cleanup_error:
+                    print(f"Cleanup failed: {cleanup_error}")
+                    raise Exception("Failed to cache analysis results due to memory constraints")
+        except Exception as cache_error:
+            print(f"Cache error: {cache_error}")
+            # Store minimal results in case of memory issues
+            minimal_results = {
+                'sentiment': results['sentiment'],
+                'summary': {'summary': results['summary'].get('summary', 'Analysis completed but full details unavailable due to memory constraints.')}
+            }
+            success = cache.set('sentiment_analysis', analysis_id, minimal_results, ttl_hours=1)
+            if success:
+                print(f"Minimal results cached for {analysis_id}")
+                cache.set('analysis_status', analysis_id, {'status': 'completed', 'progress': 100}, ttl_hours=1)
+            else:
+                raise Exception(f"Critical: Cannot cache results due to Redis memory issue: {cache_error}")
         
     except Exception as e:
         error_msg = str(e)

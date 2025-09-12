@@ -81,6 +81,77 @@ class User(UserMixin, db.Model):
         current_app.logger.info(f'✅ Cleared reset token for {self.email}')
 
 
+class Channel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    yt_channel_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    title = db.Column(db.String(255), nullable=False)
+    handle = db.Column(db.String(255), nullable=True, index=True)
+    uploads_playlist_id = db.Column(db.String(255), nullable=True)
+    latest_video_id = db.Column(db.String(64), nullable=True)
+    video_count = db.Column(db.Integer, default=0)
+    last_synced_at = db.Column(db.DateTime, nullable=True)
+    last_checked_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Video(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    yt_video_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=False, index=True)
+    title = db.Column(db.String(500), nullable=False)
+    published_at = db.Column(db.DateTime, nullable=True, index=True)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    comments = db.Column(db.Integer, default=0)
+    last_synced_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class UserChannel(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        db.UniqueConstraint('user_id', 'channel_id', name='uq_user_channel'),
+    )
+
+
+class SentimentFeedback(db.Model):
+    """Store user feedback on sentiment predictions for model training."""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True, index=True)  # Nullable for anonymous feedback
+    video_id = db.Column(db.String(64), nullable=False, index=True)
+    comment_id = db.Column(db.String(128), nullable=True, index=True)  # YouTube comment ID if available
+    comment_text = db.Column(db.Text, nullable=False)  # Store the actual comment text
+    comment_author = db.Column(db.String(255), nullable=True)  # Store author for context
+    
+    # Sentiment labels
+    predicted_sentiment = db.Column(db.String(20), nullable=False)  # What our model predicted
+    corrected_sentiment = db.Column(db.String(20), nullable=False)  # What the user says it should be
+    confidence_score = db.Column(db.Float, nullable=True)  # Model's confidence in its prediction
+    
+    # Metadata
+    session_id = db.Column(db.String(128), nullable=True)  # Track feedback within a session
+    ip_hash = db.Column(db.String(64), nullable=True)  # Hashed IP for spam prevention
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    
+    # Training status
+    used_for_training = db.Column(db.Boolean, default=False, index=True)  # Track if used in model retraining
+    training_batch = db.Column(db.String(64), nullable=True)  # Batch ID when used for training
+    
+    __table_args__ = (
+        # Prevent duplicate feedback for the same comment from the same user/session
+        db.UniqueConstraint('user_id', 'video_id', 'comment_text', name='uq_user_comment_feedback'),
+        db.UniqueConstraint('session_id', 'video_id', 'comment_text', name='uq_session_comment_feedback'),
+        # Index for efficient training data queries
+        db.Index('idx_training_queries', 'used_for_training', 'created_at'),
+    )
+
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))

@@ -87,6 +87,20 @@ class CacheService:
             print(f"Cache delete error: {e}")
             return False
     
+    def clear_pattern(self, pattern: str) -> int:
+        """Clear all cache entries matching a pattern."""
+        if not self.enabled:
+            return 0
+            
+        try:
+            keys = self.redis_client.keys(pattern)
+            if keys:
+                return self.redis_client.delete(*keys)
+            return 0
+        except Exception as e:
+            print(f"Cache clear pattern error: {e}")
+            return 0
+    
     def clear_video_cache(self, video_id: str) -> int:
         """Clear all cache entries for a specific video."""
         if not self.enabled:

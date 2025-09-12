@@ -197,6 +197,75 @@
         }
     }
     
+    /* Toast animation */
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    /* Manually corrected comment styles */
+    .comment-sample-item.manually-corrected {
+        background: linear-gradient(135deg, #f0f4f8 0%, #e8ecf0 100%);
+        border: 2px solid #94a3b8;
+        position: relative;
+    }
+    
+    .manual-correction-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #3b82f6;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .correction-info {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin-top: 10px;
+        font-size: 0.85rem;
+    }
+    
+    .correction-info .original-prediction {
+        text-decoration: line-through;
+        opacity: 0.6;
+        color: #64748b;
+    }
+    
+    .correction-info .user-correction {
+        color: #059669;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+    
+    .feedback-btn.disabled-original {
+        opacity: 0.4;
+        text-decoration: line-through;
+        cursor: not-allowed;
+        background: #e2e8f0;
+    }
+    
+    .feedback-btn.highlighted-correction {
+        background: #10b981;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    
     @media (max-width: 576px) {
         .stats-card {
             padding: 0.5rem;
@@ -303,6 +372,233 @@
             padding: 5px 8px;
         }
     }
+    
+    /* Scrollable comment samples */
+    .comment-samples-container {
+        height: 450px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 10px;
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e0 #f7fafc;
+        background: linear-gradient(to bottom, #f8f9fa 0%, #f0f2f5 100%);
+        border-radius: 0 0 8px 8px;
+        padding: 10px;
+        border: 1px solid #e9ecef;
+        border-top: none;
+    }
+    
+    /* Sample comments body padding */
+    #sampleCommentsSection .card-body {
+        padding: 1.5rem;
+    }
+    
+    /* Make sample comments section wider on larger screens */
+    /* Responsive padding adjustments */
+    @media (min-width: 1200px) {
+        #sampleCommentsSection .card-body {
+            padding: 2rem;
+        }
+    }
+    
+    @media (min-width: 1400px) {
+        #sampleCommentsSection .card-body {
+            padding: 2.5rem;
+        }
+    }
+    
+    /* Separate visual styling for the sample comments section - now using vibe-card */
+    #sampleCommentsSection {
+        margin-top: 2rem;
+    }
+    
+    /* Sample Comments header uses default vibe-card styling */
+    
+    .comment-samples-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .comment-samples-container::-webkit-scrollbar-track {
+        background: #f7fafc;
+        border-radius: 4px;
+    }
+    
+    .comment-samples-container::-webkit-scrollbar-thumb {
+        background: #cbd5e0;
+        border-radius: 4px;
+    }
+    
+    .comment-samples-container::-webkit-scrollbar-thumb:hover {
+        background: #a0aec0;
+    }
+    
+    .comment-sample-item {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 14px;
+        margin-bottom: 14px;
+        transition: all 0.2s ease;
+    }
+    
+    .comment-sample-item:hover {
+        background: white;
+        border-color: #dee2e6;
+        transform: translateX(2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    
+    .comment-sample-text {
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin-bottom: 10px;
+        word-wrap: break-word;
+        color: #2d3748;
+    }
+    
+    .comment-sample-meta {
+        font-size: 0.8rem;
+        color: #6c757d;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .confidence-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+    
+    .comment-sample-item.positive {
+        border-left: 3px solid #28a745;
+    }
+    
+    .comment-sample-item.negative {
+        border-left: 3px solid #dc3545;
+    }
+    
+    .comment-sample-item.neutral {
+        border-left: 3px solid #6c757d;
+    }
+    
+    /* Sentiment headers styling */
+    .sentiment-header-section {
+        background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+        border-radius: 8px 8px 0 0;
+        padding: 12px 16px;
+        margin-bottom: 0;
+        border: 1px solid #d1d5db;
+        border-bottom: 2px solid #9ca3af;
+    }
+    
+    .sentiment-header-section h5 {
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 1.2rem;
+    }
+    
+    .sentiment-positive.sentiment-header-section {
+        background: linear-gradient(135deg, #d4edda 0%, #f4f9f5 100%);
+        border-color: #c3e6cb;
+    }
+    
+    .sentiment-neutral.sentiment-header-section {
+        background: linear-gradient(135deg, #e2e3e5 0%, #f8f9fa 100%);
+        border-color: #d6d8db;
+    }
+    
+    .sentiment-negative.sentiment-header-section {
+        background: linear-gradient(135deg, #f8d7da 0%, #fff5f5 100%);
+        border-color: #f5c6cb;
+    }
+    
+    /* Feedback buttons styling */
+    .feedback-buttons {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 8px;
+    }
+    
+    .feedback-btn {
+        background: none;
+        border: 1px solid #dee2e6;
+        border-radius: 16px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: #6c757d;
+    }
+    
+    .feedback-btn:hover:not(.current-sentiment) {
+        background: #f8f9fa;
+        border-color: #adb5bd;
+        transform: scale(1.05);
+    }
+    
+    .feedback-btn.current-sentiment {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+        cursor: default;
+        font-weight: 600;
+    }
+    
+    .feedback-btn.positive:hover:not(.current-sentiment) {
+        border-color: #28a745;
+        color: #28a745;
+    }
+    
+    .feedback-btn.neutral:hover:not(.current-sentiment) {
+        border-color: #6c757d;
+        color: #495057;
+    }
+    
+    .feedback-btn.negative:hover:not(.current-sentiment) {
+        border-color: #dc3545;
+        color: #dc3545;
+    }
+    
+    .feedback-notice {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 12px;
+        margin-top: 12px;
+        font-size: 0.85rem;
+        color: #6c757d;
+        text-align: center;
+    }
+    
+    .feedback-notice i {
+        color: #667eea;
+        margin-right: 4px;
+    }
+    
+    @keyframes fadeOutUp {
+        from {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+    }
+    
+    .comment-sample-item.removing {
+        animation: fadeOutUp 0.5s ease-out;
+    }
 </style>
 {% endblock %}
 
@@ -367,7 +663,7 @@
                     <div class="col-md-6 col-sm-6 mb-3">
                         <div class="card bg-light">
                             <div class="card-body stats-card">
-                                <div class="stats-value text-warning">{{ "%.2f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</div>
+                                <div class="stats-value text-warning">{{ "%.1f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</div>
                                 <p class="stats-label"><i class="fas fa-percentage stats-icon"></i>Engagement</p>
                             </div>
                         </div>
@@ -390,8 +686,8 @@
                     (<strong>{{ "%.1f"|format(comment_stats.fetch_percentage) }}%</strong> coverage)
                     <br>
                     <small class="text-muted">
-                        <i class="fas fa-clock"></i> Fetch time: {{ "%.2f"|format(comment_stats.fetch_time) }}s | 
-                        <i class="fas fa-tachometer-alt"></i> Speed: {{ "%.1f"|format(comment_stats.comments_per_second) }} comments/sec
+                        <i class="fas fa-clock"></i> Fetch time: {{ "%.1f"|format(comment_stats.fetch_time) }}s | 
+                        <i class="fas fa-tachometer-alt"></i> Speed: {{ "%.0f"|format(comment_stats.comments_per_second) }} comments/sec
                     </small>
                     {% if not current_user.is_authenticated %}
                     <div class="pro-analysis-message">
@@ -528,7 +824,14 @@
                                 <!-- Unlocked State for Pro Users -->
                                 <div class="coverage-unlocked">
                                     <div class="slider-container">
-                                        <label class="slider-label">Analysis Depth</label>
+                                        <label class="slider-label">
+                                            Analysis Depth
+                                            {% if comment_stats.fetched_comments > 0 %}
+                                                <span class="badge badge-success ml-2" style="font-size: 0.8rem;">
+                                                    <i class="fas fa-check-circle"></i> {{ comment_stats.fetched_comments }} preloaded
+                                                </span>
+                                            {% endif %}
+                                        </label>
                                         <input type="range" 
                                                class="coverage-slider" 
                                                id="commentPercentageSlider" 
@@ -664,36 +967,58 @@
                     
                     <!-- Sentiment Timeline -->
                     <div class="card mb-4">
-<div class="card-header header-muted-blue">
+                        <div class="card-header header-muted-blue">
                             <h5 class="mb-0"><i class="fas fa-clock"></i> Sentiment Timeline</h5>
                         </div>
                         <div class="card-body">
                             <canvas id="sentimentTimelineChart" width="400" height="200"></canvas>
                         </div>
                     </div>
-                    
-                    <!-- Sample Comments by Sentiment -->
-                    <div class="card">
-<div class="card-header header-muted-blue">
-                            <h5 class="mb-0"><i class="fas fa-comments"></i> Sample Comments by Sentiment</h5>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sample Comments Section (Standalone, Wider) -->
+        <div id="sampleCommentsSection" class="vibe-card mb-4 analysis-section" style="display: none;">
+            <div class="card-header-vibe">
+                <h3 class="mb-0">
+                    <span class="emoji-icon">💬</span> Sample Comments by Sentiment
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-4">
+                        <div class="sentiment-positive sentiment-header-section">
+                            <h5>
+                                <span><i class="fas fa-smile"></i> Positive</span>
+                                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="positiveCount">0</span>
+                            </h5>
                         </div>
-                        <div class="card-body samples-card-body">
-                            <div class="row">
-                                <div class="col-md-4 pl-0">
-                                    <h6 class="sentiment-positive"><i class="fas fa-smile"></i> Positive</h6>
-                                    <div id="positiveSamples" class="small"></div>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6 class="sentiment-neutral"><i class="fas fa-meh"></i> Neutral</h6>
-                                    <div id="neutralSamples" class="small"></div>
-                                </div>
-                                <div class="col-md-4 pr-0">
-                                    <h6 class="sentiment-negative"><i class="fas fa-frown"></i> Negative</h6>
-                                    <div id="negativeSamples" class="small"></div>
-                                </div>
-                            </div>
-                        </div>
+                        <div id="positiveSamples" class="comment-samples-container"></div>
                     </div>
+                    <div class="col-lg-4">
+                        <div class="sentiment-neutral sentiment-header-section">
+                            <h5>
+                                <span><i class="fas fa-meh"></i> Neutral</span>
+                                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="neutralCount">0</span>
+                            </h5>
+                        </div>
+                        <div id="neutralSamples" class="comment-samples-container"></div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="sentiment-negative sentiment-header-section">
+                            <h5>
+                                <span><i class="fas fa-frown"></i> Negative</span>
+                                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="negativeCount">0</span>
+                            </h5>
+                        </div>
+                        <div id="negativeSamples" class="comment-samples-container"></div>
+                    </div>
+                </div>
+                <!-- Feedback Notice -->
+                <div class="feedback-notice mt-3">
+                    <i class="fas fa-robot"></i>
+                    Your feedback helps us improve our AI models. Click the sentiment buttons to correct any misclassifications.
                 </div>
             </div>
         </div>
@@ -736,11 +1061,163 @@
 let analysisId = null;
 let statusCheckInterval = null;
 let charts = {};
+let commentData = {
+    positive: [],
+    neutral: [],
+    negative: []
+};
+
+// Define showToast function globally so it can be used by submitFeedback
+function showToast(message, type = 'info', duration = 3000) {
+    // Create toast container if it doesn't exist
+    let toastContainer = document.getElementById('toastContainer');
+    if (!toastContainer) {
+        toastContainer = document.createElement('div');
+        toastContainer.id = 'toastContainer';
+        toastContainer.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999;';
+        document.body.appendChild(toastContainer);
+    }
+    
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type === 'success' ? 'success' : type === 'danger' ? 'danger' : type === 'warning' ? 'warning' : 'info'} alert-dismissible fade show`;
+    toast.style.cssText = 'min-width: 250px; margin-bottom: 10px; animation: slideIn 0.3s ease-out;';
+    toast.setAttribute('role', 'alert');
+    
+    // Add icon based on type
+    const icon = type === 'success' ? '✓' : type === 'danger' ? '✕' : type === 'warning' ? '⚠' : 'ℹ';
+    
+    toast.innerHTML = `
+        <strong>${icon}</strong> ${message}
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    `;
+    
+    // Add toast to container
+    toastContainer.appendChild(toast);
+    
+    // Auto-dismiss after duration
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+            toast.remove();
+        }, 150);
+    }, duration);
+}
+
+// Load user's previous feedback corrections
+async function loadUserFeedback() {
+    const videoId = '{{ video_id }}';
+    
+    try {
+        // Fetch feedback from server
+        const response = await fetch(`/api/sentiment-feedback?video_id=${videoId}`);
+        const data = await response.json();
+        
+        if (data.success && data.feedback.length > 0) {
+            // Store server feedback in localStorage for consistency
+            const storageKey = `sentiment_corrections_${videoId}`;
+            const corrections = {};
+            
+            data.feedback.forEach(fb => {
+                const commentKey = fb.comment_text.substring(0, 100);
+                corrections[commentKey] = {
+                    original: fb.predicted_sentiment,
+                    corrected: fb.corrected_sentiment,
+                    timestamp: fb.created_at
+                };
+            });
+            
+            localStorage.setItem(storageKey, JSON.stringify(corrections));
+            return corrections;
+        }
+    } catch (error) {
+        console.error('Error loading user feedback:', error);
+    }
+    
+    // Fall back to localStorage
+    const storageKey = `sentiment_corrections_${videoId}`;
+    return JSON.parse(localStorage.getItem(storageKey) || '{}');
+}
+
+// Apply stored corrections to displayed comments
+function applyStoredCorrections() {
+    const videoId = '{{ video_id }}';
+    const storageKey = `sentiment_corrections_${videoId}`;
+    const corrections = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    
+    // Check each displayed comment for corrections
+    Object.keys(commentData).forEach(sentiment => {
+        commentData[sentiment].forEach((comment, index) => {
+            const commentKey = comment.text.substring(0, 100);
+            const correction = corrections[commentKey];
+            
+            if (correction) {
+                // Find the comment element
+                const commentId = `comment-${sentiment}-${index}`;
+                const commentElement = document.getElementById(commentId);
+                
+                if (commentElement) {
+                    // Apply the correction UI
+                    applyManualCorrectionUI(commentElement, correction.original, correction.corrected);
+                }
+            }
+        });
+    });
+}
 
 // Initialize when page loads
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Load user's previous feedback first
+    await loadUserFeedback();
+    
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
+    
+    // Check if comments are already loaded
+    const fetchedComments = {{ comment_stats.fetched_comments }};
+    const totalComments = {{ comment_stats.total_comments }};
+    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
+    let isModified = false; // Track if user has modified the slider
+    
+    // If comments are already loaded, update UI
+    if (fetchedComments > 0) {
+        const loadedPercentage = Math.round((fetchedComments / totalComments) * 100);
+        
+        // Update button text to reflect loaded state
+        if (startButtonMain) {
+            startButtonMain.innerHTML = '<span class="button-icon">📊</span><span class="button-text">Load Analysis Results</span>';
+        }
+        
+        // For Pro users, set slider to match loaded percentage
+        const percentageSlider = document.getElementById('commentPercentageSlider');
+        if (isProUser && percentageSlider) {
+            percentageSlider.value = loadedPercentage;
+            document.getElementById('percentageDisplay').textContent = loadedPercentage + '%';
+            document.getElementById('commentCountEstimate').textContent = fetchedComments.toLocaleString();
+            const estimatedTime = Math.max(1, Math.round((fetchedComments / 100) * 2 * 10) / 10);
+            document.getElementById('timeEstimate').textContent = `~${estimatedTime}s`;
+            
+            // Update accuracy estimate
+            const accuracyEl = document.getElementById('accuracyEstimate');
+            if (accuracyEl) {
+                if (loadedPercentage <= 30) {
+                    accuracyEl.textContent = 'Quick';
+                } else if (loadedPercentage <= 70) {
+                    accuracyEl.textContent = 'Good';
+                } else {
+                    accuracyEl.textContent = 'Best';
+                }
+            }
+            
+            // Update tip
+            const tipEl = document.getElementById('coverageTip');
+            if (tipEl) {
+                tipEl.textContent = `${fetchedComments} comments already loaded - click to analyze`;
+            }
+        }
+    }
     
     if (startButton) {
         startButton.addEventListener('click', startSentimentAnalysis);
@@ -752,9 +1229,23 @@ document.addEventListener('DOMContentLoaded', function() {
     // Percentage slider event listener for Pro users
     const percentageSlider = document.getElementById('commentPercentageSlider');
     if (percentageSlider) {
-        const totalComments = {{ comment_stats.total_comments }};
-        
         percentageSlider.addEventListener('input', function() {
+            // Mark as modified when user changes the slider
+            isModified = true;
+            
+            // If slider was modified and comments were preloaded, change button back
+            if (fetchedComments > 0 && startButtonMain) {
+                const selectedPercentage = parseInt(this.value);
+                const selectedComments = Math.ceil(totalComments * (selectedPercentage / 100));
+                
+                // If the selected value differs from what's loaded, change button text
+                if (Math.abs(selectedComments - fetchedComments) > 5) { // Allow small margin
+                    startButtonMain.innerHTML = '<span class="button-icon">🧠</span><span class="button-text">Analyze Sentiment</span>';
+                } else {
+                    // If slider is back to loaded amount, show "Load Results"
+                    startButtonMain.innerHTML = '<span class="button-icon">📊</span><span class="button-text">Load Analysis Results</span>';
+                }
+            }
             const percentage = this.value;
             const commentCount = Math.ceil(totalComments * (percentage / 100));
             const estimatedTime = Math.max(1, Math.round((commentCount / 100) * 2 * 10) / 10); // Estimate ~2 seconds per 100 comments
@@ -998,10 +1489,15 @@ function startSentimentAnalysis() {
     const percentageSlider = document.getElementById('commentPercentageSlider');
     const selectedPercentage = isProUser && percentageSlider ? parseInt(percentageSlider.value) : 10;
     const totalComments = {{ comment_stats.total_comments }};
+    const fetchedComments = {{ comment_stats.fetched_comments }};
     const maxFreeComments = 100; // Cap free analysis at 100 comments
     const commentsToAnalyze = isProUser ? 
         Math.ceil(totalComments * (selectedPercentage / 100)) : 
         Math.min(Math.ceil(totalComments * 0.1), maxFreeComments);
+    
+    // Check if we can use already loaded comments
+    const usePreloaded = fetchedComments > 0 && 
+                         Math.abs(commentsToAnalyze - fetchedComments) <= 5; // Allow small margin
     
     // Show section and hide results
     section.style.display = 'block';
@@ -1009,14 +1505,15 @@ function startSentimentAnalysis() {
     progressDiv.style.display = 'flex';
     resultsDiv.style.display = 'none';
     
-    // Disable both buttons
+    // Disable both buttons with appropriate text
+    const loadingText = usePreloaded ? 'Loading Results...' : 'Analyzing...';
     if (startButton) {
         startButton.disabled = true;
-        startButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+        startButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
     }
     if (startButtonMain) {
         startButtonMain.disabled = true;
-        startButtonMain.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...';
+        startButtonMain.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
     }
     
     // Scroll to sentiment analysis section
@@ -1033,8 +1530,22 @@ function startSentimentAnalysis() {
             percentage_selected: selectedPercentage  // Send percentage for logging
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        if (response.status === 507) {
+            // Insufficient Storage - cache memory full
+            showError('The analysis cache is currently full. Please wait a moment while we clear some space and try again.');
+            // Automatically retry after 3 seconds
+            setTimeout(() => {
+                showError('Retrying analysis...');
+                startSentimentAnalysis();
+            }, 3000);
+            return null;
+        }
+        return response.json();
+    })
     .then(data => {
+        if (data === null) return; // Handled above
+        
         if (data.success) {
             analysisId = data.analysis_id;
             if (data.cached) {
@@ -1045,7 +1556,12 @@ function startSentimentAnalysis() {
                 statusCheckInterval = setInterval(checkAnalysisStatus, 1000);
             }
         } else {
-            showError(data.error);
+            if (data.error && data.error.includes('memory')) {
+                showError('Cache memory issue detected. Clearing space and retrying...');
+                setTimeout(() => startSentimentAnalysis(), 2000);
+            } else {
+                showError(data.error);
+            }
         }
     })
     .catch(error => {
@@ -1069,6 +1585,15 @@ function checkAnalysisStatus() {
                     clearInterval(statusCheckInterval);
                     showError(data.status.error);
                 }
+            } else if (!data.success && data.error === 'Analysis not found') {
+                // Analysis was lost, restart automatically
+                clearInterval(statusCheckInterval);
+                console.log('Analysis not found during status check, restarting...');
+                showError('Analysis data was cleared. Restarting...');
+                analysisId = null;
+                setTimeout(() => {
+                    startSentimentAnalysis();
+                }, 1500);
             }
         })
         .catch(error => {
@@ -1091,6 +1616,9 @@ function updateProgress(status) {
     switch(status.status) {
         case 'fetching_comments':
             statusText = '🎬 Fetching additional comments from YouTube for analysis...';
+            break;
+        case 'using_cached':
+            statusText = '📊 Using preloaded comments for analysis...';
             break;
         case 'analyzing_sentiment':
             statusText = `🧠 Analyzing comment contents... (${status.current || 0}/${status.total || 0} comments)`;
@@ -1117,12 +1645,26 @@ function fetchAnalysisResults() {
                 if (data.restart_needed) {
                     // Results are missing, restart the analysis
                     console.error('Results missing, restarting analysis...');
-                    showError(data.error + ' Restarting analysis...');
+                    showError('Previous analysis expired. Starting fresh analysis...');
                     // Clear the current analysis ID and restart
                     analysisId = null;
                     setTimeout(() => {
                         startSentimentAnalysis();
                     }, 2000);
+                } else if (data.error && data.error.includes('Analysis not found')) {
+                    // Analysis was cleared or expired
+                    showError('This analysis has expired or been cleared. Starting a new analysis...');
+                    analysisId = null;
+                    // Automatically restart the analysis
+                    setTimeout(() => {
+                        // Reset UI
+                        const progressDiv = document.getElementById('analysisProgress');
+                        const resultsDiv = document.getElementById('analysisResults');
+                        if (progressDiv) progressDiv.style.display = 'flex';
+                        if (resultsDiv) resultsDiv.style.display = 'none';
+                        // Start fresh analysis
+                        startSentimentAnalysis();
+                    }, 1500);
                 } else {
                     showError(data.error + (data.details ? ': ' + data.details : ''));
                 }
@@ -1137,6 +1679,7 @@ function displayResults(results) {
     console.log('displayResults called with:', results);
     const progressDiv = document.getElementById('analysisProgress');
     const resultsDiv = document.getElementById('analysisResults');
+    const samplesSection = document.getElementById('sampleCommentsSection');
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     const videoId = '{{ video_id }}';
@@ -1149,6 +1692,11 @@ function displayResults(results) {
     // Hide progress, show results
     progressDiv.style.display = 'none';
     resultsDiv.style.display = 'block';
+    
+    // Show sample comments section
+    if (samplesSection) {
+        samplesSection.style.display = 'block';
+    }
     
     // Re-enable both buttons
     if (startButton) {
@@ -1165,9 +1713,13 @@ function displayResults(results) {
     
     // Overall sentiment
     const overallEl = document.getElementById('overallSentiment');
+    // Convert score to percentage if it's not already
+    const sentimentScorePercent = sentiment.sentiment_score > 1 ? 
+        sentiment.sentiment_score.toFixed(1) : 
+        (sentiment.sentiment_score * 100).toFixed(1);
     overallEl.innerHTML = `
         <strong>${sentiment.overall_sentiment}</strong> 
-        (Score: ${sentiment.sentiment_score.toFixed(2)}, 
+        (Score: ${sentimentScorePercent}%, 
         Confidence: ${(sentiment.average_confidence * 100).toFixed(1)}%)
         <br>
         <small>Analyzed ${sentiment.total_analyzed} comments using advanced sentiment analysis</small>
@@ -1211,23 +1763,99 @@ function displayResults(results) {
                     }
                 }
                 
-                // Add controversial topics with links if it's controversy type
+                // Add controversial topics with enhanced details if it's controversy type
                 if (reception.type === 'controversy' && summary.controversy_analysis && 
                     summary.controversy_analysis.topics && summary.controversy_analysis.topics.length > 0) {
                     
+                    // Get up to 6 controversial comments with sentiment data
                     const controversialComments = summary.controversy_analysis.topics
                         .filter(topic => topic.comment_id)
-                        .slice(0, 3);
+                        .slice(0, 6);
                     
                     if (controversialComments.length > 0) {
-                        receptionHtml += '<div class="mt-3"><strong>Examples of divisive comments:</strong></div>';
-                        controversialComments.forEach(topic => {
-                            const commentSnippet = topic.text.substring(0, 100) + '...';
+                        receptionHtml += '<div class="mt-4"><strong>Examples of divisive comments:</strong></div>';
+                        controversialComments.forEach((topic, idx) => {
+                            // Get sentiment data for this comment if available
+                            const sentimentData = sentiment.individual_results ? 
+                                sentiment.individual_results.find(r => 
+                                    (r.comment_id === topic.comment_id) || 
+                                    (r.text && r.text.substring(0, 50) === topic.text.substring(0, 50))
+                                ) : null;
+                            
+                            const aiSentiment = sentimentData ? 
+                                (sentimentData.predicted_sentiment || sentimentData.sentiment || 'unknown') : 
+                                'unknown';
+                            
+                            const confidence = sentimentData && sentimentData.confidence ? 
+                                (sentimentData.confidence * 100).toFixed(0) : 'N/A';
+                            
+                            // Determine sentiment emoji and color
+                            let sentimentEmoji = '🤷';
+                            let sentimentColor = 'secondary';
+                            let sentimentLabel = 'Unknown';
+                            
+                            if (aiSentiment === 'positive') {
+                                sentimentEmoji = '😊';
+                                sentimentColor = 'success';
+                                sentimentLabel = 'Positive';
+                            } else if (aiSentiment === 'negative') {
+                                sentimentEmoji = '😔';
+                                sentimentColor = 'danger';
+                                sentimentLabel = 'Negative';
+                            } else if (aiSentiment === 'neutral') {
+                                sentimentEmoji = '😐';
+                                sentimentColor = 'secondary';
+                                sentimentLabel = 'Neutral';
+                            }
+                            
+                            const commentSnippet = topic.text.length > 200 ? 
+                                topic.text.substring(0, 200) + '...' : topic.text;
+                            
+                            // Determine why it's controversial
+                            let controversyReason = '';
+                            if (topic.controversy_score && topic.controversy_score > 0.7) {
+                                controversyReason = 'This comment has highly polarized reactions.';
+                            } else if (aiSentiment === 'positive' && topic.text.toLowerCase().includes('but')) {
+                                controversyReason = 'Mixed signals: Contains both praise and criticism.';
+                            } else if (aiSentiment === 'negative') {
+                                controversyReason = 'Critical viewpoint that sparked debate.';
+                            } else if (aiSentiment === 'neutral') {
+                                controversyReason = 'Balanced perspective that divided opinions.';
+                            } else {
+                                controversyReason = 'This comment generated significant discussion.';
+                            }
+                            
+                            // Set colors based on sentiment
+                            let badgeStyle = '';
+                            if (aiSentiment === 'positive') {
+                                badgeStyle = 'background: #28a745; color: white;';
+                            } else if (aiSentiment === 'negative') {
+                                badgeStyle = 'background: #dc3545; color: white;';
+                            } else if (aiSentiment === 'neutral') {
+                                badgeStyle = 'background: #6c757d; color: white;';
+                            } else {
+                                badgeStyle = 'background: #6c757d; color: white;';
+                            }
+                            
                             receptionHtml += `
-                                <div class="mt-2 p-2 bg-light rounded">
-                                    <p class="mb-0 small text-muted">
-                                        <em>"${commentSnippet}"</em>
+                                <div class="mt-3 p-3 border rounded" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 4px solid var(--bs-${sentimentColor}) !important;">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <span class="badge" style="${badgeStyle}">
+                                            ${sentimentEmoji} AI: ${sentimentLabel} (${confidence}% confident)
+                                        </span>
+                                        <small class="text-muted">#${idx + 1}</small>
+                                    </div>
+                                    <p class="mb-2" style="font-style: italic; color: #495057;">
+                                        "${commentSnippet}"
                                     </p>
+                                    <div class="alert alert-sm alert-info py-1 px-2 mb-0" style="font-size: 0.85rem;">
+                                        <i class="fas fa-info-circle"></i> <strong>Why controversial:</strong> ${controversyReason}
+                                    </div>
+                                    ${topic.replies_count ? `
+                                        <small class="text-muted mt-2 d-block">
+                                            <i class="fas fa-comments"></i> Generated ${topic.replies_count} replies
+                                        </small>
+                                    ` : ''}
                                 </div>
                             `;
                         });
@@ -1548,47 +2176,270 @@ function displaySampleComments(results) {
         const positive = [];
         const neutral = [];
         const negative = [];
-    
-    // Categorize comments
-    results.forEach(result => {
-        const comment = {
-            text: result.text,
-            confidence: (result.confidence * 100).toFixed(1),
-            commentId: result.comment_id || null
+        
+        // Categorize ALL comments (not just 3)
+        results.forEach(result => {
+            const comment = {
+                text: result.text,
+                confidence: (result.confidence * 100).toFixed(1),
+                commentId: result.comment_id || null,
+                author: result.author || 'Anonymous'
+            };
+            
+            // Check for both 'predicted_sentiment' and 'sentiment' fields for compatibility
+            const sentiment = result.predicted_sentiment || result.sentiment;
+            
+            if (sentiment === 'positive') {
+                positive.push(comment);
+            } else if (sentiment === 'neutral') {
+                neutral.push(comment);
+            } else if (sentiment === 'negative') {
+                negative.push(comment);
+            }
+        });
+        
+        // Sort by confidence (highest first)
+        positive.sort((a, b) => parseFloat(b.confidence) - parseFloat(a.confidence));
+        neutral.sort((a, b) => parseFloat(b.confidence) - parseFloat(a.confidence));
+        negative.sort((a, b) => parseFloat(b.confidence) - parseFloat(a.confidence));
+        
+        // Update counts
+        document.getElementById('positiveCount').textContent = positive.length;
+        document.getElementById('neutralCount').textContent = neutral.length;
+        document.getElementById('negativeCount').textContent = negative.length;
+        
+        // Display samples with enhanced formatting
+        const displaySamples = (samples, elementId, sentimentClass) => {
+            const el = document.getElementById(elementId);
+            if (samples.length === 0) {
+                el.innerHTML = '<p class="text-muted text-center py-3">No samples available</p>';
+            } else {
+                // Show up to 50 comments per category for better overview
+                const displayLimit = Math.min(samples.length, 50);
+                const truncateText = (text, maxLength = 300) => {
+                    if (text.length <= maxLength) return text;
+                    return text.substring(0, maxLength) + '...';
+                };
+                
+                el.innerHTML = samples.slice(0, displayLimit).map((s, index) => {
+                    const truncated = truncateText(s.text);
+                    const confidenceColor = parseFloat(s.confidence) >= 80 ? 'success' : 
+                                           parseFloat(s.confidence) >= 60 ? 'warning' : 'secondary';
+                    const commentId = `comment-${sentimentClass}-${index}`;
+                    
+                    return `
+                        <div class="comment-sample-item ${sentimentClass}" id="${commentId}" data-comment-index="${index}">
+                            <div class="comment-sample-text">
+                                ${escapeHtml(truncated)}
+                            </div>
+                            <div class="comment-sample-meta">
+                                <span class="text-muted">
+                                    <i class="fas fa-user-circle"></i> ${escapeHtml(s.author.substring(0, 20))}
+                                </span>
+                                <span class="confidence-badge bg-${confidenceColor}">
+                                    ${s.confidence}%
+                                </span>
+                            </div>
+                            <div class="feedback-buttons">
+                                <span class="text-muted" style="font-size: 0.7rem; margin-right: 8px;">AI thinks:</span>
+                                <button class="feedback-btn positive ${sentimentClass === 'positive' ? 'current-sentiment' : ''}" 
+                                        ${sentimentClass === 'positive' ? 'disabled' : ''}
+                                        onclick="submitFeedback('${commentId}', '${sentimentClass}', 'positive', ${index})">
+                                    👍 Positive
+                                </button>
+                                <button class="feedback-btn neutral ${sentimentClass === 'neutral' ? 'current-sentiment' : ''}" 
+                                        ${sentimentClass === 'neutral' ? 'disabled' : ''}
+                                        onclick="submitFeedback('${commentId}', '${sentimentClass}', 'neutral', ${index})">
+                                    👐 Neutral
+                                </button>
+                                <button class="feedback-btn negative ${sentimentClass === 'negative' ? 'current-sentiment' : ''}" 
+                                        ${sentimentClass === 'negative' ? 'disabled' : ''}
+                                        onclick="submitFeedback('${commentId}', '${sentimentClass}', 'negative', ${index})">
+                                    👎 Negative
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                // Add a note if there are more comments
+                if (samples.length > displayLimit) {
+                    el.innerHTML += `
+                        <div class="text-center text-muted py-2">
+                            <small><i class="fas fa-info-circle"></i> Showing ${displayLimit} of ${samples.length} ${sentimentClass} comments</small>
+                        </div>
+                    `;
+                }
+            }
         };
         
-        if (result.predicted_sentiment === 'positive' && positive.length < 3) {
-            positive.push(comment);
-        } else if (result.predicted_sentiment === 'neutral' && neutral.length < 3) {
-            neutral.push(comment);
-        } else if (result.predicted_sentiment === 'negative' && negative.length < 3) {
-            negative.push(comment);
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
         }
-    });
-    
-    // Display samples with YouTube links
-    const displaySamples = (samples, elementId) => {
-        const el = document.getElementById(elementId);
-        if (samples.length === 0) {
-            el.innerHTML = '<p class="text-muted">No samples available</p>';
-        } else {
-            el.innerHTML = samples.map(s => {
-                return `
-                    <div class="mb-2 p-2 border rounded">
-                        <p class="mb-1">${s.text}</p>
-                        <small class="text-muted">Confidence: ${s.confidence}%</small>
-                    </div>
-                `;
-            }).join('');
-        }
-    };
-    
-    displaySamples(positive, 'positiveSamples');
-    displaySamples(neutral, 'neutralSamples');
-    displaySamples(negative, 'negativeSamples');
+        
+        // Store comment data globally for feedback
+        commentData.positive = positive;
+        commentData.neutral = neutral;
+        commentData.negative = negative;
+        
+        displaySamples(positive, 'positiveSamples', 'positive');
+        displaySamples(neutral, 'neutralSamples', 'neutral');
+        displaySamples(negative, 'negativeSamples', 'negative');
+        
+        // Apply stored corrections after comments are displayed
+        setTimeout(() => {
+            applyStoredCorrections();
+        }, 100);
+        
     } catch (error) {
         console.error('Error displaying sample comments:', error);
     }
+}
+
+// Submit sentiment feedback
+async function submitFeedback(commentId, predictedSentiment, correctedSentiment, commentIndex) {
+    // Don't submit if it's the same sentiment
+    if (predictedSentiment === correctedSentiment) {
+        return;
+    }
+    
+    const videoId = '{{ video_id }}';
+    const commentElement = document.getElementById(commentId);
+    
+    // Get the comment data
+    const commentObj = commentData[predictedSentiment][commentIndex];
+    if (!commentObj) {
+        console.error('Comment data not found');
+        return;
+    }
+    
+    try {
+        // Disable all buttons in this comment
+        const buttons = commentElement.querySelectorAll('.feedback-btn');
+        buttons.forEach(btn => btn.disabled = true);
+        
+        // Send feedback to server
+        const response = await fetch('/api/sentiment-feedback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                video_id: videoId,
+                comment_id: commentObj.commentId,
+                comment_text: commentObj.text,
+                comment_author: commentObj.author,
+                predicted_sentiment: predictedSentiment,
+                corrected_sentiment: correctedSentiment,
+                confidence_score: parseFloat(commentObj.confidence) / 100
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show thank you message
+            showToast(data.message || 'Thank you for your feedback!', 'success', 3000);
+            
+            // Apply manual correction UI instead of removing the comment
+            applyManualCorrectionUI(commentElement, predictedSentiment, correctedSentiment);
+            
+            // Store the correction in session storage for persistence
+            storeCorrectionLocally(commentObj.text, predictedSentiment, correctedSentiment);
+            
+        } else {
+            // Re-enable buttons on error
+            buttons.forEach(btn => btn.disabled = false);
+            if (data.error && data.error.includes('already submitted')) {
+                showToast('You\'ve already provided feedback for this comment', 'info');
+            } else {
+                showToast(data.error || 'Failed to submit feedback', 'warning');
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+        showToast('Failed to submit feedback. Please try again.', 'danger');
+        
+        // Re-enable buttons
+        const buttons = commentElement.querySelectorAll('.feedback-btn');
+        buttons.forEach(btn => btn.disabled = false);
+    }
+}
+
+// Apply manual correction UI to a comment
+function applyManualCorrectionUI(commentElement, originalSentiment, correctedSentiment) {
+    // Add manually corrected class
+    commentElement.classList.add('manually-corrected');
+    
+    // Add correction badge
+    if (!commentElement.querySelector('.manual-correction-badge')) {
+        const badge = document.createElement('div');
+        badge.className = 'manual-correction-badge';
+        badge.innerHTML = '<i class="fas fa-user-check"></i> Manually Corrected';
+        commentElement.appendChild(badge);
+    }
+    
+    // Update feedback buttons
+    const buttons = commentElement.querySelectorAll('.feedback-btn');
+    buttons.forEach(btn => {
+        btn.disabled = true;
+        btn.classList.remove('current-sentiment', 'highlighted-correction', 'disabled-original');
+        
+        // Check which button corresponds to what sentiment
+        if (btn.classList.contains(originalSentiment)) {
+            // This was the original (wrong) prediction
+            btn.classList.add('disabled-original');
+        } else if (btn.classList.contains(correctedSentiment)) {
+            // This is the user's correction
+            btn.classList.add('highlighted-correction');
+        }
+    });
+    
+    // Add correction info if not already present
+    if (!commentElement.querySelector('.correction-info')) {
+        const correctionInfo = document.createElement('div');
+        correctionInfo.className = 'correction-info';
+        correctionInfo.innerHTML = `
+            <i class="fas fa-info-circle"></i>
+            <span class="original-prediction">AI predicted: ${capitalizeFirst(originalSentiment)}</span>
+            <span class="user-correction">→ You corrected to: ${capitalizeFirst(correctedSentiment)}</span>
+        `;
+        commentElement.appendChild(correctionInfo);
+    }
+}
+
+// Store correction locally for persistence
+function storeCorrectionLocally(commentText, originalSentiment, correctedSentiment) {
+    const videoId = '{{ video_id }}';
+    const storageKey = `sentiment_corrections_${videoId}`;
+    
+    // Get existing corrections
+    let corrections = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    
+    // Store the correction using comment text as key (truncated for efficiency)
+    const commentKey = commentText.substring(0, 100);
+    corrections[commentKey] = {
+        original: originalSentiment,
+        corrected: correctedSentiment,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Save back to localStorage
+    localStorage.setItem(storageKey, JSON.stringify(corrections));
+}
+
+// Helper function to capitalize first letter
+function capitalizeFirst(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 function showError(error) {
