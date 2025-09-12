@@ -54,8 +54,12 @@ class InteractiveAnnotator:
             self.show_summary()
             sys.exit(0)
     
-    def save_comments(self):
-        """Save annotations back to CSV file"""
+    def save_comments(self, silent=False):
+        """Save annotations back to CSV file
+        
+        Args:
+            silent: If True, don't print save message (for auto-save)
+        """
         if not self.changes_made:
             return
         
@@ -64,7 +68,8 @@ class InteractiveAnnotator:
         if not backup_file.exists():
             import shutil
             shutil.copy2(self.csv_file, backup_file)
-            print(f"💾 Backup created: {backup_file.name}")
+            if not silent:
+                print(f"💾 Backup created: {backup_file.name}")
         
         # Write updated data
         with open(self.csv_file, 'w', newline='', encoding='utf-8') as file:
@@ -73,7 +78,8 @@ class InteractiveAnnotator:
                 writer.writeheader()
                 writer.writerows(self.comments)
         
-        print(f"💾 Saved annotations to {self.csv_file.name}")
+        if not silent:
+            print(f"💾 Saved annotations to {self.csv_file.name}")
     
     def show_comment(self, comment):
         """Display a comment for annotation"""
@@ -274,7 +280,8 @@ class InteractiveAnnotator:
     def run(self):
         """Main annotation loop"""
         print(f"\n🎯 Starting interactive annotation session")
-        print(f"Use Ctrl+C anytime to quit and save")
+        print(f"✨ Auto-save enabled - your work is saved after each annotation")
+        print(f"Use Ctrl+C anytime to quit")
         self.show_progress()
         
         try:
@@ -302,6 +309,11 @@ class InteractiveAnnotator:
                     
                     self.changes_made = True
                     print(f"✅ Annotated as {annotation['sentiment_label']}")
+                    
+                    # Auto-save after each annotation
+                    self.save_comments(silent=True)
+                    print(f"💾 Auto-saved")
+                    
                     self.current_index += 1
                     
                     # Show progress every 10 annotations
