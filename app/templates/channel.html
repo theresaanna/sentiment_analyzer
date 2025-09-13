@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ channel.title }} - Sentiment Analyzer{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h1>{{ channel.title }}</h1>
+            <p class="lead">Channel Details and Analytics</p>
+            
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Channel Information</h5>
+                    <dl class="row">
+                        <dt class="col-sm-3">Channel ID:</dt>
+                        <dd class="col-sm-9">{{ channel.yt_channel_id }}</dd>
+                        
+                        <dt class="col-sm-3">Handle:</dt>
+                        <dd class="col-sm-9">{{ channel.handle or 'N/A' }}</dd>
+                        
+                        <dt class="col-sm-3">Video Count:</dt>
+                        <dd class="col-sm-9">{{ channel.video_count }}</dd>
+                        
+                        <dt class="col-sm-3">Last Synced:</dt>
+                        <dd class="col-sm-9">
+                            {% if channel.last_synced_at %}
+                                {{ channel.last_synced_at.strftime('%Y-%m-%d %H:%M:%S') }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </dd>
+                    </dl>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('main.dashboard') }}" class="btn btn-secondary">Back to Dashboard</a>
+                        <button class="btn btn-primary" onclick="syncChannel()">Sync Channel</button>
+                        <form method="POST" action="{{ url_for('main.remove_channel', channel_id=channel.id) }}" style="display: inline;">
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to remove this channel?')">Remove Channel</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Videos</h5>
+                    <p>Video analysis coming soon...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function syncChannel() {
+    // Implement channel sync functionality
+    alert('Channel sync functionality coming soon!');
+}
+</script>
+{% endblock %}

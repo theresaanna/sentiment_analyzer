@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from flask import current_app
@@ -14,8 +14,8 @@ class User(UserMixin, db.Model):
     is_subscribed = db.Column(db.Boolean, default=False)
     provider = db.Column(db.String(50))  # 'stripe' or 'paypal'
     customer_id = db.Column(db.String(255))  # Stripe customer ID or PayPal subscriber ID
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
     
     # Database-based password reset fields
     reset_token = db.Column(db.String(255), nullable=True)
@@ -38,7 +38,7 @@ class User(UserMixin, db.Model):
         
         # Store in database with expiration
         self.reset_token = token
-        self.reset_token_expires = datetime.utcnow() + timedelta(seconds=expires_in)
+        self.reset_token_expires = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(seconds=expires_in)
         db.session.commit()
         
         current_app.logger.info(f'✅ Generated database reset token for {self.email}')
@@ -58,7 +58,7 @@ class User(UserMixin, db.Model):
                 return None
             
             # Check if token has expired
-            if user.reset_token_expires and user.reset_token_expires < datetime.utcnow():
+            if user.reset_token_expires and user.reset_token_expires < datetime.now(timezone.utc).replace(tzinfo=None):
                 current_app.logger.warning(f'⏰ Reset token expired for {user.email}')
                 # Clear expired token
                 user.reset_token = None
@@ -91,8 +91,8 @@ class Channel(db.Model):
     video_count = db.Column(db.Integer, default=0)
     last_synced_at = db.Column(db.DateTime, nullable=True)
     last_checked_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class Video(db.Model):
@@ -105,15 +105,15 @@ class Video(db.Model):
     likes = db.Column(db.Integer, default=0)
     comments = db.Column(db.Integer, default=0)
     last_synced_at = db.Column(db.DateTime, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
 
 class UserChannel(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
     channel_id = db.Column(db.Integer, db.ForeignKey('channel.id'), nullable=False, index=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None))
 
     __table_args__ = (
         db.UniqueConstraint('user_id', 'channel_id', name='uq_user_channel'),
@@ -137,7 +137,7 @@ class SentimentFeedback(db.Model):
     # Metadata
     session_id = db.Column(db.String(128), nullable=True)  # Track feedback within a session
     ip_hash = db.Column(db.String(64), nullable=True)  # Hashed IP for spam prevention
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), index=True)
     
     # Training status
     used_for_training = db.Column(db.Boolean, default=False, index=True)  # Track if used in model retraining
@@ -154,4 +154,4 @@ class SentimentFeedback(db.Model):
 
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))

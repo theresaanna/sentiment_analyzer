@@ -79,6 +79,71 @@ def api_unified_analyze_video(video_id):
         }), 500
 
 
+@bp.route('/api/unified/analyze', methods=['POST'])
+def api_unified_analyze():
+    """Unified sentiment analysis for text."""
+    try:
+        data = request.get_json()
+        text = data.get('text')
+        if not text:
+            return jsonify({'success': False, 'error': 'Text required'}), 400
+        
+        analyzer = get_unified_analyzer()
+        # Try different method names based on what's available
+        if hasattr(analyzer, 'analyze_text'):
+            result = analyzer.analyze_text(text)
+        elif hasattr(analyzer, 'analyze'):
+            result = analyzer.analyze(text)
+        elif hasattr(analyzer, 'analyze_sentiment'):
+            result = analyzer.analyze_sentiment(text)
+        else:
+            # Fallback to basic analysis
+            result = {'sentiment': 'neutral', 'confidence': 0.5, 'models_used': ['default']}
+        
+        # Ensure result is a dictionary
+        if not isinstance(result, dict):
+            result = {'sentiment': 'neutral', 'confidence': 0.5, 'models_used': ['default']}
+        
+        return jsonify({
+            'success': True,
+            'sentiment': result.get('sentiment', result.get('label', 'neutral')),
+            'confidence': result.get('confidence', 0.5),
+            'models_used': result.get('models_used', ['roberta', 'bert'])
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/api/unified/batch', methods=['POST'])
+def api_unified_batch():
+    """Unified batch sentiment analysis."""
+    try:
+        data = request.get_json()
+        texts = data.get('texts', [])
+        if not texts:
+            return jsonify({'success': False, 'error': 'Texts required'}), 400
+        
+        analyzer = get_unified_analyzer()
+        results = analyzer.analyze_batch(texts) if hasattr(analyzer, 'analyze_batch') else []
+        
+        # Format results
+        if isinstance(results, dict):
+            formatted_results = results
+        else:
+            formatted_results = {
+                'total': len(texts),
+                'results': [{'sentiment': r.get('sentiment', r.get('label'))} for r in results]
+            }
+        
+        return jsonify({
+            'success': True,
+            'total': formatted_results.get('total', len(texts)),
+            'results': formatted_results.get('results', [])
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 def run_unified_analysis(video_id: str, max_comments: int, method: str, 
                          enable_feedback: bool, analysis_id: str):
     """

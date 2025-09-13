@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Processing - Sentiment Analyzer{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Batch Sentiment Analysis</h1>
+    <p class="lead">Process multiple texts at once for sentiment analysis.</p>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Batch Input</h5>
+                    <form id="batchForm">
+                        <div class="mb-3">
+                            <label for="batchTexts" class="form-label">Enter texts (one per line)</label>
+                            <textarea class="form-control" id="batchTexts" rows="10" placeholder="Enter texts to analyze..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Analyze Batch</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Features</h5>
+                    <ul>
+                        <li>Process up to 100 texts at once</li>
+                        <li>Advanced sentiment analysis</li>
+                        <li>Export results as CSV</li>
+                        <li>Batch history tracking</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="results" class="mt-4" style="display: none;">
+        <h3>Results</h3>
+        <div id="resultsContent"></div>
+    </div>
+</div>
+
+<script>
+document.getElementById('batchForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const texts = document.getElementById('batchTexts').value.split('\n').filter(t => t.trim());
+    
+    if (texts.length === 0) {
+        alert('Please enter at least one text to analyze');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/batch/process', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({texts: texts})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('resultsContent').innerHTML = `
+                <p>Total analyzed: ${data.total_analyzed}</p>
+                <pre>${JSON.stringify(data.results, null, 2)}</pre>
+            `;
+        } else {
+            alert('Error: ' + (data.error || 'Unknown error'));
+        }
+    } catch (error) {
+        alert('Error processing batch: ' + error);
+    }
+});
+</script>
+{% endblock %}

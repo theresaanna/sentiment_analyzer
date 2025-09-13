@@ -56,6 +56,72 @@ class YouTubeService:
             
         return None
     
+    def get_video_comments(self, video_id: str, max_results: Optional[int] = None, use_cache: bool = True) -> List[Dict[str, Any]]:
+        """
+        Get video comments.
+
+        Args:
+            video_id: YouTube video ID
+            max_results: Maximum number of comments to fetch.
+            use_cache: Whether to use cache (default: True)
+
+        Returns:
+            List of video comments
+        """
+        try:
+            return self.get_all_comments_flat(video_id, max_comments=max_results, use_cache=use_cache)
+        except Exception as e:
+            # Return empty list on error for backward compatibility
+            print(f"Error fetching comments for video {video_id}: {e}")
+            return []
+
+    def get_channel_info(self, channel_id: str, use_cache: bool = True) -> Dict[str, Any]:
+        """
+        Get basic channel information.
+
+        Args:
+            channel_id: YouTube channel ID
+            use_cache: Whether to use cache (default: True)
+
+        Returns:
+            Dictionary containing channel metadata
+        """
+        if use_cache:
+            cached_data = cache.get('channel_info', channel_id)
+            if cached_data:
+                print(f"Cache hit for channel info: {channel_id}")
+                return cached_data
+        try:
+            request = self.youtube.channels().list(
+                part='snippet,contentDetails,statistics',
+                id=channel_id
+            )
+            response = request.execute()
+
+            if not response.get('items'):
+                raise ValueError(f"Channel with ID {channel_id} not found")
+
+            channel = response['items'][0]
+            channel_data = {
+                'id': channel_id,
+                'title': channel['snippet']['title'],
+                'description': channel['snippet']['description'],
+                'published_at': channel['snippet']['publishedAt'],
+                'subscribers': int(channel['statistics'].get('subscriberCount', 0)),
+                'views': int(channel['statistics'].get('viewCount', 0)),
+                'video_count': int(channel['statistics'].get('videoCount', 0)),
+                'uploads_playlist_id': channel['contentDetails']['relatedPlaylists']['uploads'],
+                'thumbnail': channel['snippet']['thumbnails'].get('high', {}).get('url')
+            }
+            if use_cache:
+                cache.set('channel_info', channel_id, channel_data, ttl_hours=24)
+                print(f"Cached channel info for: {channel_id}")
+            return channel_data
+        except HttpError as e:
+            if e.resp.status == 403:
+                raise ValueError("API quota exceeded or invalid API key")
+            raise
+
     def get_video_info(self, video_id: str, use_cache: bool = True) -> Dict[str, Any]:
         """
         Get basic video information

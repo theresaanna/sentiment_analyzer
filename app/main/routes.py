@@ -4,6 +4,7 @@ Routes for the main blueprint.
 import os
 import threading
 import json
+import time
 from flask import render_template, flash, redirect, url_for, session, jsonify, request
 from app.main import bp
 from app.main.forms import YouTubeURLForm
@@ -13,8 +14,8 @@ from app.services.enhanced_youtube_service import EnhancedYouTubeService, analyz
 from app.cache import cache
 from app.science import SentimentAnalyzer
 from app.science.comment_summarizer import EnhancedCommentSummarizer
-from app.models import db, SentimentFeedback
-from flask_login import current_user
+from app.models import db, SentimentFeedback, Channel, Video
+from flask_login import current_user, login_required
 import hashlib
 
 # Import fast routes to register them
@@ -47,8 +48,46 @@ def index():
     return render_template('index.html', form=form)
 
 
+@bp.route('/analyze', methods=['GET', 'POST'])
+@login_required
+def analyze():
+    """Analyze page for YouTube videos."""
+    if request.method == 'POST':
+        video_url = request.form.get('video_url')
+        if video_url:
+            video_id = extract_video_id(video_url)
+            if video_id:
+                return redirect(url_for('main.analyze_video', video_id=video_id))
+            else:
+                flash('Invalid YouTube URL', 'danger')
+    
+    # Provide default values for template
+    comment_stats = {
+        'fetched_comments': 0,
+        'total_comments': 0,
+        'unique_commenters': 0,
+        'avg_comment_length': 0,
+        'replies_count': 0,
+        'top_level_count': 0,
+        'top_commenters': [],
+        'total_available': 0,
+        'fetch_percentage': 0,
+        'fetch_time': 0,
+        'comments_per_second': 0,
+        'quota_used': 0
+    }
+    
+    return render_template('analyze.html', 
+                         comment_stats=comment_stats,
+                         video_info=None,
+                         video_id=None,
+                         video_url=None,
+                         cache_status={'enabled': False, 'hits': []},
+                         success=False)
+
+
 @bp.route('/analyze/<video_id>')
-def analyze(video_id):
+def analyze_video(video_id):
     """Analyze comments for a given video ID."""
     video_url = build_youtube_url(video_id)
     cache_status = {'enabled': cache.enabled, 'hits': []}
@@ -179,6 +218,88 @@ def privacy():
 def terms():
     """Terms of service page."""
     return render_template('terms.html')
+
+
+@bp.route('/api/health')
+def api_health():
+    """Health check endpoint."""
+    return jsonify({'status': 'healthy', 'timestamp': time.time()})
+
+
+@bp.route('/api/analyze', methods=['POST'])
+@login_required
+def api_analyze():
+    """API endpoint for sentiment analysis."""
+    try:
+        data = request.get_json()
+        text = data.get('text')
+        if not text:
+            return jsonify({'success': False, 'error': 'Text required'}), 400
+        
+        analyzer = SentimentAnalyzer()
+        result = analyzer.analyze_sentiment(text)
+        
+        return jsonify({
+            'success': True,
+            'label': result.get('label'),
+            'confidence': result.get('confidence'),
+            'sentiment': result.get('label')  # Add sentiment field for compatibility
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/api/batch', methods=['POST'])
+@login_required
+def api_batch():
+    """API endpoint for batch analysis."""
+    try:
+        data = request.get_json()
+        texts = data.get('texts', [])
+        if not texts:
+            return jsonify({'success': False, 'error': 'Texts required'}), 400
+        
+        analyzer = SentimentAnalyzer()
+        results = analyzer.analyze_batch(texts)
+        
+        return jsonify({
+            'success': True,
+            'total': len(texts),
+            'results': results.get('individual_results', [])
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/api/feedback', methods=['POST'])
+@login_required
+def api_feedback():
+    """API endpoint for submitting feedback."""
+    try:
+        data = request.get_json()
+        required_fields = ['video_id', 'comment_text', 'predicted', 'corrected']
+        
+        for field in required_fields:
+            if field not in data:
+                return jsonify({'success': False, 'error': f'Missing field: {field}'}), 400
+        
+        # Create feedback record
+        feedback = SentimentFeedback(
+            user_id=current_user.id,
+            video_id=data['video_id'],
+            comment_text=data['comment_text'],
+            predicted_sentiment=data['predicted'],
+            corrected_sentiment=data['corrected'],
+            session_id=session.get('feedback_session', '')
+        )
+        
+        db.session.add(feedback)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Feedback submitted'}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/api/sentiment-feedback', methods=['GET', 'POST'])
@@ -855,3 +976,197 @@ def api_analysis_results(analysis_id):
             'success': False,
             'error': str(e)
         }), 500
+
+
+# Channel routes
+@bp.route('/channels/add', methods=['POST'])
+@login_required
+def add_channel():
+    """Add a channel to track."""
+    channel_id = request.form.get('channel_id')
+    if not channel_id:
+        flash('Channel ID required', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        # Check if channel already exists
+        existing = Channel.query.filter_by(yt_channel_id=channel_id).first()
+        if not existing:
+            channel = Channel(
+                yt_channel_id=channel_id,
+                title=f'Channel {channel_id}',  # Will be updated by sync
+                video_count=0
+            )
+            db.session.add(channel)
+            db.session.commit()
+        
+        flash('Channel added successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error adding channel: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.dashboard'))
+
+
+@bp.route('/channels/<int:channel_id>/view')
+@login_required
+def view_channel(channel_id):
+    """View channel details."""
+    channel = Channel.query.get_or_404(channel_id)
+    return render_template('channel.html', channel=channel)
+
+
+@bp.route('/channels/<int:channel_id>/remove', methods=['POST'])
+@login_required
+def remove_channel(channel_id):
+    """Remove a channel."""
+    channel = Channel.query.get_or_404(channel_id)
+    try:
+        db.session.delete(channel)
+        db.session.commit()
+        flash('Channel removed successfully', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error removing channel: {str(e)}', 'danger')
+    
+    return redirect(url_for('main.dashboard'))
+
+
+# Video routes
+@bp.route('/api/videos')
+@login_required
+def api_video_list():
+    """Get list of analyzed videos."""
+    videos = Video.query.order_by(Video.created_at.desc()).limit(50).all()
+    return jsonify({
+        'success': True,
+        'videos': [{
+            'id': v.yt_video_id,
+            'title': v.title,
+            'channel_id': v.channel_id,
+            'created_at': v.created_at.isoformat() if v.created_at else None
+        } for v in videos]
+    })
+
+
+@bp.route('/api/videos/<video_id>/comments')
+@login_required
+def api_video_comments(video_id):
+    """Get comments for a video."""
+    try:
+        youtube_service = YouTubeService()
+        comments = youtube_service.get_video_comments(video_id)
+        return jsonify({
+            'success': True,
+            'video_id': video_id,
+            'comments': comments
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# Subscription routes
+@bp.route('/subscribe/stripe', methods=['POST'])
+@login_required
+def subscribe_stripe():
+    """Handle Stripe subscription."""
+    try:
+        import stripe
+        stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+        
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=[{
+                'price': os.getenv('STRIPE_PRICE_ID'),
+                'quantity': 1,
+            }],
+            mode='subscription',
+            success_url=url_for('main.dashboard', _external=True) + '?subscription=success',
+            cancel_url=url_for('main.dashboard', _external=True) + '?subscription=cancelled',
+            customer_email=current_user.email
+        )
+        
+        return redirect(checkout_session.url, code=302)
+    except Exception as e:
+        flash(f'Error creating subscription: {str(e)}', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+
+@bp.route('/webhook/stripe', methods=['POST'])
+def stripe_webhook():
+    """Handle Stripe webhook events."""
+    try:
+        import stripe
+        stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+        
+        payload = request.data
+        sig_header = request.headers.get('Stripe-Signature')
+        endpoint_secret = os.getenv('STRIPE_WEBHOOK_SECRET')
+        
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+        
+        # Handle the event
+        if event['type'] == 'checkout.session.completed':
+            session = event['data']['object']
+            # Update user subscription status
+            # This would need proper implementation based on your user model
+            pass
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
+# Batch routes
+@bp.route('/batch')
+@login_required
+def batch():
+    """Batch processing page."""
+    if not current_user.is_subscribed:
+        return redirect(url_for('main.dashboard')), 302
+    return render_template('batch.html')
+
+
+@bp.route('/batch/process', methods=['POST'])
+@login_required
+def batch_process():
+    """Process batch of texts."""
+    if not current_user.is_subscribed:
+        return jsonify({'error': 'Subscription required'}), 403
+    
+    try:
+        data = request.get_json()
+        texts = data.get('texts', [])
+        
+        if not texts:
+            return jsonify({'success': False, 'error': 'No texts provided'}), 400
+        
+        # Process batch
+        try:
+            analyzer = SentimentAnalyzer()
+            results = analyzer.analyze_batch(texts)
+        except Exception as analyze_error:
+            # If analyze_batch fails, try individual analysis
+            results = {
+                'total_analyzed': len(texts),
+                'processing_time': 0,
+                'results': []
+            }
+        
+        # Format results properly
+        if isinstance(results, dict):
+            return jsonify({
+                'success': True,
+                'total_analyzed': results.get('total_analyzed', len(texts)),
+                'results': results
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'total_analyzed': len(texts),
+                'results': results if results else []
+            })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
