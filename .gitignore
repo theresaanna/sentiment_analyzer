@@ -173,6 +173,21 @@ ehthumbs_vista.db
 logs/
 *.log
 
+# Model cache files (these can be very large)
+model_cache/*_cache.pkl
+model_cache/*.pt
+model_cache/*.pth
+model_cache/*.bin
+model_cache/*.h5
+model_cache/*.safetensors
+# Don't ignore the small scikit-learn models in app/science/models/
+
+# Data files that should not be tracked
+data/feedback/*.csv
+data/training/*.csv
+data/exports/*.csv
+data/exports/*.json
+
 # Project specific test files
 test_*.py
 requirements_updated.txt

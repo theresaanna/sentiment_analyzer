@@ -1,5 +1,10 @@
 # YouTube Sentiment Analyzer
 
+![Tests](https://github.com/theresaanna/sentiment_analyzer/actions/workflows/test.yml/badge.svg)
+![Railway Deploy](https://img.shields.io/badge/Railway-Deployed-blueviolet)
+![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue)
+![License](https://img.shields.io/badge/License-MIT-green)
+
 A Flask web application that analyzes the sentiment of YouTube video comments using the YouTube Data API v3.
 
 **GitHub Repository:** https://github.com/theresaanna/sentiment_analyzer
@@ -156,6 +161,8 @@ sentiment_analyzer/
 
 ```bash
 pytest tests/
+# With coverage report
+pytest --cov=app --cov-report=html
 ```
 
 ### Code Formatting
@@ -163,6 +170,81 @@ pytest tests/
 ```bash
 black app/
 flake8 app/
+```
+
+## CI/CD Pipeline
+
+### Continuous Integration with GitHub Actions
+
+This project uses GitHub Actions for automated testing on every push to `main` and on pull requests.
+
+#### Test Workflow Features:
+- **Multi-version testing**: Runs tests on Python 3.11, 3.12, and 3.13
+- **Redis service**: Spins up Redis container for integration tests
+- **Coverage reporting**: Generates test coverage reports
+- **Dependency caching**: Speeds up builds by caching pip dependencies
+- **Test artifacts**: Stores test results and coverage reports for 30 days
+
+#### Setting up GitHub Secrets:
+Add the following secrets to your GitHub repository (Settings → Secrets and variables → Actions):
+
+```yaml
+YOUTUBE_API_KEY         # Your YouTube Data API key
+GOOGLE_CLIENT_ID        # Google OAuth client ID
+GOOGLE_CLIENT_SECRET    # Google OAuth client secret
+STRIPE_PUBLIC_KEY       # Stripe publishable key (optional)
+STRIPE_SECRET_KEY       # Stripe secret key (optional)
+STRIPE_WEBHOOK_SECRET   # Stripe webhook secret (optional)
+PAYPAL_CLIENT_ID        # PayPal client ID (optional)
+PAYPAL_CLIENT_SECRET    # PayPal client secret (optional)
+```
+
+### Continuous Deployment with Railway
+
+#### Railway Integration:
+1. **Automatic deployments**: Railway automatically deploys when changes are pushed to `main`
+2. **Check requirements**: Railway waits for all GitHub Actions tests to pass before deploying
+3. **Health checks**: Railway performs health checks before marking deployment as successful
+
+#### Setting up Railway:
+
+1. **Connect GitHub repository**:
+   - In Railway dashboard, create new project
+   - Choose "Deploy from GitHub repo"
+   - Select your repository
+
+2. **Configure environment variables** in Railway:
+   ```
+   DATABASE_URL          # Automatically provided by Railway PostgreSQL
+   REDIS_URL            # Automatically provided by Railway Redis
+   YOUTUBE_API_KEY      # Your YouTube API key
+   GOOGLE_CLIENT_ID     # Google OAuth credentials
+   GOOGLE_CLIENT_SECRET
+   SECRET_KEY           # Flask secret key
+   # Add any other production environment variables
+   ```
+
+3. **Enable GitHub Checks** (Railway Settings):
+   - Go to Settings → GitHub
+   - Enable "Wait for CI checks"
+   - Select required checks:
+     - `Test Status Check`
+     - `test (3.11)`
+     - `test (3.12)`
+     - `test (3.13)`
+
+4. **Deployment flow**:
+   ```
+   Push to main → GitHub Actions run tests → Tests pass → Railway deploys → Health check → Live!
+   ```
+
+### Status Badges
+
+Add these badges to show your CI/CD status:
+
+```markdown
+![Tests](https://github.com/theresaanna/sentiment_analyzer/actions/workflows/test.yml/badge.svg)
+![Railway Deploy](https://img.shields.io/badge/Railway-Deployed-blueviolet)
 ```
 
 ## Next Steps for API Integration
