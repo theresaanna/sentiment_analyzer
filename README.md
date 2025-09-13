@@ -174,11 +174,31 @@ flake8 app/
 
 ## CI/CD Pipeline
 
-### Continuous Integration with GitHub Actions
+### Continuous Integration and Testing
 
-This project uses GitHub Actions for automated testing on every push to `main` and on pull requests.
+#### Railway Integrated Testing (Recommended)
+Railway now runs unit tests directly during the build phase. If tests fail, the deployment is automatically aborted.
 
-#### Test Workflow Features:
+**Features:**
+- Tests run automatically on every deployment
+- No separate CI service needed
+- Build fails fast if tests don't pass
+- Integration tests can be skipped for faster builds
+
+**Configuration:**
+Tests are configured in `railway.json` and use `scripts/run_tests_railway.py`
+
+**Environment Variables for Railway Testing:**
+```bash
+RAILWAY_SKIP_TESTS=false     # Set to true to skip all tests
+SKIP_INTEGRATION_TESTS=true  # Skip tests requiring external services
+RAILWAY_COVERAGE=false       # Set to true for coverage reports
+```
+
+#### GitHub Actions (Alternative)
+You can also use GitHub Actions for testing before Railway deployment.
+
+**Features:**
 - **Multi-version testing**: Runs tests on Python 3.11, 3.12, and 3.13
 - **Redis service**: Spins up Redis container for integration tests
 - **Coverage reporting**: Generates test coverage reports

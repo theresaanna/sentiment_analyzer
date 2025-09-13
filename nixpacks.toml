@@ -1,0 +1,60 @@
+# Nixpacks configuration for Railway deployment with integrated testing
+# This configuration runs tests during the build phase
+
+[phases.setup]
+nixPkgs = ["python310", "gcc", "postgresql", "redis"]
+
+[phases.install]
+cmds = [
+    "pip install --upgrade pip",
+    "pip install -r requirements.txt",
+    "echo '📦 Dependencies installed successfully'"
+]
+
+[phases.test]
+dependsOn = ["install"]
+cmds = [
+    # Create test environment
+    "echo '🧪 Running unit tests before deployment...'",
+    "echo '================================'",
+    
+    # Set up test database
+    "export DATABASE_URL=sqlite:///test.db",
+    "export FLASK_ENV=testing",
+    "export SECRET_KEY=railway-test-secret-key",
+    "export REDIS_URL=redis://localhost:6379/0",
+    "export OAUTHLIB_INSECURE_TRANSPORT=1",
+    "export CI=true",
+    "export SKIP_MODEL_PRELOAD=true",
+    
+    # Run tests with detailed output
+    '''
+    python -m pytest tests/ \
+        -v \
+        --tb=short \
+        --maxfail=10 \
+        --disable-warnings \
+        -k "not integration" \
+        || (echo "❌ Unit tests failed! Deployment aborted." && exit 1)
+    ''',
+    
+    "echo '✅ All unit tests passed!'",
+    "echo '================================'"
+]
+
+[phases.build]
+dependsOn = ["test"]
+cmds = [
+    # Download ML models after tests pass
+    "echo '🤖 Downloading ML models...'",
+    "python -c 'from transformers import AutoTokenizer, AutoModelForSequenceClassification; AutoTokenizer.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\"); AutoModelForSequenceClassification.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\")'",
+    "python -c 'from transformers import pipeline; pipeline(\"sentiment-analysis\", model=\"distilbert-base-uncased-finetuned-sst-2-english\")'",
+    "echo '✅ Build complete!'"
+]
+
+[start]
+cmd = "python scripts/railway_startup.py && gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 4 --worker-class gthread run:app"
+
+[variables]
+RAILWAY_RUN_TESTS = "true"
+PYTEST_OPTIONS = "-v --tb=short"

@@ -16,6 +16,15 @@
             "python -c 'from transformers import AutoTokenizer, AutoModelForSequenceClassification; AutoTokenizer.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\"); AutoModelForSequenceClassification.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\")'",
             "python -c 'from transformers import pipeline; pipeline(\"sentiment-analysis\", model=\"distilbert-base-uncased-finetuned-sst-2-english\")'"
           ]
+        },
+        "test": {
+          "cmds": [
+            "echo '🧪 Railway Test Phase'",
+            "export RAILWAY_RUN_TESTS=true",
+            "export SKIP_INTEGRATION_TESTS=true",
+            "python scripts/run_tests_railway.py"
+          ],
+          "dependsOn": ["install"]
         }
       }
     }
