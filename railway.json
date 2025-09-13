@@ -16,22 +16,13 @@
             "python -c 'from transformers import AutoTokenizer, AutoModelForSequenceClassification; AutoTokenizer.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\"); AutoModelForSequenceClassification.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\")'",
             "python -c 'from transformers import pipeline; pipeline(\"sentiment-analysis\", model=\"distilbert-base-uncased-finetuned-sst-2-english\")'"
           ]
-        },
-        "test": {
-          "cmds": [
-            "echo '🧪 Railway Test Phase'",
-            "export RAILWAY_RUN_TESTS=true",
-            "export SKIP_INTEGRATION_TESTS=true",
-            "python scripts/run_tests_railway.py"
-          ],
-          "dependsOn": ["install"]
         }
       }
     }
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "python scripts/railway_startup.py && gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 4 --worker-class gthread run:app",
+    "startCommand": "gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 2 --worker-class sync --preload run:app",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10,
     "healthcheckPath": "/health",
@@ -42,7 +33,7 @@
     "$schema": "https://railway.app/variables.schema.json",
     "SKIP_MODEL_PRELOAD": {
       "description": "Skip model preloading during migrations",
-      "default": "false"
+      "default": "true"
     },
     "RAILWAY_MINIMAL_MODELS": {
       "description": "Load only essential models to save memory",

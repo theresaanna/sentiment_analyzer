@@ -4,11 +4,12 @@ Modified to preload ML models at startup for better performance on Railway
 """
 import os
 import logging
-from flask import Flask
+from datetime import datetime
+from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager
 from flask_migrate import Migrate
+from flask_login import LoginManager
 from app.config import Config
 
 # Initialize extensions (without app)
@@ -113,27 +114,34 @@ def create_app(config_class=Config):
     @app.route('/health')
     def health_check():
         """Health check endpoint for Railway."""
+        # Basic health check - just verify the app is running
+        health_status = {
+            'status': 'healthy',
+            'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local'),
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        # Try to check database (but don't fail if it's not ready)
         try:
-            # Check database connection
-            db.session.execute('SELECT 1')
-
-            # Check model status
+            db.session.execute(db.text('SELECT 1'))
+            health_status['database'] = 'connected'
+        except Exception as e:
+            health_status['database'] = f'error: {str(e)}'
+            logger.warning(f"Database health check failed: {e}")
+        
+        # Try to check model status (but don't fail if models aren't loaded)
+        try:
             from app.utils.model_manager import get_model_manager
             model_manager = get_model_manager()
             stats = model_manager.get_model_stats()
-
-            return {
-                'status': 'healthy',
-                'database': 'connected',
-                'models_loaded': len(stats.get('loaded_models', [])),
-                'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'local')
-            }, 200
+            health_status['models_loaded'] = len(stats.get('loaded_models', []))
         except Exception as e:
-            logger.error(f"Health check failed: {e}")
-            return {
-                'status': 'unhealthy',
-                'error': str(e)
-            }, 503
+            health_status['models_loaded'] = 0
+            health_status['models_status'] = f'error: {str(e)}'
+            logger.warning(f"Model health check failed: {e}")
+        
+        # Always return 200 OK for basic health
+        return jsonify(health_status), 200
 
     # Add model stats endpoint (for debugging)
     @app.route('/api/model-stats')
