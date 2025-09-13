@@ -6,15 +6,10 @@ Fast DistilBERT, and ML models) into a single, coherent system with continuous
 learning through feedback integration.
 """
 
-import os
-import json
 import logging
 import numpy as np
 import torch
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple, Callable
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor, as_completed
 import asyncio
 
 # Import all analyzer components
@@ -35,9 +30,9 @@ class UnifiedSentimentAnalyzer:
     """
     
     def __init__(self, 
-                 config: Optional[Dict[str, Any]] = None,
-                 enable_feedback: bool = True,
-                 auto_retrain: bool = True):
+                 config=None,
+                 enable_feedback=True,
+                 auto_retrain=True):
         """
         Initialize the unified sentiment analyzer.
         
@@ -76,7 +71,7 @@ class UnifiedSentimentAnalyzer:
         logger.info("UnifiedSentimentAnalyzer initialized with feedback=%s, auto_retrain=%s", 
                    enable_feedback, auto_retrain)
     
-    def _get_default_config(self) -> Dict[str, Any]:
+    def _get_default_config(self):
         """Get default configuration."""
         return {
             'analyzers': {
@@ -137,10 +132,10 @@ class UnifiedSentimentAnalyzer:
             logger.error(f"Failed to initialize ML analyzer: {e}")
     
     def analyze_sentiment(self, 
-                         text: str, 
-                         method: str = 'auto',
-                         collect_feedback: bool = True,
-                         context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+                         text, 
+                         method='auto',
+                         collect_feedback=True,
+                         context=None):
         """
         Analyze sentiment of a single text using specified or automatic method.
         
@@ -190,10 +185,10 @@ class UnifiedSentimentAnalyzer:
         return result
     
     def analyze_batch(self,
-                     texts: List[str],
-                     method: str = 'auto',
-                     batch_size: Optional[int] = None,
-                     progress_callback: Optional[Callable] = None) -> Dict[str, Any]:
+                     texts,
+                     method='auto',
+                     batch_size=None,
+                     progress_callback=None):
         """
         Analyze sentiment for a batch of texts efficiently.
         
@@ -247,7 +242,7 @@ class UnifiedSentimentAnalyzer:
             'total_analyzed': total_texts
         }
     
-    def _ensemble_analysis(self, text: str) -> Dict[str, Any]:
+    def _ensemble_analysis(self, text):
         """
         Perform ensemble analysis using all available analyzers.
         
@@ -297,7 +292,7 @@ class UnifiedSentimentAnalyzer:
         
         return ensemble_result
     
-    def _weighted_ensemble_voting(self, individual_results: Dict[str, Dict]) -> Dict[str, Any]:
+    def _weighted_ensemble_voting(self, individual_results):
         """
         Combine individual analyzer results using weighted voting.
         
@@ -352,7 +347,7 @@ class UnifiedSentimentAnalyzer:
             'analyzers_used': list(individual_results.keys())
         }
     
-    def _calculate_agreement(self, individual_results: Dict[str, Dict]) -> float:
+    def _calculate_agreement(self, individual_results):
         """Calculate agreement score between analyzers."""
         if len(individual_results) < 2:
             return 1.0
@@ -364,10 +359,10 @@ class UnifiedSentimentAnalyzer:
         return agreement
     
     def collect_user_feedback(self,
-                             analysis_id: str,
-                             correct_sentiment: str,
-                             confidence: int = 4,
-                             notes: Optional[str] = None) -> bool:
+                             analysis_id,
+                             correct_sentiment,
+                             confidence=4,
+                             notes=None):
         """
         Collect user feedback on a sentiment prediction.
         
@@ -425,7 +420,7 @@ class UnifiedSentimentAnalyzer:
             logger.info("Feedback threshold reached, initiating retraining...")
             self.retrain_with_feedback()
     
-    def retrain_with_feedback(self, algorithm: str = 'logistic_regression') -> Dict[str, Any]:
+    def retrain_with_feedback(self, algorithm='logistic_regression'):
         """
         Retrain ML models using collected feedback.
         
@@ -483,7 +478,7 @@ class UnifiedSentimentAnalyzer:
             logger.error(f"Retraining failed: {e}")
             return {'error': str(e)}
     
-    def _select_best_method(self, text: str, context: Optional[Dict] = None) -> str:
+    def _select_best_method(self, text, context=None):
         """
         Automatically select the best analysis method based on text and context.
         
@@ -511,7 +506,7 @@ class UnifiedSentimentAnalyzer:
         # Default to ensemble for best accuracy
         return 'ensemble'
     
-    def _single_analyzer_analysis(self, text: str, method: str) -> Dict[str, Any]:
+    def _single_analyzer_analysis(self, text, method):
         """Perform analysis using a single specified analyzer."""
         if method not in self.analyzers:
             logger.warning(f"Analyzer {method} not available")
@@ -551,7 +546,7 @@ class UnifiedSentimentAnalyzer:
         
         return self._empty_result()
     
-    def _batch_ensemble_analysis(self, texts: List[str]) -> List[Dict[str, Any]]:
+    def _batch_ensemble_analysis(self, texts):
         """Perform ensemble analysis on a batch of texts."""
         batch_results = []
         
@@ -562,7 +557,7 @@ class UnifiedSentimentAnalyzer:
         
         return batch_results
     
-    def _batch_single_analyzer(self, texts: List[str], method: str) -> List[Dict[str, Any]]:
+    def _batch_single_analyzer(self, texts, method):
         """Perform batch analysis using a single analyzer."""
         if method not in self.analyzers:
             return [self._empty_result() for _ in texts]
@@ -585,7 +580,7 @@ class UnifiedSentimentAnalyzer:
             logger.error(f"Batch analysis failed with {method}: {e}")
             return [self._empty_result() for _ in texts]
     
-    def _calculate_batch_statistics(self, results: List[Dict]) -> Dict[str, Any]:
+    def _calculate_batch_statistics(self, results):
         """Calculate statistics for batch analysis results."""
         if not results:
             return {}
@@ -617,7 +612,7 @@ class UnifiedSentimentAnalyzer:
             'low_confidence_count': sum(1 for c in confidences if c < 0.5)
         }
     
-    def _prepare_for_feedback(self, result: Dict[str, Any]) -> str:
+    def _prepare_for_feedback(self, result):
         """Prepare analysis result for potential feedback collection."""
         import uuid
         analysis_id = str(uuid.uuid4())[:8]
@@ -627,7 +622,7 @@ class UnifiedSentimentAnalyzer:
         
         return analysis_id
     
-    def _update_performance_metrics(self, method: str):
+    def _update_performance_metrics(self, method):
         """Update performance tracking metrics."""
         self.performance_metrics['total_analyses'] += 1
         
@@ -635,7 +630,7 @@ class UnifiedSentimentAnalyzer:
             self.performance_metrics['analyzer_usage'][method] = 0
         self.performance_metrics['analyzer_usage'][method] += 1
     
-    def _empty_result(self) -> Dict[str, Any]:
+    def _empty_result(self):
         """Return empty/default result structure."""
         return {
             'predicted_sentiment': 'neutral',
@@ -645,7 +640,7 @@ class UnifiedSentimentAnalyzer:
             'error': 'No text provided or analysis failed'
         }
     
-    def get_performance_report(self) -> Dict[str, Any]:
+    def get_performance_report(self):
         """
         Get comprehensive performance report for the analyzer.
         
@@ -661,7 +656,7 @@ class UnifiedSentimentAnalyzer:
             'config': self.config
         }
     
-    def update_model_weights(self, new_weights: Dict[str, float]):
+    def update_model_weights(self, new_weights):
         """
         Update model weights for ensemble voting.
         
@@ -674,7 +669,7 @@ class UnifiedSentimentAnalyzer:
             self.model_weights = {k: v/total for k, v in new_weights.items()}
             logger.info(f"Model weights updated: {self.model_weights}")
     
-    async def analyze_sentiment_async(self, text: str, method: str = 'auto') -> Dict[str, Any]:
+    async def analyze_sentiment_async(self, text, method='auto'):
         """
         Async version of sentiment analysis for better performance.
         
@@ -693,7 +688,7 @@ class UnifiedSentimentAnalyzer:
 _unified_analyzer = None
 
 
-def get_unified_analyzer(reset: bool = False) -> UnifiedSentimentAnalyzer:
+def get_unified_analyzer(reset=False):
     """
     Get or create the unified sentiment analyzer instance.
     

@@ -327,6 +327,65 @@ class SentimentAnalyzer:
             'total_comments': total
         }
 
+    def get_sentiment_timeline(self, comments_or_texts, window=5, limit=50):
+        """
+        Build a sentiment timeline from a sequence of comments or texts.
+        Accepts a list of strings or dicts with a 'text' field and returns a
+        list of points like [{'score': {'positive': p, 'neutral': n, 'negative': g}}].
+        Scores are normalized to sum to 1.
+        """
+        if not comments_or_texts:
+            return []
+
+        # Normalize inputs to a list of texts
+        texts = []
+        for item in comments_or_texts[:limit]:
+            if isinstance(item, str):
+                texts.append(item)
+            elif isinstance(item, dict):
+                txt = item.get('text') or item.get('comment') or ''
+                texts.append(txt)
+            else:
+                texts.append(str(item) or '')
+
+        # Collect per-comment sentiment scores
+        raw_scores = []
+        for t in texts:
+            try:
+                res = self.analyze_sentiment(t)
+                s = res.get('scores') or {}
+                pos = float(s.get('positive', s.get(2, 0.0))) if isinstance(s, dict) else 0.0
+                neu = float(s.get('neutral', s.get(1, 0.0))) if isinstance(s, dict) else 0.0
+                neg = float(s.get('negative', s.get(0, 0.0))) if isinstance(s, dict) else 0.0
+                raw_scores.append((pos, neu, neg))
+            except Exception:
+                raw_scores.append((0.33, 0.34, 0.33))
+
+        # Rolling average over a window
+        timeline = []
+        w = max(int(window), 1)
+        for i in range(len(raw_scores)):
+            start = max(0, i - w + 1)
+            window_slice = raw_scores[start:i+1]
+            count = len(window_slice)
+            pos = sum(s[0] for s in window_slice) / count
+            neu = sum(s[1] for s in window_slice) / count
+            neg = sum(s[2] for s in window_slice) / count
+            total = pos + neu + neg
+            if total > 0:
+                pos /= total
+                neu /= total
+                neg /= total
+            timeline.append({
+                'score': {
+                    'positive': pos,
+                    'neutral': neu,
+                    'negative': neg
+                }
+            })
+
+        return timeline
+
 
 # Global analyzer instance for reuse
 _analyzer = None

@@ -1506,7 +1506,7 @@ function startSentimentAnalysis() {
     resultsDiv.style.display = 'none';
     
     // Disable both buttons with appropriate text
-    const loadingText = usePreloaded ? 'Loading Results...' : 'Analyzing...';
+    const loadingText = usePreloaded ? 'Loading Cached Results...' : 'Analyzing...';
     if (startButton) {
         startButton.disabled = true;
         startButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
@@ -1519,6 +1519,64 @@ function startSentimentAnalysis() {
     // Scroll to sentiment analysis section
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     
+    // If we have preloaded comments and button says "Load Analysis Results", check for cached results first
+    if (usePreloaded && startButtonMain && startButtonMain.textContent.includes('Load Analysis')) {
+        // Generate the expected analysis ID for cached results
+        const expectedAnalysisId = `sentiment_${videoId}_${selectedPercentage}pct_${commentsToAnalyze}`;
+        
+        // Try to fetch cached results directly
+        fetch(`/api/analyze/results/${expectedAnalysisId}`)
+            .then(response => {
+                // Check status code to determine what happened
+                if (response.status === 202) {
+                    // Analysis exists but not yet completed - wait for it
+                    return response.json().then(data => {
+                        console.log('Analysis in progress, waiting for completion...');
+                        analysisId = expectedAnalysisId;
+                        // Update progress status  
+                        if (data.status) {
+                            updateProgress(data.status);
+                        }
+                        // Start polling for completion
+                        statusCheckInterval = setInterval(checkAnalysisStatus, 1000);
+                        return null; // Signal that we're waiting
+                    });
+                } else if (response.ok) {
+                    return response.json();
+                } else {
+                    // Handle error responses
+                    return response.json().then(data => {
+                        throw new Error(data.error || 'Failed to fetch results');
+                    });
+                }
+            })
+            .then(data => {
+                if (data === null) {
+                    // We're waiting for in-progress analysis
+                    return;
+                }
+                if (data && data.success && data.results) {
+                    // Cached results found! Display them immediately
+                    analysisId = expectedAnalysisId;
+                    displayResults(data.results);
+                    return; // Exit early, no need to start new analysis
+                } else {
+                    // No cached results, proceed with analysis
+                    initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage);
+                }
+            })
+            .catch(error => {
+                // Error fetching cached results, proceed with analysis
+                console.log('No cached results available, starting analysis:', error.message);
+                initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage);
+            });
+    } else {
+        // Not using preloaded or different comment count, start fresh analysis
+        initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage);
+    }
+}
+
+function initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage) {
     // Start analysis with selected number of comments
     fetch(`/api/analyze/sentiment/${videoId}`, {
         method: 'POST',

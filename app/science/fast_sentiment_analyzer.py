@@ -3,13 +3,9 @@ Fast Sentiment Analyzer using centralized Model Manager
 Optimized for speed with model caching
 """
 import logging
-import time
 import torch
 import torch.nn.functional as F
-from typing import List, Dict, Optional, Callable, Any
 from concurrent.futures import ThreadPoolExecutor
-from queue import Queue
-import numpy as np
 from app.cache import cache
 from app.utils.model_manager import get_model_manager
 
@@ -19,11 +15,11 @@ logger = logging.getLogger(__name__)
 class FastSentimentAnalyzer:
     """Fast sentiment analyzer using cached pipeline from Model Manager."""
 
-    def __init__(self):
+    def __init__(self, batch_size=32):
         """Initialize the fast sentiment analyzer."""
         self.model_manager = get_model_manager()
         self.max_length = 512
-        self.batch_size = 32
+        self.batch_size = batch_size
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
         # Get pipeline on initialization (it will be cached)
@@ -45,7 +41,7 @@ class FastSentimentAnalyzer:
         
         logger.info(f"Fast sentiment analyzer initialized with device: {self.device}")
 
-    def _preprocess_texts(self, texts: List[str]) -> List[str]:
+    def _preprocess_texts(self, texts):
         """
         Preprocess texts for better sentiment analysis.
 
@@ -73,8 +69,8 @@ class FastSentimentAnalyzer:
 
         return processed_texts
 
-    def analyze_batch_fast(self, texts: List[str],
-                          progress_callback: Optional[Callable] = None) -> Dict:
+    def analyze_batch_fast(self, texts,
+                          progress_callback=None):
         """
         Quickly analyze sentiment of multiple texts using cached pipeline.
 
@@ -125,8 +121,14 @@ class FastSentimentAnalyzer:
 
                 # Update progress if callback provided
                 if progress_callback:
-                    progress = (i + 1) / len(texts) * 100
-                    progress_callback(progress)
+                    current = i + 1
+                    total = len(texts)
+                    try:
+                        progress_callback(current, total)
+                    except TypeError:
+                        # Backward compatibility: single-arg callbacks (percentage)
+                        progress = current / total * 100
+                        progress_callback(progress)
 
             # Calculate overall sentiment
             total = len(sentiments)
@@ -152,8 +154,8 @@ class FastSentimentAnalyzer:
             logger.error(f"Fast sentiment analysis failed: {e}")
             raise
 
-    def analyze_with_cache(self, texts: List[str], cache_key: str,
-                          progress_callback: Optional[Callable] = None) -> Dict:
+    def analyze_with_cache(self, texts, cache_key,
+                          progress_callback=None):
         """
         Analyze texts with caching support.
 
@@ -179,7 +181,7 @@ class FastSentimentAnalyzer:
 
         return result
 
-    def get_sentiment_score(self, text: str) -> float:
+    def get_sentiment_score(self, text):
         """
         Get a sentiment score for a single text (-1 to 1).
 
@@ -201,8 +203,8 @@ class FastSentimentAnalyzer:
         else:
             return 0  # Neutral
 
-    def filter_by_sentiment(self, texts: List[str],
-                           sentiment_filter: str = 'all') -> List[str]:
+    def filter_by_sentiment(self, texts,
+                           sentiment_filter='all'):
         """
         Filter texts by sentiment.
 
@@ -232,8 +234,8 @@ class FastSentimentAnalyzer:
         return filtered
     
     def analyze_batch_gpu_optimized(self, 
-                                   texts: List[str],
-                                   max_length: int = 512) -> List[Dict[str, Any]]:
+                                   texts,
+                                   max_length=512):
         """
         GPU-optimized batch processing using tensor batching.
         
@@ -327,8 +329,8 @@ class FastSentimentAnalyzer:
         return results
     
     def analyze_with_prefetch(self,
-                             texts: List[str],
-                             prefetch_size: int = 2) -> List[Dict[str, Any]]:
+                             texts,
+                             prefetch_size=2):
         """
         Analyze with data prefetching for improved throughput.
         
@@ -396,7 +398,7 @@ class FastSentimentAnalyzer:
         
         return results
     
-    def _process_outputs(self, outputs, texts: List[str]) -> List[Dict[str, Any]]:
+    def _process_outputs(self, outputs, texts):
         """
         Process model outputs into formatted results.
         
@@ -441,7 +443,7 @@ class FastSentimentAnalyzer:
 # Global instance for reuse across the application
 _fast_analyzer = None
 
-def get_fast_analyzer() -> FastSentimentAnalyzer:
+def get_fast_analyzer():
     """Get or create the global fast sentiment analyzer instance."""
     global _fast_analyzer
     if _fast_analyzer is None:
