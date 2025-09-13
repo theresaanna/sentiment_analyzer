@@ -3,11 +3,8 @@ Updated Sentiment Analyzer using centralized Model Manager
 Optimized for Railway deployment with model caching
 """
 import os
-import math
 import numpy as np
-from typing import List, Dict, Tuple, Optional
 import torch
-from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pickle
 import logging
@@ -20,7 +17,7 @@ logger = logging.getLogger(__name__)
 class SentimentAnalyzer:
     """Ensemble sentiment analyzer using cached models from Model Manager."""
 
-    def __init__(self, batch_size: int = 32):
+    def __init__(self, batch_size=32):
         """Initialize the sentiment analyzer with cached models.
 
         Args:
@@ -58,7 +55,7 @@ class SentimentAnalyzer:
             except Exception as e:
                 logger.warning(f"Failed to load GB model: {e}")
 
-    def analyze_sentiment(self, text: str) -> Dict:
+    def analyze_sentiment(self, text):
         """
         Analyze sentiment of a single text using cached models.
 
@@ -135,38 +132,117 @@ class SentimentAnalyzer:
         
         return result
 
-    def analyze_batch(self, texts: List[str], use_cache: bool = True) -> List[Dict]:
+    def analyze_batch(self, 
+        texts, 
+        use_cache=True,
+        progress_callback=None
+    ):
         """
         Analyze sentiment of multiple texts in batches.
 
         Args:
             texts: List of texts to analyze
             use_cache: Whether to use cached results
+            progress_callback: Optional callback receiving (current, total)
 
         Returns:
-            List of sentiment analysis results
+            Dictionary with overall stats and individual results compatible with routes
         """
-        results = []
+        if not texts:
+            return {
+                'overall_sentiment': 'neutral',
+                'distribution': {'positive': 0, 'neutral': 0, 'negative': 0},
+                'distribution_percentage': {'positive': 0.0, 'neutral': 0.0, 'negative': 0.0},
+                'sentiment_counts': {'positive': 0, 'neutral': 0, 'negative': 0},
+                'sentiment_percentages': {'positive': 0.0, 'neutral': 0.0, 'negative': 0.0},
+                'average_confidence': 0.0,
+                'total_analyzed': 0,
+                'individual_results': []
+            }
+
+        total = len(texts)
+        processed = 0
+        individual_results = []
+        counts = {'positive': 0, 'neutral': 0, 'negative': 0}
+        total_confidence = 0.0
 
         # Process in batches for efficiency
-        for i in range(0, len(texts), self.batch_size):
+        for i in range(0, total, self.batch_size):
             batch = texts[i:i + self.batch_size]
 
             # Analyze each text (will use cache if available)
-            batch_results = []
             for text in batch:
                 if use_cache:
                     result = self.analyze_sentiment(text)
                 else:
                     # Bypass cache for fresh analysis
                     result = self._analyze_single_no_cache(text)
-                batch_results.append(result)
 
-            results.extend(batch_results)
+                label = result.get('label', 'neutral')
+                confidence = float(result.get('confidence', 0.0))
+                scores = result.get('scores', {}) or {}
 
-        return results
+                # Normalize scores to include all keys
+                sentiment_scores = {
+                    'negative': float(scores.get('negative', scores.get(0, 0.0))) if isinstance(scores, dict) else float(scores[0]) if isinstance(scores, (list, tuple, np.ndarray)) and len(scores) > 0 else 0.0,
+                    'neutral': float(scores.get('neutral', scores.get(1, 0.0))) if isinstance(scores, dict) else float(scores[1]) if isinstance(scores, (list, tuple, np.ndarray)) and len(scores) > 1 else 0.0,
+                    'positive': float(scores.get('positive', scores.get(2, 0.0))) if isinstance(scores, dict) else float(scores[2]) if isinstance(scores, (list, tuple, np.ndarray)) and len(scores) > 2 else 0.0,
+                }
 
-    def _analyze_single_no_cache(self, text: str) -> Dict:
+                individual_results.append({
+                    'text': text[:100],
+                    'predicted_sentiment': label,
+                    'confidence': confidence,
+                    'sentiment_scores': sentiment_scores,
+                    'model': result.get('model', 'roberta')
+                })
+
+                counts[label] = counts.get(label, 0) + 1
+                total_confidence += confidence
+
+                processed += 1
+                if progress_callback:
+                    try:
+                        progress_callback(processed, total)
+                    except Exception:
+                        # Do not fail analysis due to callback errors
+                        pass
+
+        # Calculate percentages and overall sentiment
+        total_nonzero = max(processed, 1)
+        percentages = {
+            'positive': counts['positive'] / total_nonzero * 100.0,
+            'neutral': counts['neutral'] / total_nonzero * 100.0,
+            'negative': counts['negative'] / total_nonzero * 100.0,
+        }
+
+        # Determine overall sentiment (similar heuristic as calculate_aggregate_sentiment)
+        if percentages['positive'] >= 50:
+            overall = 'positive'
+        elif percentages['negative'] >= 40:
+            overall = 'negative'
+        else:
+            overall = 'neutral'
+
+        average_confidence = total_confidence / total_nonzero if total_nonzero else 0.0
+
+        # Also provide fields some routes expect
+        sentiment_score = (percentages['positive'] - percentages['negative']) / 100.0
+
+        return {
+            'overall_sentiment': overall,
+            'distribution': counts.copy(),
+            'distribution_percentage': percentages.copy(),
+            'sentiment_counts': counts.copy(),
+            'sentiment_percentages': percentages.copy(),
+            'average_confidence': average_confidence,
+            'sentiment_score': sentiment_score,
+            'total_analyzed': processed,
+            'individual_results': individual_results,
+            'model': 'ensemble' if self.gb_model else 'roberta'
+        }
+
+    def _analyze_single_no_cache(self, text):
         """Analyze sentiment without using cache."""
         # Temporarily clear the cache for this function call
         # This is the same implementation as analyze_sentiment but without @cache decorator
@@ -202,7 +278,7 @@ class SentimentAnalyzer:
             'model': 'roberta'
         }
 
-    def calculate_aggregate_sentiment(self, sentiments: List[Dict]) -> Dict:
+    def calculate_aggregate_sentiment(self, sentiments):
         """
         Calculate aggregate sentiment statistics from multiple sentiment results.
 
@@ -255,7 +331,7 @@ class SentimentAnalyzer:
 # Global analyzer instance for reuse
 _analyzer = None
 
-def get_sentiment_analyzer() -> SentimentAnalyzer:
+def get_sentiment_analyzer():
     """Get or create the global sentiment analyzer instance."""
     global _analyzer
     if _analyzer is None:
