@@ -33,5 +33,8 @@ RUN chmod +x railway_check_env.py || true
 EXPOSE 8000
 
 # Use shell form to allow environment variable substitution
-# Run startup script first, then start gunicorn
-CMD sh -c "python scripts/railway_startup.py && gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 4 --worker-class gthread run:app"
+# Skip startup script for now and start gunicorn directly
+# Set SKIP_MODEL_PRELOAD to avoid memory issues during startup
+ENV SKIP_MODEL_PRELOAD=true
+ENV RAILWAY_MINIMAL_MODELS=true
+CMD gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 2 --worker-class sync --preload --log-level info run:app

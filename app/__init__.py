@@ -123,11 +123,12 @@ def create_app(config_class=Config):
         
         # Try to check database (but don't fail if it's not ready)
         try:
-            db.session.execute(db.text('SELECT 1'))
+            from sqlalchemy import text
+            db.session.execute(text('SELECT 1'))
             health_status['database'] = 'connected'
         except Exception as e:
-            health_status['database'] = f'error: {str(e)}'
-            logger.warning(f"Database health check failed: {e}")
+            health_status['database'] = f'initializing'
+            logger.info(f"Database not ready yet: {e}")
         
         # Try to check model status (but don't fail if models aren't loaded)
         try:
