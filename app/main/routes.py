@@ -234,15 +234,15 @@ def api_analyze():
         if not text:
             return jsonify({'success': False, 'error': 'Text required'}), 400
         
-        from app.science.sentiment_analyzer import SentimentAnalyzer
-        analyzer = SentimentAnalyzer()
-        result = analyzer.analyze_sentiment(text)
+        from app.services.sentiment_api import get_sentiment_client
+        client = get_sentiment_client()
+        result = client.analyze_text(text)
         
         return jsonify({
             'success': True,
-            'label': result.get('label'),
+            'label': result.get('sentiment'),
             'confidence': result.get('confidence'),
-            'sentiment': result.get('label')  # Add sentiment field for compatibility
+            'sentiment': result.get('sentiment')
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -258,14 +258,14 @@ def api_batch():
         if not texts:
             return jsonify({'success': False, 'error': 'Texts required'}), 400
         
-        from app.science.sentiment_analyzer import SentimentAnalyzer
-        analyzer = SentimentAnalyzer()
-        results = analyzer.analyze_batch(texts)
+        from app.services.sentiment_api import get_sentiment_client
+        client = get_sentiment_client()
+        results = client.analyze_batch(texts)
         
         return jsonify({
             'success': True,
-            'total': len(texts),
-            'results': results.get('individual_results', [])
+            'total': results.get('total_analyzed', len(texts)),
+            'results': results.get('results', [])
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -1066,6 +1066,7 @@ def api_video_list():
 def api_video_comments(video_id):
     """Get comments for a video."""
     try:
+        from app.services.youtube_service import YouTubeService
         youtube_service = YouTubeService()
         comments = youtube_service.get_video_comments(video_id)
         return jsonify({
@@ -1155,15 +1156,15 @@ def batch_process():
         if not texts:
             return jsonify({'success': False, 'error': 'No texts provided'}), 400
         
-        # Process batch
-        try:
-            analyzer = SentimentAnalyzer()
-            results = analyzer.analyze_batch(texts)
-        except Exception as analyze_error:
-            # If analyze_batch fails, try individual analysis
+        # Process batch using sentiment API
+        from app.services.sentiment_api import get_sentiment_client
+        client = get_sentiment_client()
+        results = client.analyze_batch(texts)
+        
+        # Ensure results have expected format
+        if not isinstance(results, dict):
             results = {
-                'total_analyzed': len(texts),
-                'processing_time': 0,
+                'total_analyzed': 0,
                 'results': []
             }
         

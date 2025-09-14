@@ -89,14 +89,14 @@ def api_unified_analyze():
         if not text:
             return jsonify({'success': False, 'error': 'Text required'}), 400
         
-        # Call external ML service on Modal
-        from app.services.ml_service_client import MLServiceClient
-        client = MLServiceClient()
+        # Call external sentiment API
+        from app.services.sentiment_api import get_sentiment_client
+        client = get_sentiment_client()
         result = client.analyze_text(text)
         
         return jsonify({
             'success': True,
-            'sentiment': result.get('predicted_sentiment', 'neutral'),
+            'sentiment': result.get('sentiment', 'neutral'),
             'confidence': result.get('confidence', 0.5),
             'models_used': result.get('models_used', ['distilbert'])
         })
@@ -113,9 +113,9 @@ def api_unified_batch():
         if not texts:
             return jsonify({'success': False, 'error': 'Texts required'}), 400
         
-        # Call external ML service on Modal for batch analysis
-        from app.services.ml_service_client import MLServiceClient
-        client = MLServiceClient()
+        # Call external sentiment API for batch analysis
+        from app.services.sentiment_api import get_sentiment_client
+        client = get_sentiment_client()
         results = client.analyze_batch(texts)
         
         # Normalize response for client
@@ -188,11 +188,11 @@ def run_unified_analysis(video_id: str, max_comments: int, method: str,
                 }
             })
         
-        # Perform batch analysis via external ML service on Modal
+        # Perform batch analysis via external sentiment API
         texts = [c['text'] for c in comment_data]
-        from app.services.ml_service_client import MLServiceClient
-        client = MLServiceClient()
-        batch_results = client.analyze_batch(texts, method=method)
+        from app.services.sentiment_api import get_sentiment_client
+        client = get_sentiment_client()
+        batch_results = client.analyze_batch(texts)
         
         # Add context to results
         for i, result in enumerate(batch_results.get('results', [])):
