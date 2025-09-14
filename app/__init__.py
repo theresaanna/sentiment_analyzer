@@ -144,6 +144,11 @@ def create_app(config_class=Config):
         # Always return 200 OK for basic health
         return jsonify(health_status), 200
 
+    # Minimal liveness endpoint for platform health checks
+    @app.route('/healthz')
+    def healthz():
+        return jsonify({'ok': True}), 200
+
     # Add model stats endpoint (for debugging)
     @app.route('/api/model-stats')
     def model_stats():
