@@ -1742,6 +1742,13 @@ function displayResults(results) {
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     const videoId = '{{ video_id }}';
     
+    // Guard: ensure results have sentiment payload
+    if (!results || !results.sentiment) {
+        console.error('No sentiment results returned:', results);
+        showError('No results returned. Please try again.');
+        return;
+    }
+
     // Update comment statistics if Pro user analyzed more comments
     if (results.updated_stats) {
         updateCommentStatistics(results.updated_stats);
@@ -1968,15 +1975,18 @@ function createSentimentPieChart(sentiment) {
         
         if (charts.pie) charts.pie.destroy();
         
+        // Use counts from either sentiment_counts or distribution
+        const counts = (sentiment.sentiment_counts || sentiment.distribution || {positive: 0, neutral: 0, negative: 0});
+        
         charts.pie = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: ['Positive', 'Neutral', 'Negative'],
                 datasets: [{
                     data: [
-                        sentiment.sentiment_counts.positive,
-                        sentiment.sentiment_counts.neutral,
-                        sentiment.sentiment_counts.negative
+                        (counts.positive || 0),
+                        (counts.neutral || 0),
+                        (counts.negative || 0)
                     ],
                     backgroundColor: [
                         // Positive: match the green background used by Most Mentioned Concepts (Bootstrap alert-success bg)
@@ -2102,9 +2112,10 @@ function createTimelineChart(timeline) {
                 labels.push(''); // Empty label for intermediate points
             }
             
-            positiveData.push(item.score.positive * 100);
-            neutralData.push(item.score.neutral * 100);
-            negativeData.push(item.score.negative * 100);
+            const sc = item.score || item.sentiment_scores || {positive: 0, neutral: 1, negative: 0};
+            positiveData.push((sc.positive || 0) * 100);
+            neutralData.push((sc.neutral || 0) * 100);
+            negativeData.push((sc.negative || 0) * 100);
         });
         
         charts.timeline = new Chart(ctx, {
@@ -2239,8 +2250,8 @@ function displaySampleComments(results) {
         results.forEach(result => {
             const comment = {
                 text: result.text,
-                confidence: (result.confidence * 100).toFixed(1),
-                commentId: result.comment_id || null,
+                confidence: ((typeof result.confidence === 'number' ? (result.confidence > 1 ? result.confidence : result.confidence * 100) : 0)).toFixed(1),
+                commentId: (result.commentId || result.comment_id || null),
                 author: result.author || 'Anonymous'
             };
             
@@ -2292,7 +2303,7 @@ function displaySampleComments(results) {
                             </div>
                             <div class="comment-sample-meta">
                                 <span class="text-muted">
-                                    <i class="fas fa-user-circle"></i> ${escapeHtml(s.author.substring(0, 20))}
+                                    <i class="fas fa-user-circle"></i> ${escapeHtml((s.author || 'Anonymous').substring(0, 20))}
                                 </span>
                                 <span class="confidence-badge bg-${confidenceColor}">
                                     ${s.confidence}%
