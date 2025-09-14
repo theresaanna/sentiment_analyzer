@@ -160,6 +160,44 @@ class SentimentAPIClient:
             'mock': True
         }
 
+    def summarize(self, comments: List[Dict[str, Any]], sentiment: Optional[Dict[str, Any]] = None, method: str = "auto") -> Dict[str, Any]:
+        """Request comment summary from the external ML service."""
+        if self.mock_mode:
+            # Simple local fallback summary
+            dist = sentiment.get('sentiment_distribution', {}) if sentiment else {}
+            pos = dist.get('positive', 0); neu = dist.get('neutral', 0); neg = dist.get('negative', 0)
+            total = sentiment.get('total_analyzed', 0) if sentiment else 0
+            def pct(x):
+                return round((x / total * 100), 1) if total else 0.0
+            return {
+                'summary': {
+                    'summary': f"Viewer reactions are mixed. Distribution — positive: {pct(pos)}%, neutral: {pct(neu)}%, negative: {pct(neg)}%.",
+                    'method': 'mock',
+                    'comments_analyzed': total
+                }
+            }
+        try:
+            response = requests.post(
+                f"{self.base_url}/summarize",
+                json={
+                    'comments': comments,
+                    'sentiment': sentiment,
+                    'method': method
+                },
+                timeout=self.timeout
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data
+        except Exception as e:
+            return {
+                'summary': {
+                    'summary': 'Unable to generate summary at this time.',
+                    'method': 'error',
+                    'error': str(e)
+                }
+            }
+
 
 # Singleton instance
 _client = None

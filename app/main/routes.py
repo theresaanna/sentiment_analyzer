@@ -684,12 +684,12 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         except Exception as e:
             print(f"Warning: Could not update status due to cache issue: {e}")
         
-        # Analyze sentiment via external ML service on Modal
+        # Analyze sentiment via external ML service (Modal-hosted FastAPI)
         comment_texts = [c['text'] for c in comments]
-        print(f"Analyzing sentiment for {len(comment_texts)} comments via Modal ML service...")
-        from app.services.ml_service_client import MLServiceClient
-        client = MLServiceClient()
-        ml_batch = client.analyze_batch(comment_texts, method='auto')
+        print(f"Analyzing sentiment for {len(comment_texts)} comments via external sentiment API...")
+        from app.services.sentiment_api import get_sentiment_client
+        client = get_sentiment_client()
+        ml_batch = client.analyze_batch(comment_texts)
         
         # Normalize to legacy structure expected downstream
         total = ml_batch.get('total_analyzed', len(comment_texts))
@@ -722,22 +722,48 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'generating_summary', 'progress': 85}, ttl_hours=1)
         
-        # Generate enhanced summary with video context
-        print("Generating enhanced summary with intelligent filtering...")
-        from app.science.comment_summarizer import EnhancedCommentSummarizer
-        summarizer = EnhancedCommentSummarizer(use_openai=os.getenv('OPENAI_API_KEY') is not None)
-        summary_results = summarizer.generate_enhanced_summary(comments, sentiment_results, video_info)
+        # Generate summary via external ML service (Modal). Falls back on error.
+        print("Generating summary via external ML service...")
+        try:
+            from app.services.sentiment_api import get_sentiment_client
+            client = get_sentiment_client()
+            resp = client.summarize(comments, sentiment_results, method='auto')
+            summary_results = resp.get('summary') or resp
+        except Exception as e:
+            print(f"External summarizer unavailable; using fallback summary. Reason: {e}")
+            dist = sentiment_results.get('sentiment_counts', {}) or sentiment_results.get('distribution', {}) or {}
+            pos = dist.get('positive', 0)
+            neu = dist.get('neutral', 0)
+            neg = dist.get('negative', 0)
+            total = sentiment_results.get('total_analyzed', 0) or (pos + neu + neg)
+            def pct(x):
+                return round((x / total * 100), 1) if total else 0.0
+            trend = 'mixed'
+            if pos >= max(neg, neu) and pos >= total * 0.5:
+                trend = 'mostly positive'
+            elif neg >= max(pos, neu) and neg >= total * 0.4:
+                trend = 'mostly negative'
+            summary_results = {
+                'summary': (
+                    f"Viewer reactions are {trend}. "
+                    f"Distribution — positive: {pct(pos)}%, neutral: {pct(neu)}%, negative: {pct(neg)}%."
+                ),
+                'method': 'fallback',
+                'comments_analyzed': total,
+            }
         
-        # Debug: Check if social media themes were generated
-        print(f"DEBUG: Summary keys: {list(summary_results.keys())}")
-        if 'social_media_themes' in summary_results:
-            themes_count = len(summary_results['social_media_themes'].get('themes', []))
-            print(f"DEBUG: Generated {themes_count} social media themes")
-        else:
-            print("DEBUG: No social_media_themes found in summary_results")
-        
-        # Get sentiment timeline
-        timeline = analyzer.get_sentiment_timeline(comments[:50])  # Limit timeline to 50 comments
+        # Build a simple sentiment timeline from external results (first 50 comments)
+        individual_results = sentiment_results.get('individual_results', [])
+        timeline = []
+        for i, comment in enumerate(comments[:min(50, len(individual_results))]):
+            ir = individual_results[i]
+            pred = ir.get('predicted_sentiment') or ir.get('sentiment', 'neutral')
+            timeline.append({
+                'timestamp': comment.get('published_at', ''),
+                'sentiment': pred,
+                'score': ir.get('sentiment_scores') or {},
+                'text_preview': (ir.get('text') or comment.get('text', ''))[:100]
+            })
         
         # Calculate updated comment statistics based on analyzed comments
         unique_commenters = set()
