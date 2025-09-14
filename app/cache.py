@@ -12,9 +12,25 @@ class CacheService:
     
     def __init__(self, redis_url: Optional[str] = None):
         """Initialize Redis connection."""
-        # Get Redis URL from environment or use default
+        # Prefer FakeRedis during tests to avoid external dependency
+        flask_env = (os.getenv('FLASK_ENV') or '').lower().strip()
+        if flask_env in {'testing', 'test'} or os.getenv('PYTEST_CURRENT_TEST'):
+            try:
+                import fakeredis  # type: ignore
+                self.redis_client = fakeredis.FakeRedis(decode_responses=True)
+                self.enabled = True
+                # TTL defaults for tests
+                self.default_ttl_hours = int(os.getenv('REDIS_CACHE_TTL_HOURS', '24'))
+                self.comments_ttl_hours = int(os.getenv('REDIS_COMMENTS_TTL_HOURS', '6'))
+                print("Redis cache: Using FakeRedis for testing environment")
+                return
+            except Exception as e:
+                print(f"FakeRedis not available or failed to initialize: {e}. Falling back to real Redis.")
+        
+        # Get Redis URL from environment or use default (treat empty as unset)
         if not redis_url:
-            redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+            env_url = (os.getenv('REDIS_URL') or '').strip()
+            redis_url = env_url or 'redis://localhost:6379/0'
         
         # Get TTL settings from environment
         self.default_ttl_hours = int(os.getenv('REDIS_CACHE_TTL_HOURS', '24'))
@@ -27,7 +43,8 @@ class CacheService:
             self.enabled = True
             print(f"Redis cache connected successfully to {redis_url}")
             print(f"Cache TTL: Video info={self.default_ttl_hours}h, Comments={self.comments_ttl_hours}h")
-        except (redis.ConnectionError, redis.TimeoutError) as e:
+        except (redis.ConnectionError, redis.TimeoutError, ValueError) as e:
+            # ValueError covers invalid URL schemes
             print(f"Redis connection failed: {e}. Running without cache.")
             self.redis_client = None
             self.enabled = False
