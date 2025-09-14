@@ -99,16 +99,18 @@ def create_app(config_class=Config):
     with app.app_context():
         try:
             from app.models import User  # noqa: F401
-            # Create tables if they don't exist (for initial deployment)
-            # This is safe to run even with migrations
-            db.create_all()
+            # Avoid database initialization on Railway to prevent startup blocking
+            if not os.environ.get('RAILWAY_ENVIRONMENT') and os.environ.get('DB_INIT_ON_START', 'false').lower() == 'true':
+                # Create tables if they don't exist (for local development only)
+                db.create_all()
         except Exception as e:
             logger.warning(f"Could not initialize database: {e}")
 
     # Preload ML models after app context is established
     # This runs once at startup, not per request
     with app.app_context():
-        preload_models()
+        if not os.environ.get('RAILWAY_ENVIRONMENT'):
+            preload_models()
 
     # Add health check endpoint for Railway
     @app.route('/health')

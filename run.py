@@ -33,11 +33,12 @@ from app.models import User
 config_name = os.environ.get('FLASK_ENV', 'development')
 app = create_app()
 
-# Ensure database tables exist
+# Optionally ensure database tables exist (disabled by default in production)
 with app.app_context():
     try:
-        db.create_all()
-        logger.info("Database tables ready")
+        if not os.environ.get('RAILWAY_ENVIRONMENT') and os.environ.get('DB_INIT_ON_START', 'false').lower() == 'true':
+            db.create_all()
+            logger.info("Database tables ready (local init)")
     except Exception as e:
         logger.error(f"Database initialization error: {e}")
 
