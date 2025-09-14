@@ -690,14 +690,30 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         from app.services.sentiment_api import get_sentiment_client
         client = get_sentiment_client()
         ml_batch = client.analyze_batch(comment_texts)
-        
-        # Normalize to legacy structure expected downstream
+
+        # Normalize to legacy structure expected downstream (robust to various response shapes)
         total = ml_batch.get('total_analyzed', len(comment_texts))
-        dist = ml_batch.get('statistics', {}).get('sentiment_distribution', {"positive": 0, "neutral": 0, "negative": 0})
-        pct = ml_batch.get('statistics', {}).get('sentiment_percentages', {}) or {
-            k: (v / total * 100 if total else 0.0) for k, v in dist.items()
-        }
         individual_results = ml_batch.get('results', [])
+        # Prefer nested statistics; fall back to top-level or compute
+        stats = ml_batch.get('statistics') or {}
+        dist = stats.get('sentiment_distribution') or ml_batch.get('sentiment_distribution') or {}
+        if not dist:
+            dist = {'positive': 0, 'neutral': 0, 'negative': 0}
+            for r in individual_results:
+                s = r.get('predicted_sentiment') or r.get('sentiment') or 'neutral'
+                if s not in dist:
+                    s = 'neutral'
+                dist[s] += 1
+        pct = stats.get('sentiment_percentages') or {
+            k: (v / total * 100.0 if total else 0.0) for k, v in dist.items()
+        }
+        avg_conf = stats.get('average_confidence')
+        if avg_conf is None:
+            avg_conf = sum(x.get('confidence', 0.0) for x in individual_results) / total if total else 0.0
+        # sentiment_score in [-1, 1]
+        pos = dist.get('positive', 0); neg = dist.get('negative', 0)
+        sentiment_score = ((pos - neg) / total) if total else 0.0
+
         sentiment_results = {
             'overall_sentiment': ('positive' if dist.get('positive', 0) >= total * 0.5 else
                                   'negative' if dist.get('negative', 0) >= total * 0.4 else 'neutral'),
@@ -705,7 +721,8 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
             'distribution_percentage': pct,
             'sentiment_counts': dist,
             'sentiment_percentages': pct,
-            'average_confidence': sum(x.get('confidence', 0.0) for x in individual_results) / total if total else 0.0,
+            'average_confidence': avg_conf,
+            'sentiment_score': sentiment_score,
             'total_analyzed': total,
             'individual_results': individual_results,
             'model': 'remote-modal'

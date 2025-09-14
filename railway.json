@@ -33,6 +33,10 @@
       "description": "Modal ML service endpoint URL",
       "default": "https://theresaanna--sentiment-ml-service-fastapi-app.modal.run"
     },
+    "SENTIMENT_API_URL": {
+      "description": "External Sentiment API base URL (falls back to MODAL_ML_BASE_URL)",
+      "default": "https://theresaanna--sentiment-ml-service-fastapi-app.modal.run"
+    },
     "PRECOMPUTE_ANALYSIS_ON_PRELOAD": {
       "description": "Precompute analysis for faster results",
       "default": "true"

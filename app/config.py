@@ -15,7 +15,8 @@ class Config:
     YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY')
     
     # External sentiment analysis API
-    SENTIMENT_API_URL = os.environ.get('SENTIMENT_API_URL')  # URL of external sentiment service
+    # Prefer SENTIMENT_API_URL, fall back to MODAL_ML_BASE_URL for compatibility
+    SENTIMENT_API_URL = os.environ.get('SENTIMENT_API_URL') or os.environ.get('MODAL_ML_BASE_URL')
     
     # Flask settings
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
