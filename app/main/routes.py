@@ -37,8 +37,8 @@ def index():
             session['video_id'] = video_id
             session['video_url'] = build_youtube_url(video_id)
             
-            # Redirect to analysis page
-            return redirect(url_for('main.analyze', video_id=video_id))
+            # Redirect to analysis page (use canonical route with path param)
+            return redirect(url_for('main.analyze_video', video_id=video_id))
         else:
             flash('Could not extract video ID from URL', 'danger')
     
@@ -49,6 +49,11 @@ def index():
 @login_required
 def analyze():
     """Analyze page for YouTube videos."""
+    # Support legacy links like /analyze?video_id=XYZ by redirecting to the canonical route
+    if request.method == 'GET':
+        q_video_id = request.args.get('video_id')
+        if q_video_id:
+            return redirect(url_for('main.analyze_video', video_id=q_video_id))
     if request.method == 'POST':
         video_url = request.form.get('video_url')
         if video_url:
