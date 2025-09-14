@@ -21,7 +21,12 @@ class SentimentAPIClient:
         # Prefer SENTIMENT_API_URL, fall back to MODAL_ML_BASE_URL for compatibility
         env_base = os.getenv('SENTIMENT_API_URL') or os.getenv('MODAL_ML_BASE_URL') or ''
         self.base_url = (base_url or env_base).strip()
-        self.timeout = timeout
+        # Allow overriding timeout via env
+        env_timeout = os.getenv('SENTIMENT_API_TIMEOUT')
+        self.timeout = int(env_timeout) if env_timeout else timeout
+        # Controls to compact summarize payload
+        self.max_summary_comments = int(os.getenv('MAX_SUMMARY_COMMENTS', '300'))
+        self.max_comment_length = int(os.getenv('MAX_SUMMARY_COMMENT_CHARS', '300'))
 
         # Optional API key support
         self.api_key = os.getenv('MODAL_ML_API_KEY') or os.getenv('SENTIMENT_API_KEY')
@@ -213,14 +218,57 @@ class SentimentAPIClient:
         }
 
     def summarize(self, comments: List[Dict[str, Any]], sentiment: Optional[Dict[str, Any]] = None, method: str = "auto") -> Dict[str, Any]:
-        """Request comment summary from the external ML service."""
+        """Request comment summary from the external ML service.
+        This compacts the payload to avoid timeouts or 400s due to oversized/malformed inputs.
+        """
+        # Prepare compact list of comment texts
+        def _to_text_list(raw: List[Any]) -> List[str]:
+            texts: List[str] = []
+            for item in raw or []:
+                if isinstance(item, dict):
+                    t = item.get('text')
+                else:
+                    t = str(item)
+                if not t:
+                    continue
+                t = t.strip()
+                if not t:
+                    continue
+                # Truncate excessively long comments
+                texts.append(t[: self.max_comment_length])
+                if len(texts) >= self.max_summary_comments:
+                    break
+            return texts
+
+        # Prepare compact sentiment statistics for summary guidance
+        def _compact_sentiment(s: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+            if not isinstance(s, dict):
+                return {}
+            stats = s.get('statistics') or {}
+            dist = s.get('sentiment_counts') or s.get('distribution') or stats.get('sentiment_distribution') or {}
+            avg_conf = s.get('average_confidence') or stats.get('average_confidence') or 0.0
+            total = s.get('total_analyzed') or stats.get('total_analyzed') or 0
+            # Only pass minimal keys
+            return {
+                'sentiment_distribution': {
+                    'positive': dist.get('positive', 0),
+                    'neutral': dist.get('neutral', 0),
+                    'negative': dist.get('negative', 0),
+                },
+                'average_confidence': float(avg_conf),
+                'total_analyzed': int(total),
+            }
+
+        compact_comments = _to_text_list(comments)
+        compact_sentiment = _compact_sentiment(sentiment)
+
         if self.mock_mode:
-            # Simple local fallback summary
-            dist = sentiment.get('sentiment_distribution', {}) if sentiment else {}
+            # Simple local fallback summary based on compact_sentiment
+            dist = compact_sentiment.get('sentiment_distribution', {})
             pos = dist.get('positive', 0)
             neu = dist.get('neutral', 0)
             neg = dist.get('negative', 0)
-            total = sentiment.get('total_analyzed', 0) if sentiment else 0
+            total = compact_sentiment.get('total_analyzed', 0)
             def pct(x):
                 return round((x / total * 100), 1) if total else 0.0
             return {
@@ -234,8 +282,8 @@ class SentimentAPIClient:
             response = requests.post(
                 f"{self.base_url}/summarize",
                 json={
-                    'comments': comments,
-                    'sentiment': sentiment,
+                    'comments': compact_comments,
+                    'sentiment': compact_sentiment,
                     'method': method,
                 },
                 timeout=self.timeout,
