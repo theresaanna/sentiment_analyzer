@@ -804,37 +804,39 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'generating_summary', 'progress': 85}, ttl_hours=1)
-            for i, result in enumerate(sentiment_results['individual_results']):
-                # Attach YouTube comment context when available
-                if i < len(comments):
-                    src = comments[i]
-                    cid = src.get('id') or src.get('comment_id')
-                    # Provide both snake_case and camelCase for frontend compatibility
-                    result['comment_id'] = cid
-                    result['commentId'] = cid
-                    # Ensure text and author exist
-                    result.setdefault('text', src.get('text', ''))
-                    result.setdefault('author', src.get('author', 'Anonymous'))
 
-                # Ensure predicted_sentiment exists
-                if not result.get('predicted_sentiment') and result.get('sentiment'):
-                    result['predicted_sentiment'] = result['sentiment']
+        # Normalize individual results to match template expectations and attach context
+        for i, result in enumerate(sentiment_results['individual_results']):
+            # Attach YouTube comment context when available
+            if i < len(comments):
+                src = comments[i]
+                cid = src.get('id') or src.get('comment_id')
+                # Provide both snake_case and camelCase for frontend compatibility
+                result['comment_id'] = cid
+                result['commentId'] = cid
+                # Ensure text and author exist
+                result.setdefault('text', src.get('text', ''))
+                result.setdefault('author', src.get('author', 'Anonymous'))
 
-                # Ensure sentiment_scores exist (0..1 floats) for timeline
-                scores = result.get('sentiment_scores')
-                if not isinstance(scores, dict) or not {'positive', 'neutral', 'negative'} <= set(scores.keys()):
-                    pred = (result.get('predicted_sentiment') or result.get('sentiment') or 'neutral')
-                    scores = {
-                        'positive': 1.0 if pred == 'positive' else 0.0,
-                        'neutral':  1.0 if pred == 'neutral'  else 0.0,
-                        'negative': 1.0 if pred == 'negative' else 0.0,
-                    }
-                    result['sentiment_scores'] = scores
+            # Ensure predicted_sentiment exists
+            if not result.get('predicted_sentiment') and result.get('sentiment'):
+                result['predicted_sentiment'] = result['sentiment']
 
-                # Scale confidence to percentage if needed (frontend expects 0-100)
-                conf = result.get('confidence')
-                if isinstance(conf, (int, float)) and conf <= 1.0:
-                    result['confidence'] = round(conf * 100.0, 1)
+            # Ensure sentiment_scores exist (0..1 floats) for timeline
+            scores = result.get('sentiment_scores')
+            if not isinstance(scores, dict) or not {'positive', 'neutral', 'negative'} <= set(scores.keys()):
+                pred = (result.get('predicted_sentiment') or result.get('sentiment') or 'neutral')
+                scores = {
+                    'positive': 1.0 if pred == 'positive' else 0.0,
+                    'neutral':  1.0 if pred == 'neutral'  else 0.0,
+                    'negative': 1.0 if pred == 'negative' else 0.0,
+                }
+                result['sentiment_scores'] = scores
+
+            # Scale confidence to percentage if needed (frontend expects 0-100)
+            conf = result.get('confidence')
+            if isinstance(conf, (int, float)) and conf <= 1.0:
+                result['confidence'] = round(conf * 100.0, 1)
         
         print(f"Sentiment analysis complete. Overall: {sentiment_results.get('overall_sentiment', 'unknown')}")
         
