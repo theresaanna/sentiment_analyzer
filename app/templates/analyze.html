@@ -1778,16 +1778,18 @@ function displayResults(results) {
     
     // Overall sentiment
     const overallEl = document.getElementById('overallSentiment');
-    // Convert score to percentage if it's not already
-    const sentimentScorePercent = sentiment.sentiment_score > 1 ? 
-        sentiment.sentiment_score.toFixed(1) : 
-        (sentiment.sentiment_score * 100).toFixed(1);
+    // Convert score to percentage if it's not already; handle missing keys
+    const rawScore = (typeof sentiment.sentiment_score === 'number') ? sentiment.sentiment_score : 0;
+    const sentimentScorePercent = rawScore > 1 ? rawScore.toFixed(1) : (rawScore * 100).toFixed(1);
+    const rawConf = (typeof sentiment.average_confidence === 'number') ? sentiment.average_confidence : 0;
+    const confPercent = rawConf > 1 ? rawConf.toFixed(1) : (rawConf * 100).toFixed(1);
+    const totalAnalyzed = sentiment.total_analyzed || (Array.isArray(sentiment.individual_results) ? sentiment.individual_results.length : 0);
     overallEl.innerHTML = `
-        <strong>${sentiment.overall_sentiment}</strong> 
+        <strong>${sentiment.overall_sentiment || 'neutral'}</strong> 
         (Score: ${sentimentScorePercent}%, 
-        Confidence: ${(sentiment.average_confidence * 100).toFixed(1)}%)
+        Confidence: ${confPercent}%)
         <br>
-        <small>Analyzed ${sentiment.total_analyzed} comments using advanced sentiment analysis</small>
+        <small>Analyzed ${totalAnalyzed} comments using advanced sentiment analysis</small>
     `;
     
     // AI Summary with Enhanced Details
