@@ -104,11 +104,11 @@ def run_fast_sentiment_analysis(video_id: str, max_comments: int, analysis_id: s
         asyncio.set_event_loop(loop)
         
         try:
-        # Use enhanced service for maximum comment retrieval
-        from app.services.enhanced_youtube_service import fetch_maximum_comments_async
-        data = loop.run_until_complete(
-            fetch_maximum_comments_async(video_id, max_comments)
-        )
+            # Use enhanced service for maximum comment retrieval
+            from app.services.enhanced_youtube_service import fetch_maximum_comments_async
+            data = loop.run_until_complete(
+                fetch_maximum_comments_async(video_id, max_comments)
+            )
         finally:
             loop.close()
         
