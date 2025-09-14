@@ -15,11 +15,11 @@ print("=" * 60)
 print("\nAdd these in Railway Dashboard → Variables tab:")
 print("(https://railway.app/project/[your-project-id]/service/[service-id]/settings)\n")
 
-# Critical Modal ML Service vars
-print("🔴 CRITICAL - Modal ML Service Integration:")
+# Critical Sentiment API Service
+print("🔴 CRITICAL - Sentiment Analysis Service:")
 print("─" * 40)
-print("MODAL_ML_BASE_URL=https://theresaanna--sentiment-ml-service-fastapi-app.modal.run")
-print("  ↳ This is your Modal service endpoint\n")
+print("SENTIMENT_API_URL=https://theresaanna--sentiment-ml-service-fastapi-app.modal.run")
+print("  ↳ External sentiment analysis service endpoint\n")
 
 # Important API Keys
 print("🟡 IMPORTANT - External Services:")
@@ -30,13 +30,12 @@ print("  ↳ Required for YouTube data fetching\n")
 print(f"SECRET_KEY=generate-a-secure-random-key-for-production")
 print("  ↳ Flask secret key (DO NOT use the dev one!)\n")
 
-# Optional but recommended
-print("🟢 RECOMMENDED - Performance Settings:")
+# Optional performance settings
+print("🟢 OPTIONAL - Performance Settings:")
 print("─" * 40)
-print("PRECOMPUTE_ANALYSIS_ON_PRELOAD=true")
-print("PRELOAD_ANALYSIS_LIMIT=500")
-print("PRELOAD_ANALYSIS_METHOD=auto")
-print("  ↳ These optimize Modal service usage\n")
+print("API_TIMEOUT=30")
+print("MAX_WORKERS=4")
+print("  ↳ These control API performance\n")
 
 # Payment/Auth services (if using)
 print("🔵 OPTIONAL - Additional Services:")

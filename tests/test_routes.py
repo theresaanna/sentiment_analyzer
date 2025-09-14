@@ -44,8 +44,8 @@ class TestAnalyzeRoutes:
         assert b'Analyze' in response.data or b'Sentiment' in response.data
     
     @patch('app.main.routes.YouTubeService')
-    @patch('app.services.ml_service_client.MLServiceClient')
-    def test_analyze_video(self, mock_ml_client, mock_youtube, authenticated_client):
+    @patch('app.services.sentiment_api.SentimentAPIClient')
+    def test_analyze_video(self, mock_api_client, mock_youtube, authenticated_client):
         """Test analyzing a video."""
         # Mock YouTube service
         mock_yt_instance = MagicMock()
@@ -55,18 +55,15 @@ class TestAnalyzeRoutes:
         ]
         mock_youtube.return_value = mock_yt_instance
         
-        # Mock ML service client
+        # Mock sentiment API client
         mock_client_instance = MagicMock()
         mock_client_instance.analyze_batch.return_value = {
-            'statistics': {
-                'sentiment_distribution': {'positive': 2, 'neutral': 0, 'negative': 0},
-                'average_confidence': 0.85,
-                'total_analyzed': 2
-            },
+            'sentiment_distribution': {'positive': 2, 'neutral': 0, 'negative': 0},
             'results': [],
-            'total_analyzed': 2
+            'total_analyzed': 2,
+            'success': True
         }
-        mock_ml_client.return_value = mock_client_instance
+        mock_api_client.return_value = mock_client_instance
         
         response = authenticated_client.post('/analyze', data={
             'video_url': 'https://youtube.com/watch?v=test123'
@@ -105,8 +102,8 @@ class TestBatchRoutes:
         # May redirect or show page based on implementation
         assert response.status_code in [200, 302]
     
-    @patch('app.services.ml_service_client.MLServiceClient')
-    def test_batch_process(self, mock_ml_client, authenticated_client, subscribed_user):
+    @patch('app.services.sentiment_api.SentimentAPIClient')
+    def test_batch_process(self, mock_api_client, authenticated_client, subscribed_user):
         """Test batch processing."""
         with authenticated_client.session_transaction() as sess:
             sess['_user_id'] = str(subscribed_user.id)
@@ -117,7 +114,7 @@ class TestBatchRoutes:
             'statistics': {},
             'results': []
         }
-        mock_ml_client.return_value = mock_instance
+        mock_api_client.return_value = mock_instance
         
         response = authenticated_client.post('/batch/process', 
             data=json.dumps({'texts': ['text1', 'text2']}),
@@ -131,16 +128,16 @@ class TestBatchRoutes:
 class TestUnifiedRoutes:
     """Test unified sentiment analysis routes."""
     
-    @patch('app.services.ml_service_client.MLServiceClient')
-    def test_unified_analyze(self, mock_ml_client, authenticated_client):
+    @patch('app.services.sentiment_api.SentimentAPIClient')
+    def test_unified_analyze(self, mock_api_client, authenticated_client):
         """Test unified sentiment analysis."""
         mock_instance = MagicMock()
         mock_instance.analyze_text.return_value = {
-            'predicted_sentiment': 'positive',
+            'sentiment': 'positive',
             'confidence': 0.9,
-            'models_used': ['distilbert']
+            'success': True
         }
-        mock_ml_client.return_value = mock_instance
+        mock_api_client.return_value = mock_instance
         
         response = authenticated_client.post('/api/unified/analyze',
             data=json.dumps({'text': 'This is great!'}),
@@ -151,8 +148,8 @@ class TestUnifiedRoutes:
         data = json.loads(response.data)
         assert data['sentiment'] == 'positive'
     
-    @patch('app.services.ml_service_client.MLServiceClient')
-    def test_unified_batch(self, mock_ml_client, authenticated_client):
+    @patch('app.services.sentiment_api.SentimentAPIClient')
+    def test_unified_batch(self, mock_api_client, authenticated_client):
         """Test unified batch analysis."""
         mock_instance = MagicMock()
         mock_instance.analyze_batch.return_value = {
@@ -164,7 +161,7 @@ class TestUnifiedRoutes:
             ],
             'statistics': {}
         }
-        mock_ml_client.return_value = mock_instance
+        mock_api_client.return_value = mock_instance
         
         response = authenticated_client.post('/api/unified/batch',
             data=json.dumps({'texts': ['text1', 'text2', 'text3']}),
@@ -201,15 +198,16 @@ class TestAPIEndpoints:
             )
             assert response.status_code in [401, 403, 302]
     
-    @patch('app.services.ml_service_client.MLServiceClient')
-    def test_api_analyze_endpoint(self, mock_ml_client, authenticated_client):
+    @patch('app.services.sentiment_api.SentimentAPIClient')
+    def test_api_analyze_endpoint(self, mock_api_client, authenticated_client):
         """Test API analyze endpoint."""
         mock_instance = MagicMock()
         mock_instance.analyze_text.return_value = {
-            'predicted_sentiment': 'positive',
-            'confidence': 0.85
+            'sentiment': 'positive',
+            'confidence': 0.85,
+            'success': True
         }
-        mock_ml_client.return_value = mock_instance
+        mock_api_client.return_value = mock_instance
         
         response = authenticated_client.post('/api/analyze',
             data=json.dumps({'text': 'Test text'}),
@@ -305,10 +303,10 @@ class TestErrorHandling:
         response = client.get('/nonexistent_page')
         assert response.status_code == 404
     
-    @patch('app.services.ml_service_client.MLServiceClient')
-    def test_500_error_handling(self, mock_ml_client, authenticated_client):
+    @patch('app.services.sentiment_api.SentimentAPIClient')
+    def test_500_error_handling(self, mock_api_client, authenticated_client):
         """Test 500 error handling."""
-        mock_ml_client.side_effect = Exception('Internal error')
+        mock_api_client.side_effect = Exception('Internal error')
         
         response = authenticated_client.post('/analyze',
             data={'video_url': 'https://youtube.com/watch?v=test'},

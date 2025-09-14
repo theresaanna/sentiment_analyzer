@@ -14,12 +14,8 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY')
     
-    # External ML service (Modal)
-    MODAL_ML_BASE_URL = os.environ.get('MODAL_ML_BASE_URL')  # e.g., https://sentiment-ml-service--<handle>.modal.run
-    MODAL_ML_API_KEY = os.environ.get('MODAL_ML_API_KEY')
-    PRECOMPUTE_ANALYSIS_ON_PRELOAD = os.environ.get('PRECOMPUTE_ANALYSIS_ON_PRELOAD', 'False').lower() == 'true'
-    PRELOAD_ANALYSIS_LIMIT = int(os.environ.get('PRELOAD_ANALYSIS_LIMIT', 500))
-    PRELOAD_ANALYSIS_METHOD = os.environ.get('PRELOAD_ANALYSIS_METHOD', 'auto')
+    # External sentiment analysis API
+    SENTIMENT_API_URL = os.environ.get('SENTIMENT_API_URL')  # URL of external sentiment service
     
     # Flask settings
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
@@ -79,26 +75,9 @@ class Config:
     MAX_COMMENTS_PER_VIDEO = int(os.environ.get('MAX_COMMENTS_PER_VIDEO', 10000))  # Increased for better analysis
     CACHE_TIMEOUT = int(os.environ.get('CACHE_TIMEOUT', 300))  # 5 minutes
     
-    # Batch Processing Configuration
-    BATCH_PROCESSING_ENABLED = os.environ.get('BATCH_PROCESSING_ENABLED', 'True').lower() == 'true'
-    DEFAULT_BATCH_SIZE = int(os.environ.get('DEFAULT_BATCH_SIZE', 32))
-    MAX_BATCH_SIZE = int(os.environ.get('MAX_BATCH_SIZE', 128))
-    MIN_BATCH_SIZE = int(os.environ.get('MIN_BATCH_SIZE', 8))
-    DYNAMIC_BATCHING_ENABLED = os.environ.get('DYNAMIC_BATCHING_ENABLED', 'True').lower() == 'true'
-    
-    # GPU Optimization
-    ENABLE_GPU_OPTIMIZATION = os.environ.get('ENABLE_GPU_OPTIMIZATION', 'True').lower() == 'true'
-    ENABLE_MIXED_PRECISION = os.environ.get('ENABLE_MIXED_PRECISION', 'True').lower() == 'true'
-    
-    # Memory Management
-    MEMORY_THRESHOLD = float(os.environ.get('MEMORY_THRESHOLD', 0.8))  # Use max 80% of available memory
-    ENABLE_MEMORY_MONITORING = os.environ.get('ENABLE_MEMORY_MONITORING', 'True').lower() == 'true'
-    
-    # Performance
-    MAX_WORKERS = int(os.environ.get('MAX_WORKERS', 4))
-    PREFETCH_SIZE = int(os.environ.get('PREFETCH_SIZE', 2))
-    BUFFER_SIZE = int(os.environ.get('BUFFER_SIZE', 100))
-    FLUSH_INTERVAL = float(os.environ.get('FLUSH_INTERVAL', 1.0))  # seconds
+    # API Performance settings
+    API_TIMEOUT = int(os.environ.get('API_TIMEOUT', 30))  # Timeout for external API calls
+    MAX_WORKERS = int(os.environ.get('MAX_WORKERS', 4))  # For async operations
 
     # Payments (Stripe only)
     STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
