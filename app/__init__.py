@@ -4,6 +4,7 @@ Modified to preload ML models at startup for better performance on Railway
 """
 import os
 import logging
+import threading
 from datetime import datetime
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -31,7 +32,7 @@ def preload_models():
         model_manager = get_model_manager()
 
         # Check if we should skip model preloading (for migrations, etc.)
-        if os.environ.get('SKIP_MODEL_PRELOAD'):
+        if os.environ.get('SKIP_MODEL_PRELOAD') and os.environ.get('RAILWAY_ENABLE_PRELOAD', 'false').lower() != 'true':
             logger.info("Skipping model preloading (SKIP_MODEL_PRELOAD is set)")
             return
 
@@ -106,11 +107,41 @@ def create_app(config_class=Config):
         except Exception as e:
             logger.warning(f"Could not initialize database: {e}")
 
-    # Preload ML models after app context is established
+    # Preload ML models after app context is established (controlled by toggle)
     # This runs once at startup, not per request
     with app.app_context():
-        if not os.environ.get('RAILWAY_ENVIRONMENT'):
+        if (os.environ.get('RAILWAY_ENABLE_PRELOAD', 'false').lower() == 'true') or (not os.environ.get('RAILWAY_ENVIRONMENT')):
             preload_models()
+
+    # Background warmup (non-blocking)
+    def _warmup_worker(app):
+        with app.app_context():
+            try:
+                # Optionally preload all models if enabled
+                if os.environ.get('RAILWAY_ENABLE_PRELOAD', 'false').lower() == 'true':
+                    from app.utils.model_manager import get_model_manager
+                    get_model_manager().preload_all_models()
+                # Minimal warmup for fast pipeline
+                try:
+                    from app.science.fast_sentiment_analyzer import get_fast_analyzer
+                    analyzer = get_fast_analyzer()
+                    analyzer.analyze_batch_fast(["warmup"])  # small inference
+                except Exception as e:
+                    logger.info(f"Fast analyzer warmup skipped: {e}")
+            except Exception as e:
+                logger.info(f"Background warmup error: {e}")
+
+    def _start_background_warmup(app):
+        if os.environ.get('RAILWAY_BACKGROUND_WARMUP', 'false').lower() == 'true' or \
+           os.environ.get('RAILWAY_ENABLE_PRELOAD', 'false').lower() == 'true':
+            try:
+                threading.Thread(target=_warmup_worker, args=(app,), daemon=True).start()
+                logger.info("Background warmup thread started")
+            except Exception as e:
+                logger.info(f"Could not start background warmup: {e}")
+
+    # Start background warmup before returning the app
+    _start_background_warmup(app)
 
     # Add health check endpoint for Railway
     @app.route('/health')
