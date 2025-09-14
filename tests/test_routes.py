@@ -43,7 +43,7 @@ class TestAnalyzeRoutes:
         assert response.status_code == 200
         assert b'Analyze' in response.data or b'Sentiment' in response.data
     
-    @patch('app.main.routes.YouTubeService')
+    @patch('app.services.youtube_service.YouTubeService')
     @patch('app.services.sentiment_api.SentimentAPIClient')
     def test_analyze_video(self, mock_api_client, mock_youtube, authenticated_client):
         """Test analyzing a video."""
@@ -279,7 +279,7 @@ class TestVideoRoutes:
         response = authenticated_client.get('/api/videos')
         assert response.status_code == 200
     
-    @patch('app.main.routes.YouTubeService')
+    @patch('app.services.youtube_service.YouTubeService')
     def test_video_comments(self, mock_youtube, authenticated_client):
         """Test fetching video comments."""
         mock_yt = MagicMock()

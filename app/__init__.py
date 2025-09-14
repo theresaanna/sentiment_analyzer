@@ -24,38 +24,9 @@ logger = logging.getLogger(__name__)
 
 
 def preload_models():
-    """Preload ML models at application startup."""
-    try:
-        # Import model manager
-        from app.utils.model_manager import get_model_manager
-
-        model_manager = get_model_manager()
-
-        # Check if we should skip model preloading (for migrations, etc.)
-        if os.environ.get('SKIP_MODEL_PRELOAD') and os.environ.get('RAILWAY_ENABLE_PRELOAD', 'false').lower() != 'true':
-            logger.info("Skipping model preloading (SKIP_MODEL_PRELOAD is set)")
-            return
-
-        # For Railway deployment, check available memory
-        if os.environ.get('RAILWAY_ENVIRONMENT'):
-            # Use minimal models on Railway if specified
-            if os.environ.get('RAILWAY_MINIMAL_MODELS'):
-                logger.info("Loading minimal model set for Railway deployment")
-                os.environ['MINIMAL_MODELS'] = '1'
-
-        # Preload all models
-        logger.info("Starting model preloading...")
-        model_manager.preload_all_models()
-
-        # Log statistics
-        stats = model_manager.get_model_stats()
-        logger.info(f"Models loaded: {stats.get('loaded_models', [])}")
-        logger.info(f"Total load time: {sum(stats.get('load_times', {}).values()):.2f}s")
-
-    except Exception as e:
-        logger.error(f"Failed to preload models: {e}")
-        # Don't crash the app if model preloading fails
-        # Models will be loaded on-demand instead
+    """Deprecated - ML models now handled by external service."""
+    logger.info("Model preloading skipped - using external sentiment API")
+    return
 
 
 def create_app(config_class=Config):
@@ -112,41 +83,9 @@ def create_app(config_class=Config):
         except Exception as e:
             logger.warning(f"Could not initialize database: {e}")
 
-    # Preload ML models after app context is established (controlled by toggle)
-    # This runs once at startup, not per request
-    with app.app_context():
-        if (os.environ.get('RAILWAY_ENABLE_PRELOAD', 'false').lower() == 'true') or (not os.environ.get('RAILWAY_ENVIRONMENT')):
-            preload_models()
+    # Model preloading is deprecated - using external sentiment API
 
-    # Background warmup (non-blocking)
-    def _warmup_worker(app):
-        with app.app_context():
-            try:
-                # Optionally preload all models if enabled
-                if os.environ.get('RAILWAY_ENABLE_PRELOAD', 'false').lower() == 'true':
-                    from app.utils.model_manager import get_model_manager
-                    get_model_manager().preload_all_models()
-                # Minimal warmup for fast pipeline
-                try:
-                    from app.science.fast_sentiment_analyzer import get_fast_analyzer
-                    analyzer = get_fast_analyzer()
-                    analyzer.analyze_batch_fast(["warmup"])  # small inference
-                except Exception as e:
-                    logger.info(f"Fast analyzer warmup skipped: {e}")
-            except Exception as e:
-                logger.info(f"Background warmup error: {e}")
-
-    def _start_background_warmup(app):
-        if os.environ.get('RAILWAY_BACKGROUND_WARMUP', 'false').lower() == 'true' or \
-           os.environ.get('RAILWAY_ENABLE_PRELOAD', 'false').lower() == 'true':
-            try:
-                threading.Thread(target=_warmup_worker, args=(app,), daemon=True).start()
-                logger.info("Background warmup thread started")
-            except Exception as e:
-                logger.info(f"Could not start background warmup: {e}")
-
-    # Start background warmup before returning the app
-    _start_background_warmup(app)
+    # Background warmup is deprecated - using external sentiment API
 
     # Add health check endpoint for Railway
     @app.route('/health')
@@ -168,16 +107,9 @@ def create_app(config_class=Config):
             health_status['database'] = f'initializing'
             logger.info(f"Database not ready yet: {e}")
         
-        # Try to check model status (but don't fail if models aren't loaded)
-        try:
-            from app.utils.model_manager import get_model_manager
-            model_manager = get_model_manager()
-            stats = model_manager.get_model_stats()
-            health_status['models_loaded'] = len(stats.get('loaded_models', []))
-        except Exception as e:
-            health_status['models_loaded'] = 0
-            health_status['models_status'] = f'error: {str(e)}'
-            logger.warning(f"Model health check failed: {e}")
+        # Check sentiment API status
+        health_status['sentiment_api'] = 'external'
+        health_status['sentiment_api_url'] = os.environ.get('SENTIMENT_API_URL', 'not configured')
         
         # Always return 200 OK for basic health
         return jsonify(health_status), 200
@@ -187,15 +119,13 @@ def create_app(config_class=Config):
     def healthz():
         return jsonify({'ok': True}), 200
 
-    # Add model stats endpoint (for debugging)
-    @app.route('/api/model-stats')
-    def model_stats():
-        """Get model loading statistics."""
-        try:
-            from app.utils.model_manager import get_model_manager
-            model_manager = get_model_manager()
-            return model_manager.get_model_stats(), 200
-        except Exception as e:
-            return {'error': str(e)}, 500
+    # Add API stats endpoint (for debugging)
+    @app.route('/api/stats')
+    def api_stats():
+        """Get API statistics."""
+        return {
+            'sentiment_api': os.environ.get('SENTIMENT_API_URL', 'not configured'),
+            'api_timeout': app.config.get('API_TIMEOUT', 30)
+        }, 200
 
     return app
