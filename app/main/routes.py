@@ -684,23 +684,32 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         except Exception as e:
             print(f"Warning: Could not update status due to cache issue: {e}")
         
-        # Initialize analyzer
-        analyzer = SentimentAnalyzer()
-        
-        # Progress callback
-        def progress_callback(current, total):
-            progress = 30 + int((current / total) * 50)  # 30-80% for sentiment analysis
-            cache.set('analysis_status', analysis_id, 
-                     {'status': 'analyzing_sentiment', 'progress': progress, 
-                      'current': current, 'total': total}, ttl_hours=1)
-        
-        # Analyze sentiment
+        # Analyze sentiment via external ML service on Modal
         comment_texts = [c['text'] for c in comments]
-        print(f"Analyzing sentiment for {len(comment_texts)} comments...")
-        sentiment_results = analyzer.analyze_batch(
-            comment_texts,
-            progress_callback=progress_callback
-        )
+        print(f"Analyzing sentiment for {len(comment_texts)} comments via Modal ML service...")
+        from app.services.ml_service_client import MLServiceClient
+        client = MLServiceClient()
+        ml_batch = client.analyze_batch(comment_texts, method='auto')
+        
+        # Normalize to legacy structure expected downstream
+        total = ml_batch.get('total_analyzed', len(comment_texts))
+        dist = ml_batch.get('statistics', {}).get('sentiment_distribution', {"positive": 0, "neutral": 0, "negative": 0})
+        pct = ml_batch.get('statistics', {}).get('sentiment_percentages', {}) or {
+            k: (v / total * 100 if total else 0.0) for k, v in dist.items()
+        }
+        individual_results = ml_batch.get('results', [])
+        sentiment_results = {
+            'overall_sentiment': ('positive' if dist.get('positive', 0) >= total * 0.5 else
+                                  'negative' if dist.get('negative', 0) >= total * 0.4 else 'neutral'),
+            'distribution': dist,
+            'distribution_percentage': pct,
+            'sentiment_counts': dist,
+            'sentiment_percentages': pct,
+            'average_confidence': sum(x.get('confidence', 0.0) for x in individual_results) / total if total else 0.0,
+            'total_analyzed': total,
+            'individual_results': individual_results,
+            'model': 'remote-modal'
+        }
         
         # Add comment IDs to individual results for YouTube linking
         if 'individual_results' in sentiment_results:

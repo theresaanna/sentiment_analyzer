@@ -168,6 +168,32 @@ def process_job(job: dict):
                 alias_key = f"{video_id}:max:{t}:True:relevance"
                 cache.set('enhanced_comments', alias_key, result, ttl_hours=12)
 
+            # Optionally precompute sentiment analysis via Modal ML service
+            try:
+                import os as _os
+                if _os.getenv('PRECOMPUTE_ANALYSIS_ON_PRELOAD', 'false').lower() in ('1', 'true', 'yes'):
+                    set_status(job_id, 'precomputing', 95, video_id, {'job_type': 'preload'})
+                    limit = int(_os.getenv('PRELOAD_ANALYSIS_LIMIT', '500'))
+                    method = _os.getenv('PRELOAD_ANALYSIS_METHOD', 'auto')
+                    texts = [c.get('text', '') for c in comments[:limit]]
+                    if texts:
+                        try:
+                            from app.services.ml_service_client import MLServiceClient
+                            client = MLServiceClient()
+                            ml_batch = client.analyze_batch(texts, method=method)
+                            pre_key = f"{video_id}:{limit}:{method}"
+                            cache.set('precomputed_sentiment', pre_key, ml_batch, ttl_hours=6)
+                            # Attach a hint on preload status for UI
+                            set_status(job_id, 'precomputed', 98, video_id, {
+                                'job_type': 'preload',
+                                'analysis_precomputed': True,
+                                'precompute_count': len(texts)
+                            })
+                        except Exception as _e:
+                            print(f"Precompute via Modal ML failed: {_e}")
+            except Exception as _env_e:
+                print(f"Precompute check failed: {_env_e}")
+
             set_status(job_id, 'completed', 100, video_id, {
                 'fetched': len(comments),
                 'percentage': stats.get('fetch_percentage', 0),

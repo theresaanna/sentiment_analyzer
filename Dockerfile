@@ -41,4 +41,4 @@ EXPOSE 8000
 # Set SKIP_MODEL_PRELOAD to avoid memory issues during startup
 ENV SKIP_MODEL_PRELOAD=true
 ENV RAILWAY_MINIMAL_MODELS=true
-CMD gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 1 --worker-class sync --preload --log-level info --access-logfile - run:app
+CMD gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 1 --worker-class sync --log-level info --access-logfile - run:app

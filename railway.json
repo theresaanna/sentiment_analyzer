@@ -12,9 +12,7 @@
           "cmds": [
             "pip install --upgrade pip",
             "pip install -r requirements.txt",
-            "echo 'Downloading ML models during build...'",
-            "python -c 'from transformers import AutoTokenizer, AutoModelForSequenceClassification; AutoTokenizer.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\"); AutoModelForSequenceClassification.from_pretrained(\"cardiffnlp/twitter-roberta-base-sentiment-latest\")'",
-            "python -c 'from transformers import pipeline; pipeline(\"sentiment-analysis\", model=\"distilbert-base-uncased-finetuned-sst-2-english\")'"
+            "echo 'Dependencies installed. Using Modal ML service for sentiment analysis.'"
           ]
         }
       }
@@ -31,21 +29,21 @@
   },
   "variables": {
     "$schema": "https://railway.app/variables.schema.json",
-    "SKIP_MODEL_PRELOAD": {
-      "description": "Skip model preloading during migrations",
+    "MODAL_ML_BASE_URL": {
+      "description": "Modal ML service endpoint URL",
+      "default": "https://theresaanna--sentiment-ml-service-fastapi-app.modal.run"
+    },
+    "PRECOMPUTE_ANALYSIS_ON_PRELOAD": {
+      "description": "Precompute analysis for faster results",
       "default": "true"
     },
-    "RAILWAY_MINIMAL_MODELS": {
-      "description": "Load only essential models to save memory",
-      "default": "false"
+    "PRELOAD_ANALYSIS_LIMIT": {
+      "description": "Number of items to preload",
+      "default": "500"
     },
-    "MODEL_CACHE_DIR": {
-      "description": "Directory for model cache",
-      "default": "/app/model_cache"
-    },
-    "TRANSFORMERS_CACHE": {
-      "description": "Transformers library cache directory",
-      "default": "/app/.cache/huggingface"
+    "PRELOAD_ANALYSIS_METHOD": {
+      "description": "Method to use for preloading",
+      "default": "auto"
     }
   }
 }

@@ -14,6 +14,13 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     YOUTUBE_API_KEY = os.environ.get('YOUTUBE_API_KEY')
     
+    # External ML service (Modal)
+    MODAL_ML_BASE_URL = os.environ.get('MODAL_ML_BASE_URL')  # e.g., https://sentiment-ml-service--<handle>.modal.run
+    MODAL_ML_API_KEY = os.environ.get('MODAL_ML_API_KEY')
+    PRECOMPUTE_ANALYSIS_ON_PRELOAD = os.environ.get('PRECOMPUTE_ANALYSIS_ON_PRELOAD', 'False').lower() == 'true'
+    PRELOAD_ANALYSIS_LIMIT = int(os.environ.get('PRELOAD_ANALYSIS_LIMIT', 500))
+    PRELOAD_ANALYSIS_METHOD = os.environ.get('PRELOAD_ANALYSIS_METHOD', 'auto')
+    
     # Flask settings
     DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     TESTING = False

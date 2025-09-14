@@ -89,28 +89,16 @@ def api_unified_analyze():
         if not text:
             return jsonify({'success': False, 'error': 'Text required'}), 400
         
-        from app.ml.unified_sentiment_analyzer import get_unified_analyzer
-        analyzer = get_unified_analyzer()
-        # Try different method names based on what's available
-        if hasattr(analyzer, 'analyze_text'):
-            result = analyzer.analyze_text(text)
-        elif hasattr(analyzer, 'analyze'):
-            result = analyzer.analyze(text)
-        elif hasattr(analyzer, 'analyze_sentiment'):
-            result = analyzer.analyze_sentiment(text)
-        else:
-            # Fallback to basic analysis
-            result = {'sentiment': 'neutral', 'confidence': 0.5, 'models_used': ['default']}
-        
-        # Ensure result is a dictionary
-        if not isinstance(result, dict):
-            result = {'sentiment': 'neutral', 'confidence': 0.5, 'models_used': ['default']}
+        # Call external ML service on Modal
+        from app.services.ml_service_client import MLServiceClient
+        client = MLServiceClient()
+        result = client.analyze_text(text)
         
         return jsonify({
             'success': True,
-            'sentiment': result.get('sentiment', result.get('label', 'neutral')),
+            'sentiment': result.get('predicted_sentiment', 'neutral'),
             'confidence': result.get('confidence', 0.5),
-            'models_used': result.get('models_used', ['roberta', 'bert'])
+            'models_used': result.get('models_used', ['distilbert'])
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -125,23 +113,16 @@ def api_unified_batch():
         if not texts:
             return jsonify({'success': False, 'error': 'Texts required'}), 400
         
-        from app.ml.unified_sentiment_analyzer import get_unified_analyzer
-        analyzer = get_unified_analyzer()
-        results = analyzer.analyze_batch(texts) if hasattr(analyzer, 'analyze_batch') else []
+        # Call external ML service on Modal for batch analysis
+        from app.services.ml_service_client import MLServiceClient
+        client = MLServiceClient()
+        results = client.analyze_batch(texts)
         
-        # Format results
-        if isinstance(results, dict):
-            formatted_results = results
-        else:
-            formatted_results = {
-                'total': len(texts),
-                'results': [{'sentiment': r.get('sentiment', r.get('label'))} for r in results]
-            }
-        
+        # Normalize response for client
         return jsonify({
             'success': True,
-            'total': formatted_results.get('total', len(texts)),
-            'results': formatted_results.get('results', [])
+            'total': results.get('total_analyzed', len(texts)),
+            'results': results.get('results', [])
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -172,8 +153,6 @@ def run_unified_analysis(video_id: str, max_comments: int, method: str,
         # Initialize services
         from app.services.enhanced_youtube_service import EnhancedYouTubeService
         youtube_service = EnhancedYouTubeService()
-        from app.ml.unified_sentiment_analyzer import get_unified_analyzer
-        analyzer = get_unified_analyzer()
         
         # Fetch comments using enhanced service
         result = youtube_service.get_all_available_comments(
@@ -195,17 +174,6 @@ def run_unified_analysis(video_id: str, max_comments: int, method: str,
             'comments_fetched': len(comments)
         }, ttl_hours=1)
         
-        # Progress callback for batch analysis
-        def progress_callback(current, total):
-            progress = 40 + int((current / total) * 40)  # 40-80% for analysis
-            cache.set('unified_analysis_status', analysis_id, {
-                'status': 'analyzing_sentiment',
-                'progress': progress,
-                'message': f'Analyzing comment {current}/{total}...',
-                'current': current,
-                'total': total
-            }, ttl_hours=1)
-        
         # Extract comment texts and prepare context
         comment_data = []
         for comment in comments:
@@ -220,19 +188,17 @@ def run_unified_analysis(video_id: str, max_comments: int, method: str,
                 }
             })
         
-        # Perform batch analysis
+        # Perform batch analysis via external ML service on Modal
         texts = [c['text'] for c in comment_data]
-        batch_results = analyzer.analyze_batch(
-            texts=texts,
-            method=method,
-            progress_callback=progress_callback
-        )
+        from app.services.ml_service_client import MLServiceClient
+        client = MLServiceClient()
+        batch_results = client.analyze_batch(texts, method=method)
         
         # Add context to results
-        for i, result in enumerate(batch_results['results']):
+        for i, result in enumerate(batch_results.get('results', [])):
             if i < len(comment_data):
                 result['context'] = comment_data[i]['context']
-                # Enable feedback for each result
+                # Enable feedback for each result (flag only)
                 if enable_feedback:
                     result['feedback_enabled'] = True
         
