@@ -5,8 +5,7 @@ from flask import render_template, request, jsonify, abort
 from flask_login import login_required, current_user
 
 from app.main import bp
-from app.services.channel_service import ChannelService
-from app.services.enhanced_youtube_service import EnhancedYouTubeService
+# Lazy import heavy services within endpoints to speed startup
 from app.cache import cache
 from app.models import db, UserChannel, Channel, Video
 
@@ -41,6 +40,7 @@ def api_channel_videos():
     max_results = request.args.get('max', type=int, default=100)
     force_refresh = request.args.get('refresh', 'false').lower() in ('1', 'true', 'yes')
     try:
+        from app.services.channel_service import ChannelService
         service = ChannelService()
         # Persist channel/videos and serve DB snapshot; associate channel with user
         data = service.get_channel_videos(channel_input, max_results=max_results, user_id=current_user.id)

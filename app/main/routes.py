@@ -9,11 +9,8 @@ from flask import render_template, flash, redirect, url_for, session, jsonify, r
 from app.main import bp
 from app.main.forms import YouTubeURLForm
 from app.utils.youtube import extract_video_id, build_youtube_url
-from app.services import YouTubeService
-from app.services.enhanced_youtube_service import EnhancedYouTubeService, analyze_comment_coverage
+# Lazy imports inside view functions to speed up startup on Railway
 from app.cache import cache
-from app.science import SentimentAnalyzer
-from app.science.comment_summarizer import EnhancedCommentSummarizer
 from app.models import db, SentimentFeedback, Channel, Video
 from flask_login import current_user, login_required
 import hashlib
@@ -94,6 +91,7 @@ def analyze_video(video_id):
     
     try:
         # Initialize Enhanced YouTube service for maximum comment retrieval
+        from app.services.enhanced_youtube_service import EnhancedYouTubeService
         youtube_service = EnhancedYouTubeService()
         
         # Get more comments for better analysis (configurable)
@@ -236,6 +234,7 @@ def api_analyze():
         if not text:
             return jsonify({'success': False, 'error': 'Text required'}), 400
         
+        from app.science.sentiment_analyzer import SentimentAnalyzer
         analyzer = SentimentAnalyzer()
         result = analyzer.analyze_sentiment(text)
         
@@ -259,6 +258,7 @@ def api_batch():
         if not texts:
             return jsonify({'success': False, 'error': 'Texts required'}), 400
         
+        from app.science.sentiment_analyzer import SentimentAnalyzer
         analyzer = SentimentAnalyzer()
         results = analyzer.analyze_batch(texts)
         
@@ -508,6 +508,7 @@ def api_get_video_info(video_id):
     API endpoint to fetch video information only.
     """
     try:
+        from app.services import YouTubeService
         youtube_service = YouTubeService()
         video_info = youtube_service.get_video_info(video_id)
         
@@ -669,6 +670,7 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         cache.set('analysis_status', analysis_id, {'status': 'fetching_comments', 'progress': 10}, ttl_hours=1)
         
         # Fetch video info for context
+        from app.services import YouTubeService
         youtube_service = YouTubeService()
         video_info = youtube_service.get_video_info(video_id)
         
@@ -713,6 +715,7 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         
         # Generate enhanced summary with video context
         print("Generating enhanced summary with intelligent filtering...")
+        from app.science.comment_summarizer import EnhancedCommentSummarizer
         summarizer = EnhancedCommentSummarizer(use_openai=os.getenv('OPENAI_API_KEY') is not None)
         summary_results = summarizer.generate_enhanced_summary(comments, sentiment_results, video_info)
         

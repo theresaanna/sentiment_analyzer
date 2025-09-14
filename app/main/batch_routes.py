@@ -3,8 +3,9 @@ Batch processing routes for handling multiple videos or large datasets.
 """
 from flask import jsonify, request
 from app.main import bp
-from app.ml.batch_processor import BatchInferenceOptimizer, BatchConfig
-from app.services.enhanced_youtube_service import EnhancedYouTubeService
+# Lazy import heavy modules in functions to speed startup
+# from app.ml.batch_processor import BatchInferenceOptimizer, BatchConfig
+# from app.services.enhanced_youtube_service import EnhancedYouTubeService
 import logging
 import threading
 import time
@@ -67,10 +68,13 @@ def process_video_batch(video_ids, max_comments, batch_size, use_dynamic, batch_
     
     try:
         # Initialize services
+        from app.services.enhanced_youtube_service import EnhancedYouTubeService
         youtube_service = EnhancedYouTubeService()
+        from app.ml.unified_sentiment_analyzer import get_unified_analyzer
         analyzer = get_unified_analyzer()
         
         # Configure batch processing
+        from app.ml.batch_processor import BatchInferenceOptimizer, BatchConfig
         config = BatchConfig(
             optimal_batch_size=batch_size,
             enable_dynamic_batching=use_dynamic,
@@ -301,7 +305,9 @@ def process_streaming_comments(video_id, buffer_size, flush_interval, session_id
     from app.services.enhanced_youtube_service import EnhancedYouTubeService
     
     try:
+        from app.services.enhanced_youtube_service import EnhancedYouTubeService
         youtube_service = EnhancedYouTubeService()
+        from app.ml.ml_sentiment_analyzer import get_ml_analyzer
         analyzer = get_ml_analyzer()
         
         # Create comment generator

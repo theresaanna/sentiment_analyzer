@@ -9,8 +9,9 @@ import logging
 import threading
 from flask import jsonify, request
 from app.main import bp
-from app.ml.unified_sentiment_analyzer import get_unified_analyzer
-from app.services.enhanced_youtube_service import EnhancedYouTubeService
+# Lazy import heavy analyzers/services inside endpoints to speed startup
+# from app.ml.unified_sentiment_analyzer import get_unified_analyzer
+# from app.services.enhanced_youtube_service import EnhancedYouTubeService
 from app.cache import cache
 import time
 
@@ -88,6 +89,7 @@ def api_unified_analyze():
         if not text:
             return jsonify({'success': False, 'error': 'Text required'}), 400
         
+        from app.ml.unified_sentiment_analyzer import get_unified_analyzer
         analyzer = get_unified_analyzer()
         # Try different method names based on what's available
         if hasattr(analyzer, 'analyze_text'):
@@ -123,6 +125,7 @@ def api_unified_batch():
         if not texts:
             return jsonify({'success': False, 'error': 'Texts required'}), 400
         
+        from app.ml.unified_sentiment_analyzer import get_unified_analyzer
         analyzer = get_unified_analyzer()
         results = analyzer.analyze_batch(texts) if hasattr(analyzer, 'analyze_batch') else []
         
@@ -167,7 +170,9 @@ def run_unified_analysis(video_id: str, max_comments: int, method: str,
         }, ttl_hours=1)
         
         # Initialize services
+        from app.services.enhanced_youtube_service import EnhancedYouTubeService
         youtube_service = EnhancedYouTubeService()
+        from app.ml.unified_sentiment_analyzer import get_unified_analyzer
         analyzer = get_unified_analyzer()
         
         # Fetch comments using enhanced service

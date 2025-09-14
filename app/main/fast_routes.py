@@ -14,9 +14,10 @@ import time
 from flask import jsonify, request
 from app.main import bp
 from app.cache import cache
-from app.science.fast_sentiment_analyzer import get_fast_analyzer
-from app.services.async_youtube_service import get_video_and_comments_fast
-from app.services.enhanced_youtube_service import fetch_maximum_comments_async
+# Lazy import heavy analyzers/services inside endpoints to speed startup
+# from app.science.fast_sentiment_analyzer import get_fast_analyzer
+# from app.services.async_youtube_service import get_video_and_comments_fast
+# from app.services.enhanced_youtube_service import fetch_maximum_comments_async
 import logging
 
 logger = logging.getLogger(__name__)
@@ -103,10 +104,11 @@ def run_fast_sentiment_analysis(video_id: str, max_comments: int, analysis_id: s
         asyncio.set_event_loop(loop)
         
         try:
-            # Use enhanced service for maximum comment retrieval
-            data = loop.run_until_complete(
-                fetch_maximum_comments_async(video_id, max_comments)
-            )
+        # Use enhanced service for maximum comment retrieval
+        from app.services.enhanced_youtube_service import fetch_maximum_comments_async
+        data = loop.run_until_complete(
+            fetch_maximum_comments_async(video_id, max_comments)
+        )
         finally:
             loop.close()
         
@@ -122,6 +124,7 @@ def run_fast_sentiment_analysis(video_id: str, max_comments: int, analysis_id: s
         }, ttl_hours=1)
         
         # Initialize fast analyzer
+        from app.science.fast_sentiment_analyzer import get_fast_analyzer
         analyzer = get_fast_analyzer()
         
         # Progress callback for sentiment analysis
@@ -311,6 +314,7 @@ def api_fast_analysis_results(analysis_id):
 def api_test_fast_analyzer():
     """Test endpoint to verify fast analyzer is working."""
     try:
+        from app.science.fast_sentiment_analyzer import get_fast_analyzer
         analyzer = get_fast_analyzer()
         
         test_texts = [
@@ -374,6 +378,7 @@ def api_compare_analysis_speed(video_id):
             asyncio.set_event_loop(loop)
             
             try:
+                from app.services.async_youtube_service import get_video_and_comments_fast
                 data_result = loop.run_until_complete(
                     get_video_and_comments_fast(video_id, max_comments)
                 )
