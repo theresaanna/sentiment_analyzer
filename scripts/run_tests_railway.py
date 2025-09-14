@@ -16,7 +16,7 @@ def setup_test_environment():
         'SECRET_KEY': 'railway-test-secret-key',
         'DATABASE_URL': 'sqlite:///test.db',
         'REDIS_URL': 'redis://localhost:6379/0',
-        'MODAL_ML_BASE_URL': 'https://theresaanna--sentiment-ml-service-fastapi-app.modal.run',
+        'SENTIMENT_API_URL': 'https://theresaanna--sentiment-ml-service-fastapi-app.modal.run',
         'OAUTHLIB_INSECURE_TRANSPORT': '1',
         'CI': 'true',
         'SKIP_MODEL_PRELOAD': 'true',
@@ -88,21 +88,21 @@ def main():
     
     # Check environment variables
     railway_env = os.environ.get('RAILWAY_ENVIRONMENT')
-    run_tests = os.environ.get('RAILWAY_RUN_TESTS', 'false').lower()
-    skip_tests = os.environ.get('RAILWAY_SKIP_TESTS', 'false').lower()
+    should_run_tests = os.environ.get('RAILWAY_RUN_TESTS', 'false').lower()
+    should_skip_tests = os.environ.get('RAILWAY_SKIP_TESTS', 'false').lower()
     
     print(f"Environment: RAILWAY_ENVIRONMENT={railway_env}")
-    print(f"Config: RAILWAY_RUN_TESTS={run_tests}")
-    print(f"Config: RAILWAY_SKIP_TESTS={skip_tests}")
+    print(f"Config: RAILWAY_RUN_TESTS={should_run_tests}")
+    print(f"Config: RAILWAY_SKIP_TESTS={should_skip_tests}")
     print("=" * 60)
     
     # Determine if we should run tests
-    if skip_tests == 'true':
+    if should_skip_tests == 'true':
         print("⚠️  Tests SKIPPED (RAILWAY_SKIP_TESTS=true)")
         print("   To enable: Set RAILWAY_SKIP_TESTS=false in Railway variables")
         return 0
     
-    if run_tests != 'true' and not railway_env:
+    if should_run_tests != 'true' and not railway_env:
         print("ℹ️  Tests SKIPPED (not in Railway or RAILWAY_RUN_TESTS!=true)")
         print("   To enable: Set RAILWAY_RUN_TESTS=true in Railway variables")
         return 0

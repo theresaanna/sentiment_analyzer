@@ -24,7 +24,7 @@ COPY . .
 # Make scripts executable
 RUN chmod +x railway_build.sh || true
 RUN chmod +x scripts/deploy_production_db.py || true
-RUN chmod +x railway_check_env.py || true
+RUN chmod +x scripts/run_tests_railway.py || true
 
 # Run unit tests during build; fail the build if tests fail
 # This uses the project-provided test runner which skips integration tests by default
@@ -37,8 +37,5 @@ RUN RAILWAY_RUN_TESTS=true python scripts/run_tests_railway.py
 EXPOSE 8000
 
 # Use shell form to allow environment variable substitution
-# Skip startup script for now and start gunicorn directly
-# Set SKIP_MODEL_PRELOAD to avoid memory issues during startup
-ENV SKIP_MODEL_PRELOAD=true
-ENV RAILWAY_MINIMAL_MODELS=true
-CMD gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 1 --worker-class sync --log-level info --access-logfile - run:app
+# Start gunicorn directly
+CMD gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 4 --worker-class gthread --log-level info --access-logfile - run:app
