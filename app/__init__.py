@@ -63,6 +63,11 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # On Railway, disable strict server name matching to allow healthchecks from
+    # healthcheck.railway.app and other internal hosts
+    if os.environ.get('RAILWAY_ENVIRONMENT'):
+        app.config['SERVER_NAME'] = None
+
     # Setup logging
     if not app.debug:
         logging.basicConfig(
