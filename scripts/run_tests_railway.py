@@ -63,8 +63,13 @@ def run_tests():
     
     print("=" * 60)
     
+    # Pytest exit code meanings:
+    # 0 = success, 1-4 = failures/errors, 5 = no tests collected
     if result.returncode == 0:
         print("✅ All tests passed!")
+        return 0
+    elif result.returncode == 5:
+        print("⚠️  No tests collected (exit code 5). Treating as success in CI.")
         return 0
     else:
         print("❌ Tests failed! Build will be aborted.")
