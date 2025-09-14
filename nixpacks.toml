@@ -14,32 +14,8 @@ cmds = [
 [phases.test]
 dependsOn = ["install"]
 cmds = [
-    # Create test environment
-    "echo '🧪 Running unit tests before deployment...'",
-    "echo '================================'",
-    
-    # Set up test database
-    "export DATABASE_URL=sqlite:///test.db",
-    "export FLASK_ENV=testing",
-    "export SECRET_KEY=railway-test-secret-key",
-    "export REDIS_URL=redis://localhost:6379/0",
-    "export OAUTHLIB_INSECURE_TRANSPORT=1",
-    "export CI=true",
-    "export MODAL_ML_BASE_URL=https://theresaanna--sentiment-ml-service-fastapi-app.modal.run",
-    
-    # Run tests with detailed output
-    '''
-    python -m pytest tests/ \
-        -v \
-        --tb=short \
-        --maxfail=10 \
-        --disable-warnings \
-        -k "not integration" \
-        || (echo "❌ Unit tests failed! Deployment aborted." && exit 1)
-    ''',
-    
-    "echo '✅ All unit tests passed!'",
-    "echo '================================'"
+    # Use the Railway test runner script which respects RAILWAY_RUN_TESTS variable
+    "python scripts/run_tests_railway.py"
 ]
 
 [phases.build]

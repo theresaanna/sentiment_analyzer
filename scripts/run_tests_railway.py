@@ -16,6 +16,7 @@ def setup_test_environment():
         'SECRET_KEY': 'railway-test-secret-key',
         'DATABASE_URL': 'sqlite:///test.db',
         'REDIS_URL': 'redis://localhost:6379/0',
+        'MODAL_ML_BASE_URL': 'https://theresaanna--sentiment-ml-service-fastapi-app.modal.run',
         'OAUTHLIB_INSECURE_TRANSPORT': '1',
         'CI': 'true',
         'SKIP_MODEL_PRELOAD': 'true',
@@ -51,7 +52,11 @@ def run_tests():
     
     # Skip integration tests if requested (they might need external services)
     if skip_integration:
-        pytest_args.extend(['-k', 'not integration and not redis_cloud'])
+        pytest_args.extend([
+            '-k', 'not integration and not redis_cloud and not slow',
+            '--ignore=tests/test_enhanced_integration.py',
+            '--ignore=tests/test_redis_cloud.py'
+        ])
         print("ℹ️  Skipping integration tests (SKIP_INTEGRATION_TESTS=true)")
     
     # Add coverage if requested
@@ -78,19 +83,32 @@ def run_tests():
 
 def main():
     """Main entry point."""
-    # Check if tests should be skipped entirely
-    if os.environ.get('RAILWAY_SKIP_TESTS', 'false').lower() == 'true':
-        print("⚠️  Tests skipped (RAILWAY_SKIP_TESTS=true)")
-        return 0
-    
-    # Only run tests in Railway environment or when explicitly requested
-    if not (os.environ.get('RAILWAY_ENVIRONMENT') or 
-            os.environ.get('RAILWAY_RUN_TESTS', 'false').lower() == 'true'):
-        print("ℹ️  Not in Railway environment, skipping tests")
-        return 0
-    
     print("🚂 Railway Test Runner")
     print("=" * 60)
+    
+    # Check environment variables
+    railway_env = os.environ.get('RAILWAY_ENVIRONMENT')
+    run_tests = os.environ.get('RAILWAY_RUN_TESTS', 'false').lower()
+    skip_tests = os.environ.get('RAILWAY_SKIP_TESTS', 'false').lower()
+    
+    print(f"Environment: RAILWAY_ENVIRONMENT={railway_env}")
+    print(f"Config: RAILWAY_RUN_TESTS={run_tests}")
+    print(f"Config: RAILWAY_SKIP_TESTS={skip_tests}")
+    print("=" * 60)
+    
+    # Determine if we should run tests
+    if skip_tests == 'true':
+        print("⚠️  Tests SKIPPED (RAILWAY_SKIP_TESTS=true)")
+        print("   To enable: Set RAILWAY_SKIP_TESTS=false in Railway variables")
+        return 0
+    
+    if run_tests != 'true' and not railway_env:
+        print("ℹ️  Tests SKIPPED (not in Railway or RAILWAY_RUN_TESTS!=true)")
+        print("   To enable: Set RAILWAY_RUN_TESTS=true in Railway variables")
+        return 0
+    
+    # Tests will run
+    print("✅ Tests ENABLED")
     
     # Setup and run
     setup_test_environment()
