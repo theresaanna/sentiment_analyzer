@@ -674,14 +674,18 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'fetching_comments', 'progress': 10}, ttl_hours=1)
         
-        # Fetch video info for context
-        from app.services import YouTubeService
-        youtube_service = YouTubeService()
-        video_info = youtube_service.get_video_info(video_id)
-        
-        # Fetch comments
-        comments = youtube_service.get_all_comments_flat(video_id, max_comments=max_comments)
-        print(f"Fetched {len(comments)} comments for analysis")
+        # Fetch video info and comments using enhanced service for better coverage
+        from app.services.enhanced_youtube_service import EnhancedYouTubeService
+        youtube_service = EnhancedYouTubeService()
+        result = youtube_service.get_all_available_comments(
+            video_id=video_id,
+            target_comments=max_comments,
+            include_replies=True,
+            sort_order='relevance'
+        )
+        video_info = result['video']
+        comments = result['comments']
+        print(f"Fetched {len(comments)} comments for analysis (enhanced)")
         
         # Update status with error handling
         try:
