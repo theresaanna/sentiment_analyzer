@@ -128,16 +128,16 @@ class TestBatchRoutes:
 class TestUnifiedRoutes:
     """Test unified sentiment analysis routes."""
     
-    @patch('app.services.sentiment_api.SentimentAPIClient')
-    def test_unified_analyze(self, mock_api_client, authenticated_client):
+    @patch('app.services.sentiment_api.get_sentiment_client')
+    def test_unified_analyze(self, mock_get_client, authenticated_client):
         """Test unified sentiment analysis."""
-        mock_instance = MagicMock()
-        mock_instance.analyze_text.return_value = {
+        mock_client = MagicMock()
+        mock_client.analyze_text.return_value = {
             'sentiment': 'positive',
             'confidence': 0.9,
             'success': True
         }
-        mock_api_client.return_value = mock_instance
+        mock_get_client.return_value = mock_client
         
         response = authenticated_client.post('/api/unified/analyze',
             data=json.dumps({'text': 'This is great!'}),
@@ -148,11 +148,11 @@ class TestUnifiedRoutes:
         data = json.loads(response.data)
         assert data['sentiment'] == 'positive'
     
-    @patch('app.services.sentiment_api.SentimentAPIClient')
-    def test_unified_batch(self, mock_api_client, authenticated_client):
+    @patch('app.services.sentiment_api.get_sentiment_client')
+    def test_unified_batch(self, mock_get_client, authenticated_client):
         """Test unified batch analysis."""
-        mock_instance = MagicMock()
-        mock_instance.analyze_batch.return_value = {
+        mock_client = MagicMock()
+        mock_client.analyze_batch.return_value = {
             'total_analyzed': 3,
             'results': [
                 {'predicted_sentiment': 'positive'},
@@ -161,7 +161,7 @@ class TestUnifiedRoutes:
             ],
             'statistics': {}
         }
-        mock_api_client.return_value = mock_instance
+        mock_get_client.return_value = mock_client
         
         response = authenticated_client.post('/api/unified/batch',
             data=json.dumps({'texts': ['text1', 'text2', 'text3']}),
@@ -198,16 +198,16 @@ class TestAPIEndpoints:
             )
             assert response.status_code in [401, 403, 302]
     
-    @patch('app.services.sentiment_api.SentimentAPIClient')
-    def test_api_analyze_endpoint(self, mock_api_client, authenticated_client):
+    @patch('app.services.sentiment_api.get_sentiment_client')
+    def test_api_analyze_endpoint(self, mock_get_client, authenticated_client):
         """Test API analyze endpoint."""
-        mock_instance = MagicMock()
-        mock_instance.analyze_text.return_value = {
+        mock_client = MagicMock()
+        mock_client.analyze_text.return_value = {
             'sentiment': 'positive',
             'confidence': 0.85,
             'success': True
         }
-        mock_api_client.return_value = mock_instance
+        mock_get_client.return_value = mock_client
         
         response = authenticated_client.post('/api/analyze',
             data=json.dumps({'text': 'Test text'}),
