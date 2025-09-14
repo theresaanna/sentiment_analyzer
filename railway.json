@@ -6,7 +6,7 @@
       "providers": ["python"],
       "phases": {
         "setup": {
-          "nixPkgs": ["python310", "gcc", "postgresql"]
+      "nixPkgs": ["python310", "gcc", "postgresql", "redis"]
         },
         "install": {
           "cmds": [
