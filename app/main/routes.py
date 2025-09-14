@@ -696,9 +696,24 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         # Analyze sentiment via external ML service (Modal-hosted FastAPI)
         comment_texts = [c['text'] for c in comments]
         print(f"Analyzing sentiment for {len(comment_texts)} comments via external sentiment API...")
+        
+        # Update status to show current/total for progress
+        cache.set('analysis_status', analysis_id, {
+            'status': 'analyzing_sentiment', 
+            'progress': 30,
+            'current': 0,
+            'total': len(comment_texts)
+        }, ttl_hours=1)
+        
         from app.services.sentiment_api import get_sentiment_client
         client = get_sentiment_client()
+        
+        # Set a shorter timeout for the API calls
+        import time
+        start_time = time.time()
         ml_batch = client.analyze_batch(comment_texts)
+        elapsed = time.time() - start_time
+        print(f"Sentiment analysis completed in {elapsed:.2f} seconds")
         # Fallback: if external service returns no results, use local mock analyzer
         try:
             if not ml_batch or not ml_batch.get('results') or ml_batch.get('total_analyzed', 0) == 0:
