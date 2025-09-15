@@ -697,6 +697,16 @@
                             - <strong>{{ "%.1f"|format(comment_stats.fetch_percentage) }}%</strong> coverage
                         {% endif %}
                     {% endif %}
+                    
+                    {% if comment_stats.top_level_count > 0 and comment_stats.replies_count > 0 %}
+                        {% set avg_replies_per_thread = (comment_stats.replies_count / comment_stats.top_level_count)|round(1) %}
+                        {% if avg_replies_per_thread > 20 %}
+                            <br>
+                            <span class="badge badge-info" title="This video has sparked extensive discussion!">
+                                <i class="fas fa-fire"></i> Highly discussed: ~{{ avg_replies_per_thread|int }} replies per thread
+                            </span>
+                        {% endif %}
+                    {% endif %}
                     <br>
                     <small class="text-muted">
                         <i class="fas fa-clock"></i> Fetch time: {{ "%.1f"|format(comment_stats.fetch_time) }}s | 
@@ -750,7 +760,7 @@
                         <div class="card bg-light">
                             <div class="card-body stats-card">
                                 <div class="stats-value text-info">{{ comment_stats.top_level_count }}</div>
-                                <p class="stats-label"><i class="fas fa-comment-dots stats-icon"></i>Top-level</p>
+                                <p class="stats-label"><i class="fas fa-comment-dots stats-icon"></i>Comment Threads</p>
                             </div>
                         </div>
                     </div>
@@ -758,7 +768,7 @@
                         <div class="card bg-light">
                             <div class="card-body stats-card">
                                 <div class="stats-value text-warning">{{ comment_stats.replies_count }}</div>
-                                <p class="stats-label"><i class="fas fa-reply stats-icon"></i>Replies</p>
+                                <p class="stats-label"><i class="fas fa-reply stats-icon"></i>Thread Replies</p>
                             </div>
                         </div>
                     </div>
