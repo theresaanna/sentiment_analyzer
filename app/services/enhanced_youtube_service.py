@@ -76,12 +76,15 @@ class EnhancedYouTubeService(YouTubeService):
         
         # Get video info first to know total comment count
         video_info = self.get_video_info(video_id, use_cache=use_cache)
-        total_comment_count = video_info['statistics']['comments']
+        # Note: YouTube's commentCount only includes top-level comments, not replies
+        total_top_level_comments = video_info['statistics']['comments']
         
-        logger.info(f"Video has {total_comment_count} total comments. Starting retrieval...")
+        logger.info(f"Video has {total_top_level_comments} top-level comments. Starting retrieval...")
         
         # Calculate how many comments we can realistically fetch
-        max_feasible = self._calculate_feasible_comments(total_comment_count, target_comments)
+        # Note: We estimate total with replies based on average reply rate
+        estimated_total_with_replies = int(total_top_level_comments * 1.5)  # Assume 50% of comments have replies
+        max_feasible = self._calculate_feasible_comments(estimated_total_with_replies, target_comments)
         
         # Fetch comment threads
         all_comments = []
@@ -156,21 +159,38 @@ class EnhancedYouTubeService(YouTubeService):
             
             # Prepare comprehensive result
             fetch_time = time.time() - start_time
+            threads_fetched = len(all_threads)
+            replies_fetched = sum(1 for c in all_comments if c.get('is_reply', False))
+            
+            # Calculate proper coverage based on what we actually fetched
+            # If we fetched all available pages (no next_page_token), we got 100% of available comments
+            if next_page_token is None and pages_fetched > 0:
+                # We fetched everything available
+                fetch_percentage = 100.0
+                actual_total_available = comments_fetched
+            else:
+                # We were limited by pages/quota/target
+                # Use threads fetched vs total top-level comments for coverage
+                fetch_percentage = (threads_fetched / total_top_level_comments * 100) if total_top_level_comments > 0 else 0
+                # Estimate total available including replies
+                actual_total_available = int(total_top_level_comments * (1 + (replies_fetched / threads_fetched if threads_fetched > 0 else 0.5)))
+            
             result = {
                 'video': video_info,
                 'comments': all_comments,
                 'threads': all_threads,
                 'statistics': {
-                    'total_comments_available': total_comment_count,
+                    'total_top_level_comments': total_top_level_comments,
+                    'total_comments_available': actual_total_available,
                     'comments_fetched': comments_fetched,
-                    'threads_fetched': len(all_threads),
-                    'replies_fetched': sum(1 for c in all_comments if c.get('is_reply', False)),
+                    'threads_fetched': threads_fetched,
+                    'replies_fetched': replies_fetched,
                     'pages_fetched': pages_fetched,
                     'fetch_time_seconds': fetch_time,
                     'comments_per_second': comments_fetched / fetch_time if fetch_time > 0 else 0,
                     'quota_used': quota_used,
                     'sort_order': sort_order,
-                    'fetch_percentage': (comments_fetched / total_comment_count * 100) if total_comment_count > 0 else 0
+                    'fetch_percentage': fetch_percentage
                 },
                 'fetch_metadata': {
                     'incomplete': next_page_token is not None,
@@ -183,8 +203,9 @@ class EnhancedYouTubeService(YouTubeService):
                 cache.set('enhanced_comments', cache_key, result, ttl_hours=12)
                 logger.info(f"Cached {comments_fetched} comments for video {video_id}")
             
-            logger.info(f"Successfully fetched {comments_fetched}/{total_comment_count} comments "
-                       f"({result['statistics']['fetch_percentage']:.1f}%) in {fetch_time:.2f}s")
+            logger.info(f"Successfully fetched {comments_fetched} comments "
+                       f"({threads_fetched} threads + {replies_fetched} replies) "
+                       f"Coverage: {result['statistics']['fetch_percentage']:.1f}% in {fetch_time:.2f}s")
             
             return result
             
