@@ -843,11 +843,38 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
             scores = result.get('sentiment_scores')
             if not isinstance(scores, dict) or not {'positive', 'neutral', 'negative'} <= set(scores.keys()):
                 pred = (result.get('predicted_sentiment') or result.get('sentiment') or 'neutral')
-                scores = {
-                    'positive': 1.0 if pred == 'positive' else 0.0,
-                    'neutral':  1.0 if pred == 'neutral'  else 0.0,
-                    'negative': 1.0 if pred == 'negative' else 0.0,
-                }
+                conf = result.get('confidence', 0.7)
+                if isinstance(conf, (int, float)) and conf > 1.0:
+                    conf = conf / 100.0  # Convert percentage to decimal
+                
+                # Create more realistic scores based on predicted sentiment and confidence
+                # The predicted sentiment gets the confidence score, others get distributed remainder
+                remainder = (1.0 - conf) / 2
+                
+                if pred == 'positive':
+                    scores = {
+                        'positive': conf,
+                        'neutral': remainder + 0.1,  # Neutral gets slightly more of remainder
+                        'negative': remainder - 0.1 if remainder > 0.1 else 0.0
+                    }
+                elif pred == 'negative':
+                    scores = {
+                        'positive': remainder - 0.1 if remainder > 0.1 else 0.0,
+                        'neutral': remainder + 0.1,  # Neutral gets slightly more of remainder  
+                        'negative': conf
+                    }
+                else:  # neutral
+                    scores = {
+                        'positive': remainder,
+                        'neutral': conf,
+                        'negative': remainder
+                    }
+                
+                # Normalize to ensure they sum to 1.0
+                total = sum(scores.values())
+                if total > 0:
+                    scores = {k: v/total for k, v in scores.items()}
+                
                 result['sentiment_scores'] = scores
 
             # Scale confidence to percentage if needed (frontend expects 0-100)

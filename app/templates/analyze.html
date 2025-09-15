@@ -2100,37 +2100,58 @@ function createTimelineChart(timeline) {
         
         if (!timeline || timeline.length === 0) return;
         
-        // Process timeline data with more meaningful labels
+        // Process timeline data with smoothing and grouping
         const labels = [];
         const positiveData = [];
         const neutralData = [];
         const negativeData = [];
         
-        const sampleSize = Math.min(timeline.length, 30);
-        const groupSize = Math.ceil(sampleSize / 10); // Create ~10 groups
+        // Group comments for smoother visualization
+        const groupSize = Math.max(3, Math.ceil(timeline.length / 20)); // Create ~20 groups max
+        const groups = [];
         
-        timeline.slice(0, sampleSize).forEach((item, index) => {
-            // Create time-based or grouped labels
-            if (index === 0) {
+        for (let i = 0; i < timeline.length; i += groupSize) {
+            const group = timeline.slice(i, Math.min(i + groupSize, timeline.length));
+            
+            // Calculate average sentiment for the group
+            let avgPositive = 0, avgNeutral = 0, avgNegative = 0;
+            group.forEach(item => {
+                const sc = item.score || item.sentiment_scores || {positive: 0, neutral: 1, negative: 0};
+                avgPositive += (sc.positive || 0);
+                avgNeutral += (sc.neutral || 0);
+                avgNegative += (sc.negative || 0);
+            });
+            
+            const groupCount = group.length;
+            groups.push({
+                positive: (avgPositive / groupCount) * 100,
+                neutral: (avgNeutral / groupCount) * 100,
+                negative: (avgNegative / groupCount) * 100,
+                index: i
+            });
+        }
+        
+        // Create labels and data from groups
+        groups.forEach((group, idx) => {
+            const position = (group.index / timeline.length) * 100;
+            
+            if (idx === 0) {
                 labels.push('Early');
-            } else if (index === Math.floor(sampleSize / 4)) {
-                labels.push('25%');
-            } else if (index === Math.floor(sampleSize / 2)) {
-                labels.push('Midpoint');
-            } else if (index === Math.floor(sampleSize * 3 / 4)) {
-                labels.push('75%');
-            } else if (index === sampleSize - 1) {
+            } else if (idx === groups.length - 1) {
                 labels.push('Recent');
-            } else if (index % groupSize === 0) {
-                labels.push(`${Math.round((index / sampleSize) * 100)}%`);
+            } else if (Math.abs(position - 25) < 5) {
+                labels.push('25%');
+            } else if (Math.abs(position - 50) < 5) {
+                labels.push('Midpoint');
+            } else if (Math.abs(position - 75) < 5) {
+                labels.push('75%');
             } else {
-                labels.push(''); // Empty label for intermediate points
+                labels.push(`${Math.round(position)}%`);
             }
             
-            const sc = item.score || item.sentiment_scores || {positive: 0, neutral: 1, negative: 0};
-            positiveData.push((sc.positive || 0) * 100);
-            neutralData.push((sc.neutral || 0) * 100);
-            negativeData.push((sc.negative || 0) * 100);
+            positiveData.push(group.positive);
+            neutralData.push(group.neutral);
+            negativeData.push(group.negative);
         });
         
         charts.timeline = new Chart(ctx, {
