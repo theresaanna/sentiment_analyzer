@@ -152,19 +152,21 @@ def analyze_video(video_id):
         
         # Prepare stats for template with enhanced metrics
         comment_stats = {
-            'total_comments': fetch_stats.get('total_comments_available', len(comments)),
-            'fetched_comments': len(comments) if comments_cached else 0,  # Only set if preloaded from cache
+            'total_comments': len(comments),  # Actual fetched count
+            'fetched_comments': len(comments),  # Always show what we fetched
             'unique_commenters': len(unique_commenters),
             'avg_comment_length': avg_comment_length,
             'replies_count': replies_count,
             'top_level_count': top_level_count,
             'top_commenters': top_commenters,
-            # Enhanced statistics
-            'total_available': fetch_stats['total_comments_available'],
-            'fetch_percentage': fetch_stats['fetch_percentage'],
-            'fetch_time': fetch_stats['fetch_time_seconds'],
-            'comments_per_second': fetch_stats['comments_per_second'],
-            'quota_used': fetch_stats['quota_used']
+            # Enhanced statistics - use corrected values from service
+            'total_available': fetch_stats.get('total_comments_available', len(comments)),
+            'fetch_percentage': fetch_stats.get('fetch_percentage', 100.0),
+            'fetch_time': fetch_stats.get('fetch_time_seconds', 0),
+            'comments_per_second': fetch_stats.get('comments_per_second', 0),
+            'quota_used': fetch_stats.get('quota_used', 0),
+            'threads_fetched': fetch_stats.get('threads_fetched', 0),
+            'total_top_level_comments': fetch_stats.get('total_top_level_comments', 0)
         }
         
         return render_template(

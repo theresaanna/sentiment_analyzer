@@ -682,8 +682,21 @@
             <div class="card-body">
                 <div class="alert alert-info mb-4">
                     <i class="fas fa-info-circle"></i> 
-                    Fetched <strong>{{ comment_stats.total_comments }}</strong> of <strong>{{ "{:,}".format(comment_stats.total_available) }}</strong> available comments 
-                    (<strong>{{ "%.1f"|format(comment_stats.fetch_percentage) }}%</strong> coverage)
+                    {% if comment_stats.fetch_percentage >= 99.9 %}
+                        Fetched all <strong>{{ "{:,}".format(comment_stats.total_comments) }}</strong> available comments 
+                        (<strong>100%</strong> coverage)
+                    {% elif comment_stats.total_comments == comment_stats.total_available %}
+                        Fetched all <strong>{{ "{:,}".format(comment_stats.total_comments) }}</strong> available comments 
+                        (<strong>100%</strong> coverage)
+                    {% else %}
+                        Fetched <strong>{{ "{:,}".format(comment_stats.total_comments) }}</strong> comments
+                        {% if comment_stats.threads_fetched > 0 %}
+                            ({{ "{:,}".format(comment_stats.threads_fetched) }} threads + {{ "{:,}".format(comment_stats.replies_count) }} replies)
+                        {% endif %}
+                        {% if comment_stats.fetch_percentage > 0 %}
+                            - <strong>{{ "%.1f"|format(comment_stats.fetch_percentage) }}%</strong> coverage
+                        {% endif %}
+                    {% endif %}
                     <br>
                     <small class="text-muted">
                         <i class="fas fa-clock"></i> Fetch time: {{ "%.1f"|format(comment_stats.fetch_time) }}s | 
