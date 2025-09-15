@@ -3,6 +3,7 @@ Batch processing routes for handling multiple videos or large datasets.
 """
 from flask import jsonify, request
 from app.main import bp
+from app.utils.time_formatter import format_estimated_time
 # Lazy import heavy modules in functions to speed startup
 # from app.ml.batch_processor import BatchInferenceOptimizer, BatchConfig
 # from app.services.enhanced_youtube_service import EnhancedYouTubeService
@@ -52,7 +53,7 @@ def batch_analyze_videos():
             'batch_id': batch_id,
             'video_count': len(video_ids),
             'status': 'started',
-            'estimated_time': f"{len(video_ids) * max_comments * 0.01:.1f}s"
+            'estimated_time': format_estimated_time(len(video_ids) * max_comments * 0.01)
         })
         
     except Exception as e:

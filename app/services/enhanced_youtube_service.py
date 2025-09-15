@@ -14,6 +14,7 @@ from googleapiclient.errors import HttpError
 from app.cache import cache
 from app.services.youtube_service import YouTubeService
 from app.services.async_youtube_service import AsyncYouTubeService
+from app.utils.time_formatter import format_estimated_time
 
 logger = logging.getLogger(__name__)
 
@@ -350,7 +351,8 @@ class EnhancedYouTubeService(YouTubeService):
             'estimated_quota_usage': int(total_quota),
             'percentage_of_daily_quota': (total_quota / self.daily_quota_limit) * 100,
             'feasible_with_current_quota': total_quota < self.daily_quota_limit * 0.8,
-            'estimated_fetch_time_seconds': estimated_pages * 0.5,  # ~0.5s per request
+            'estimated_fetch_time': format_estimated_time(estimated_pages * 0.5),  # ~0.5s per request
+            'estimated_fetch_time_seconds': estimated_pages * 0.5,  # Keep raw seconds for calculations
             'recommendations': self._get_recommendations(total_comments, total_quota)
         }
     
@@ -420,7 +422,7 @@ def analyze_comment_coverage(video_id: str) -> Dict[str, Any]:
             'can_fetch_all': estimates['feasible_with_current_quota'],
             'recommended_approach': 'full' if total_comments < 5000 else 'sampling',
             'estimated_coverage': min(100, (5000 / total_comments * 100)) if total_comments > 0 else 100,
-            'time_estimate': estimates['estimated_fetch_time_seconds']
+            'time_estimate': estimates['estimated_fetch_time']
         },
         'api_usage': estimates,
         'recommendations': estimates['recommendations']

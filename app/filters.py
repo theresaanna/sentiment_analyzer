@@ -2,6 +2,7 @@
 Custom Jinja2 filters for the application.
 """
 import re
+from app.utils.time_formatter import format_estimated_time
 
 
 def format_duration(duration_str):
@@ -40,6 +41,25 @@ def format_duration(duration_str):
         return f"{int(minutes)}:{int(seconds):02d}"
 
 
+def format_fetch_time(seconds):
+    """
+    Format fetch time in seconds to a human-readable format.
+    
+    Args:
+        seconds: Time in seconds (float or int)
+        
+    Returns:
+        Formatted time string (e.g., "45.2s" or "~2.5 minutes")
+    """
+    if not seconds:
+        return "0s"
+    
+    try:
+        return format_estimated_time(float(seconds))
+    except (ValueError, TypeError):
+        return f"{seconds}s"
+
+
 def register_filters(app):
     """
     Register custom filters with the Flask app.
@@ -48,3 +68,4 @@ def register_filters(app):
         app: Flask application instance
     """
     app.jinja_env.filters['format_duration'] = format_duration
+    app.jinja_env.filters['format_fetch_time'] = format_fetch_time

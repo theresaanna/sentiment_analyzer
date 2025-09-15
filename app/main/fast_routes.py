@@ -14,6 +14,7 @@ import time
 from flask import jsonify, request
 from app.main import bp
 from app.cache import cache
+from app.utils.time_formatter import format_estimated_time
 # Lazy import heavy analyzers/services inside endpoints to speed startup
 # from app.science.fast_sentiment_analyzer import get_fast_analyzer
 # from app.services.async_youtube_service import get_video_and_comments_fast
@@ -74,7 +75,7 @@ def api_fast_analyze_sentiment(video_id):
             'analysis_id': analysis_id,
             'status': 'started',
             'message': 'Fast sentiment analysis started',
-            'estimated_time': f"{max_comments * 0.02:.1f}s"  # Rough estimate
+            'estimated_time': format_estimated_time(max_comments * 0.02)  # Rough estimate
         })
         
     except Exception as e:

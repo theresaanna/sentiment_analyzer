@@ -709,7 +709,7 @@
                     {% endif %}
                     <br>
                     <small class="text-muted">
-                        <i class="fas fa-clock"></i> Fetch time: {{ "%.1f"|format(comment_stats.fetch_time) }}s | 
+                        <i class="fas fa-clock"></i> Fetch time: {{ comment_stats.fetch_time | format_fetch_time }} | 
                         <i class="fas fa-tachometer-alt"></i> Speed: {{ "%.0f"|format(comment_stats.comments_per_second) }} comments/sec
                     </small>
                     {% if not current_user.is_authenticated %}
