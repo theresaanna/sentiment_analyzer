@@ -187,13 +187,152 @@
         margin-right: 0.25rem;
     }
     
+    /* New compact video metadata styles */
+    .video-metadata {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 0.85rem;
+    }
+    
+    .metadata-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+        padding: 4px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .metadata-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    
+    .metadata-item i {
+        width: 18px;
+        font-size: 0.75rem;
+        margin-right: 8px;
+    }
+    
+    .metadata-label {
+        font-weight: 600;
+        color: #6c757d;
+        margin-right: auto;
+        min-width: 60px;
+    }
+    
+    .metadata-value {
+        color: #495057;
+        text-align: right;
+        flex: 1;
+    }
+    
+    .metadata-value a {
+        color: #007bff;
+        text-decoration: none;
+    }
+    
+    .metadata-value a:hover {
+        text-decoration: underline;
+    }
+    
+    /* Compact stats grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .stat-item {
+        background: white;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 12px;
+        display: flex;
+        align-items: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .stat-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .stat-icon {
+        font-size: 1.2rem;
+        margin-right: 10px;
+        opacity: 0.8;
+    }
+    
+    .stat-content {
+        flex: 1;
+    }
+    
+    .stat-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 2px;
+        color: #2d3748;
+    }
+    
+    .stat-label {
+        font-size: 0.7rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
     /* Responsive adjustments */
+    @media (max-width: 991px) {
+        /* Stack video and metadata on tablets and below */
+        .video-metadata {
+            margin-top: 20px;
+        }
+        
+        .stats-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+    
     @media (max-width: 768px) {
         .stats-card .stats-value {
             font-size: 1.25rem;
         }
         .stats-card .stats-label {
             font-size: 0.8rem;
+        }
+        
+        /* Make stats grid 2x2 on mobile */
+        .stats-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .stat-value {
+            font-size: 0.95rem;
+        }
+        
+        .stat-label {
+            font-size: 0.65rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        /* Even more compact on very small screens */
+        .metadata-item {
+            font-size: 0.8rem;
+        }
+        
+        .metadata-label {
+            min-width: 50px;
+        }
+        
+        .stat-item {
+            padding: 8px;
+        }
+        
+        .stat-icon {
+            font-size: 1rem;
         }
     }
     
@@ -614,57 +753,71 @@
                 </h3>
             </div>
             <div class="card-body">
-                <!-- Video Embed -->
-                <div class="embed-responsive embed-responsive-16by9 mb-4">
-                    <iframe class="embed-responsive-item" 
-                            src="https://www.youtube.com/embed/{{ video_id }}"
-                            allowfullscreen></iframe>
-                </div>
-                
-                <!-- Video Metadata -->
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <p><strong><i class="fas fa-tv"></i> Channel:</strong> {{ video_info.channel }}</p>
-                        <p><strong><i class="fas fa-calendar"></i> Published:</strong> {{ video_info.published_at[:10] }}</p>
-                        <p><strong><i class="fas fa-clock"></i> Duration:</strong> {{ video_info.duration | format_duration }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <p><strong><i class="fas fa-link"></i> URL:</strong> <a href="{{ video_url }}" target="_blank" rel="noopener">Watch on YouTube</a></p>
-                        <p><strong><i class="fas fa-hashtag"></i> Video ID:</strong> <code>{{ video_id }}</code></p>
-                    </div>
-                </div>
-                
-                <!-- Video Statistics Cards -->
                 <div class="row">
-                    <div class="col-md-6 col-sm-6 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body stats-card">
-                                <div class="stats-value text-primary">{{ "{:,}".format(video_info.statistics.views) }}</div>
-                                <p class="stats-label"><i class="fas fa-eye stats-icon"></i>Views</p>
-                            </div>
+                    <!-- Video Player Column -->
+                    <div class="col-lg-8">
+                        <div class="embed-responsive embed-responsive-16by9">
+                            <iframe class="embed-responsive-item" 
+                                    src="https://www.youtube.com/embed/{{ video_id }}"
+                                    allowfullscreen></iframe>
                         </div>
                     </div>
-                    <div class="col-md-6 col-sm-6 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body stats-card">
-                                <div class="stats-value text-success">{{ "{:,}".format(video_info.statistics.likes) }}</div>
-                                <p class="stats-label"><i class="fas fa-thumbs-up stats-icon"></i>Likes</p>
+                    
+                    <!-- Video Info Column -->
+                    <div class="col-lg-4">
+                        <!-- Video Metadata -->
+                        <div class="video-metadata mb-3">
+                            <div class="metadata-item">
+                                <i class="fas fa-tv text-muted"></i>
+                                <span class="metadata-label">Channel</span>
+                                <span class="metadata-value">{{ video_info.channel }}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <i class="fas fa-calendar text-muted"></i>
+                                <span class="metadata-label">Published</span>
+                                <span class="metadata-value">{{ video_info.published_at[:10] }}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <i class="fas fa-clock text-muted"></i>
+                                <span class="metadata-label">Duration</span>
+                                <span class="metadata-value">{{ video_info.duration | format_duration }}</span>
+                            </div>
+                            <div class="metadata-item">
+                                <i class="fas fa-link text-muted"></i>
+                                <span class="metadata-label">URL</span>
+                                <span class="metadata-value"><a href="{{ video_url }}" target="_blank" rel="noopener">Watch <i class="fas fa-external-link-alt" style="font-size: 0.7rem;"></i></a></span>
                             </div>
                         </div>
-                    </div>
-                    <div class="col-md-6 col-sm-6 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body stats-card">
-                                <div class="stats-value text-info">{{ "{:,}".format(video_info.statistics.comments) }}</div>
-                                <p class="stats-label"><i class="fas fa-comment stats-icon"></i>Comments</p>
+                        
+                        <!-- Compact Statistics Grid -->
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-icon"><i class="fas fa-eye"></i></div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ "{:,}".format(video_info.statistics.views) }}</div>
+                                    <div class="stat-label">Views</div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6 col-sm-6 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body stats-card">
-                                <div class="stats-value text-warning">{{ "%.1f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</div>
-                                <p class="stats-label"><i class="fas fa-percentage stats-icon"></i>Engagement</p>
+                            <div class="stat-item">
+                                <div class="stat-icon text-success"><i class="fas fa-thumbs-up"></i></div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ "{:,}".format(video_info.statistics.likes) }}</div>
+                                    <div class="stat-label">Likes</div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon text-info"><i class="fas fa-comment"></i></div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ "{:,}".format(video_info.statistics.comments) }}</div>
+                                    <div class="stat-label">Comments</div>
+                                </div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-icon text-warning"><i class="fas fa-percentage"></i></div>
+                                <div class="stat-content">
+                                    <div class="stat-value">{{ "%.1f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</div>
+                                    <div class="stat-label">Engagement</div>
+                                </div>
                             </div>
                         </div>
                     </div>
