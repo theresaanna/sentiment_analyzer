@@ -834,11 +834,11 @@
                                         <div class="coverage-stats">
                                             <div class="stat-badge locked">
                                                 <span class="stat-label">Comments</span>
-                                                <span class="stat-value" style="color: #10b981; font-weight: 600;">{{ [comment_stats.total_comments * 0.25, 1000]|min|int }}</span>
+                                            <span class="stat-value" style="color: #10b981; font-weight: 600;">{{ [(comment_stats.total_available or video_info.statistics.comments or comment_stats.total_comments) * 0.25, 1000]|min|int }}</span>
                                             </div>
                                             <div class="stat-badge locked">
                                                 <span class="stat-label">Time</span>
-                                                <span class="stat-value">~{{ (([comment_stats.total_comments * 0.25, 1000]|min / 100) * 2)|round(1) }}s</span>
+                                            <span class="stat-value">~{{ (([(comment_stats.total_available or video_info.statistics.comments or comment_stats.total_comments) * 0.25, 1000]|min / 100) * 2)|round(1) }}s</span>
                                             </div>
                                         </div>
                                     </div>
@@ -871,11 +871,11 @@
                                     <div class="coverage-stats">
                                         <div class="stat-badge">
                                             <span class="stat-label">Comments</span>
-                                            <span class="stat-value" id="commentCountEstimate">{{ (comment_stats.total_comments * 0.5)|int }}</span>
+                                            <span class="stat-value" id="commentCountEstimate">{{ ((comment_stats.total_available or video_info.statistics.comments or comment_stats.total_comments) * 0.5)|int }}</span>
                                         </div>
                                         <div class="stat-badge">
                                             <span class="stat-label">Est. Time</span>
-                                            <span class="stat-value" id="timeEstimate">~{{ ((comment_stats.total_comments * 0.5 / 100) * 2)|round(1) }}s</span>
+                                            <span class="stat-value" id="timeEstimate">~{{ (((comment_stats.total_available or video_info.statistics.comments or comment_stats.total_comments) * 0.5 / 100) * 2)|round(1) }}s</span>
                                         </div>
                                         <div class="stat-badge">
                                             <span class="stat-label">Accuracy</span>
@@ -901,14 +901,14 @@
                             <strong>✨ Try VibeCheckAI Free!</strong>
                             Your free analysis will include:
                             <ul class="mb-0 mt-2" style="padding-left: 20px;">
-                                <li>Up to <strong>{{ [comment_stats.total_comments * 0.25, 1000]|min|int }}</strong> comments (25% sample, max 1,000)</li>
+                                <li>Up to <strong>{{ [(comment_stats.total_available or video_info.statistics.comments or comment_stats.total_comments) * 0.25, 1000]|min|int }}</strong> comments (25% sample, max 1,000)</li>
                                 <li>Full sentiment breakdown & charts</li>
                                 <li>AI-powered summary & insights</li>
                                 <li>Key discussion themes analysis</li>
                             </ul>
                             <small>
                                 <a href="{{ url_for('auth.subscribe') }}" style="color: #5a67d8; text-decoration: underline;">
-                                    Upgrade to Pro</a> to analyze all {{ comment_stats.total_comments }} comments with adjustable depth
+                                    Upgrade to Pro</a> to analyze all {{ comment_stats.total_available or video_info.statistics.comments or comment_stats.total_comments }} comments with adjustable depth
                             </small>
                         </div>
                     {% else %}
@@ -1200,13 +1200,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Check if comments are already loaded
     const fetchedComments = {{ comment_stats.fetched_comments }};
-    const totalComments = {{ comment_stats.total_comments }};
+    // Use total_available if present, otherwise use the video statistics comment count
+    const totalAvailableComments = {{ comment_stats.total_available or video_info.statistics.comments or comment_stats.total_comments }};
     const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
     let isModified = false; // Track if user has modified the slider
     
     // If comments are already loaded, update UI
     if (fetchedComments > 0) {
-        const loadedPercentage = Math.round((fetchedComments / totalComments) * 100);
+        const loadedPercentage = Math.round((fetchedComments / totalAvailableComments) * 100);
         
         // Update button text to reflect loaded state
         if (startButtonMain) {
@@ -1259,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // If slider was modified and comments were preloaded, change button back
             if (fetchedComments > 0 && startButtonMain) {
                 const selectedPercentage = parseInt(this.value);
-                const selectedComments = Math.ceil(totalComments * (selectedPercentage / 100));
+                const selectedComments = Math.ceil(totalAvailableComments * (selectedPercentage / 100));
                 
                 // If the selected value differs from what's loaded, change button text
                 if (Math.abs(selectedComments - fetchedComments) > 5) { // Allow small margin
@@ -1270,7 +1271,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
             }
             const percentage = this.value;
-            const commentCount = Math.ceil(totalComments * (percentage / 100));
+            const commentCount = Math.ceil(totalAvailableComments * (percentage / 100));
             const estimatedTime = Math.max(1, Math.round((commentCount / 100) * 2 * 10) / 10); // Estimate ~2 seconds per 100 comments
             
             // Update displays
@@ -1511,12 +1512,13 @@ function startSentimentAnalysis() {
     const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
     const percentageSlider = document.getElementById('commentPercentageSlider');
     const selectedPercentage = isProUser && percentageSlider ? parseInt(percentageSlider.value) : 25;
-    const totalComments = {{ comment_stats.total_comments }};
+    // Use total available comments from video statistics, not just fetched comments
+    const totalAvailableComments = {{ comment_stats.total_available or video_info.statistics.comments or comment_stats.total_comments }};
     const fetchedComments = {{ comment_stats.fetched_comments }};
     const maxFreeComments = 1000; // Cap free analysis at 1000 comments
     const commentsToAnalyze = isProUser ? 
-        Math.ceil(totalComments * (selectedPercentage / 100)) : 
-        Math.min(Math.ceil(totalComments * 0.25), maxFreeComments);
+        Math.ceil(totalAvailableComments * (selectedPercentage / 100)) : 
+        Math.min(Math.ceil(totalAvailableComments * 0.25), maxFreeComments);
     
     // Check if we can use already loaded comments
     const usePreloaded = fetchedComments > 0 && 
