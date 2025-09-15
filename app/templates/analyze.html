@@ -283,6 +283,144 @@
         letter-spacing: 0.5px;
     }
     
+    /* Comment Analysis Section Styles */
+    .comment-coverage-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 16px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .coverage-summary {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .coverage-main {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-size: 1.1rem;
+    }
+    
+    .coverage-number {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #2d3748;
+    }
+    
+    .coverage-text {
+        color: #6c757d;
+        font-size: 1rem;
+    }
+    
+    .coverage-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 16px;
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    
+    .detail-item {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+    
+    .detail-item i {
+        font-size: 0.75rem;
+        opacity: 0.7;
+    }
+    
+    /* Comment stats grid - same style as video stats */
+    .comment-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+    }
+    
+    /* Pro upgrade banner */
+    .pro-upgrade-banner {
+        background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+        border: 1px solid #667eea30;
+        border-radius: 8px;
+        padding: 12px;
+    }
+    
+    .pro-banner-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    .pro-star {
+        font-size: 1.5rem;
+        color: #667eea;
+    }
+    
+    .pro-text {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+    
+    .pro-text strong {
+        color: #2d3748;
+        font-size: 0.95rem;
+    }
+    
+    .pro-text span {
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    
+    .pro-upgrade-banner .btn {
+        white-space: nowrap;
+    }
+    
+    /* Editable comment count input styles */
+    .stat-value-input {
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        color: #2d3748;
+        font-size: 1.1rem;
+        font-weight: 700;
+        text-align: center;
+        width: 100%;
+        max-width: 120px;
+        padding: 2px 4px;
+        transition: all 0.2s;
+    }
+    
+    .stat-value-input:hover {
+        background: #f8f9fa;
+        border-color: #e9ecef;
+    }
+    
+    .stat-value-input:focus {
+        background: white;
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    }
+    
+    .stat-value-input::-webkit-inner-spin-button,
+    .stat-value-input::-webkit-outer-spin-button {
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    
+    .stat-value-input:hover::-webkit-inner-spin-button,
+    .stat-value-input:hover::-webkit-outer-spin-button,
+    .stat-value-input:focus::-webkit-inner-spin-button,
+    .stat-value-input:focus::-webkit-outer-spin-button {
+        opacity: 1;
+    }
+    
     /* Responsive adjustments */
     @media (max-width: 991px) {
         /* Stack video and metadata on tablets and below */
@@ -755,7 +893,7 @@
             <div class="card-body">
                 <div class="row">
                     <!-- Video Player Column -->
-                    <div class="col-lg-8">
+                    <div class="col-xl-8 col-lg-7 col-md-12">
                         <div class="embed-responsive embed-responsive-16by9">
                             <iframe class="embed-responsive-item" 
                                     src="https://www.youtube.com/embed/{{ video_id }}"
@@ -764,7 +902,7 @@
                     </div>
                     
                     <!-- Video Info Column -->
-                    <div class="col-lg-4">
+                    <div class="col-xl-4 col-lg-5 col-md-12">
                         <!-- Video Metadata -->
                         <div class="video-metadata mb-3">
                             <div class="metadata-item">
@@ -833,99 +971,96 @@
                 </h3>
             </div>
             <div class="card-body">
-                <div class="alert alert-info mb-4">
-                    <i class="fas fa-info-circle"></i> 
-                    {% if comment_stats.fetch_percentage >= 99.9 %}
-                        Fetched all <strong>{{ "{:,}".format(comment_stats.total_comments) }}</strong> available comments 
-                        (<strong>100%</strong> coverage)
-                    {% elif comment_stats.total_comments == comment_stats.total_available %}
-                        Fetched all <strong>{{ "{:,}".format(comment_stats.total_comments) }}</strong> available comments 
-                        (<strong>100%</strong> coverage)
-                    {% else %}
-                        Fetched <strong>{{ "{:,}".format(comment_stats.total_comments) }}</strong> comments
-                        {% if comment_stats.threads_fetched > 0 %}
-                            ({{ "{:,}".format(comment_stats.threads_fetched) }} threads + {{ "{:,}".format(comment_stats.replies_count) }} replies)
-                        {% endif %}
-                        {% if comment_stats.fetch_percentage > 0 %}
-                            - <strong>{{ "%.1f"|format(comment_stats.fetch_percentage) }}%</strong> coverage
-                        {% endif %}
-                    {% endif %}
+                <!-- Compact Comment Coverage Info -->
+                <div class="comment-coverage-info mb-3">
+                    <div class="coverage-summary">
+                        <div class="coverage-main">
+                            <span class="coverage-number">{{ "{:,}".format(comment_stats.total_comments) }}</span>
+                            <span class="coverage-text">comments analyzed</span>
+                            {% if comment_stats.fetch_percentage >= 99.9 %}
+                                <span class="badge badge-success ml-2">100% coverage</span>
+                            {% elif comment_stats.fetch_percentage > 0 %}
+                                <span class="badge badge-info ml-2">{{ "%.1f"|format(comment_stats.fetch_percentage) }}% coverage</span>
+                            {% endif %}
+                        </div>
+                        <div class="coverage-details">
+                            {% if comment_stats.threads_fetched > 0 %}
+                                <span class="detail-item">
+                                    <i class="fas fa-comments"></i> {{ "{:,}".format(comment_stats.threads_fetched) }} threads
+                                </span>
+                                <span class="detail-item">
+                                    <i class="fas fa-reply"></i> {{ "{:,}".format(comment_stats.replies_count) }} replies
+                                </span>
+                            {% endif %}
+                            <span class="detail-item">
+                                <i class="fas fa-clock"></i> {{ comment_stats.fetch_time | format_fetch_time }}
+                            </span>
+                            <span class="detail-item">
+                                <i class="fas fa-tachometer-alt"></i> {{ "%.0f"|format(comment_stats.comments_per_second) }} /sec
+                            </span>
+                        </div>
+                    </div>
                     
                     {% if comment_stats.top_level_count > 0 and comment_stats.replies_count > 0 %}
                         {% set avg_replies_per_thread = (comment_stats.replies_count / comment_stats.top_level_count)|round(1) %}
                         {% if avg_replies_per_thread > 20 %}
-                            <br>
-                            <span class="badge badge-info" title="This video has sparked extensive discussion!">
-                                <i class="fas fa-fire"></i> Highly discussed: ~{{ avg_replies_per_thread|int }} replies per thread
-                            </span>
+                            <div class="mt-2">
+                                <span class="badge badge-warning">
+                                    <i class="fas fa-fire"></i> Highly discussed: ~{{ avg_replies_per_thread|int }} replies per thread
+                                </span>
+                            </div>
                         {% endif %}
-                    {% endif %}
-                    <br>
-                    <small class="text-muted">
-                        <i class="fas fa-clock"></i> Fetch time: {{ comment_stats.fetch_time | format_fetch_time }} | 
-                        <i class="fas fa-tachometer-alt"></i> Speed: {{ "%.0f"|format(comment_stats.comments_per_second) }} comments/sec
-                    </small>
-                    {% if not current_user.is_authenticated %}
-                    <div class="pro-analysis-message">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-star mr-2"></i>
-                            <small class="text-primary font-weight-bold">
-                                📈 <strong>Pro Analysis</strong> can fetch up to 100% of comments with advanced filtering and prioritization. 
-                                <a href="{{ url_for('auth.login') }}">Sign in</a> or 
-                                <a href="{{ url_for('auth.subscribe') }}">upgrade to Pro</a> 
-                                for comprehensive comment coverage.
-                            </small>
-                        </div>
-                    </div>
-                    {% elif not current_user.is_subscribed %}
-                    <div class="pro-analysis-message">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-star mr-2"></i>
-                            <small class="text-primary font-weight-bold">
-                                📈 <strong>Pro Analysis</strong> can fetch up to 100% of comments with adjustable depth and advanced filtering. 
-                                <a href="{{ url_for('auth.subscribe') }}">Upgrade to Pro</a> 
-                                to maximize comment coverage and get deeper insights.
-                            </small>
-                        </div>
-                    </div>
                     {% endif %}
                 </div>
                 
-                <!-- Comment Statistics Cards -->
-                <div class="row mb-4">
-                    <div class="col-md-6 col-sm-6 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body stats-card">
-                                <div class="stats-value text-primary">{{ comment_stats.unique_commenters }}</div>
-                                <p class="stats-label"><i class="fas fa-users stats-icon"></i>Unique Commenters</p>
-                            </div>
+                <!-- Comment Statistics Grid -->
+                <div class="comment-stats-grid mb-4">
+                    <div class="stat-item">
+                        <div class="stat-icon text-primary"><i class="fas fa-users"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ comment_stats.unique_commenters }}</div>
+                            <div class="stat-label">Unique Users</div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-sm-6 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body stats-card">
-                                <div class="stats-value text-success">{{ comment_stats.avg_comment_length }}</div>
-                                <p class="stats-label"><i class="fas fa-text-width stats-icon"></i>Avg Length</p>
-                            </div>
+                    <div class="stat-item">
+                        <div class="stat-icon text-success"><i class="fas fa-text-width"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ comment_stats.avg_comment_length }}</div>
+                            <div class="stat-label">Avg Length</div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-sm-6 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body stats-card">
-                                <div class="stats-value text-info">{{ comment_stats.top_level_count }}</div>
-                                <p class="stats-label"><i class="fas fa-comment-dots stats-icon"></i>Comment Threads</p>
-                            </div>
+                    <div class="stat-item">
+                        <div class="stat-icon text-info"><i class="fas fa-comment-dots"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ comment_stats.top_level_count }}</div>
+                            <div class="stat-label">Threads</div>
                         </div>
                     </div>
-                    <div class="col-md-6 col-sm-6 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body stats-card">
-                                <div class="stats-value text-warning">{{ comment_stats.replies_count }}</div>
-                                <p class="stats-label"><i class="fas fa-reply stats-icon"></i>Thread Replies</p>
-                            </div>
+                    <div class="stat-item">
+                        <div class="stat-icon text-warning"><i class="fas fa-reply"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ comment_stats.replies_count }}</div>
+                            <div class="stat-label">Replies</div>
                         </div>
                     </div>
                 </div>
+                
+                {% if not current_user.is_authenticated or not current_user.is_subscribed %}
+                <div class="pro-upgrade-banner mb-3">
+                    <div class="pro-banner-content">
+                        <i class="fas fa-star pro-star"></i>
+                        <div class="pro-text">
+                            <strong>Unlock Pro Analysis</strong>
+                            <span>Get 100% comment coverage with advanced filtering</span>
+                        </div>
+                        {% if not current_user.is_authenticated %}
+                            <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Sign In</a>
+                        {% else %}
+                            <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-primary">Upgrade</a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
                 
                 <!-- Top Commenters -->
                 {% if comment_stats.top_commenters %}
@@ -1024,7 +1159,13 @@
                                     <div class="coverage-stats">
                                         <div class="stat-badge">
                                             <span class="stat-label">Comments</span>
-                                            <span class="stat-value" id="commentCountEstimate">{{ ((comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments) * 0.5)|int }}</span>
+                                            <input type="number" 
+                                                   class="stat-value-input" 
+                                                   id="commentCountEstimate" 
+                                                   value="{{ ((comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments) * 0.5)|int }}"
+                                                   min="1"
+                                                   max="{{ comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments }}"
+                                                   data-total="{{ comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments }}">
                                         </div>
                                         <div class="stat-badge">
                                             <span class="stat-label">Est. Time</span>
@@ -1415,57 +1556,128 @@ document.addEventListener('DOMContentLoaded', async function() {
         startButtonMain.addEventListener('click', startSentimentAnalysis);
     }
     
+    // Function to update all UI elements based on comment count
+    function updateCoverageUI(commentCount) {
+        const percentage = Math.round((commentCount / totalAvailableComments) * 100);
+        const estimatedTime = Math.max(1, Math.round((commentCount / 100) * 2 * 10) / 10);
+        
+        // Update slider if it exists
+        if (percentageSlider) {
+            percentageSlider.value = percentage;
+        }
+        
+        // Update displays
+        document.getElementById('percentageDisplay').textContent = percentage + '%';
+        
+        // Update time estimate
+        const timeEl = document.getElementById('timeEstimate');
+        if (timeEl) {
+            // Use the time formatter if over 60 seconds
+            if (estimatedTime >= 60) {
+                const minutes = estimatedTime / 60;
+                if (minutes < 2) {
+                    timeEl.textContent = `~${minutes.toFixed(1)} minute`;
+                } else {
+                    timeEl.textContent = `~${minutes.toFixed(1)} minutes`;
+                }
+            } else {
+                timeEl.textContent = `~${estimatedTime}s`;
+            }
+        }
+        
+        // Update accuracy estimate
+        const accuracyEl = document.getElementById('accuracyEstimate');
+        if (accuracyEl) {
+            if (percentage <= 30) {
+                accuracyEl.textContent = 'Quick';
+            } else if (percentage <= 70) {
+                accuracyEl.textContent = 'Good';
+            } else {
+                accuracyEl.textContent = 'Best';
+            }
+        }
+        
+        // Update tip
+        const tipEl = document.getElementById('coverageTip');
+        if (tipEl) {
+            if (percentage <= 30) {
+                tipEl.textContent = 'Quick analysis - good for a rapid overview';
+            } else if (percentage <= 70) {
+                tipEl.textContent = 'Balanced analysis - recommended for most use cases';
+            } else {
+                tipEl.textContent = 'Comprehensive analysis - best accuracy';
+            }
+        }
+        
+        // Update button text if needed
+        if (fetchedComments > 0 && startButtonMain) {
+            if (Math.abs(commentCount - fetchedComments) > 5) {
+                startButtonMain.innerHTML = '<span class="button-icon">🧠</span><span class="button-text">Analyze Sentiment</span>';
+            } else {
+                startButtonMain.innerHTML = '<span class="button-icon">📊</span><span class="button-text">Load Analysis Results</span>';
+            }
+        }
+    }
+    
     // Percentage slider event listener for Pro users
     const percentageSlider = document.getElementById('commentPercentageSlider');
     if (percentageSlider) {
         percentageSlider.addEventListener('input', function() {
-            // Mark as modified when user changes the slider
             isModified = true;
-            
-            // If slider was modified and comments were preloaded, change button back
-            if (fetchedComments > 0 && startButtonMain) {
-                const selectedPercentage = parseInt(this.value);
-                const selectedComments = Math.ceil(totalAvailableComments * (selectedPercentage / 100));
-                
-                // If the selected value differs from what's loaded, change button text
-                if (Math.abs(selectedComments - fetchedComments) > 5) { // Allow small margin
-                    startButtonMain.innerHTML = '<span class="button-icon">🧠</span><span class="button-text">Analyze Sentiment</span>';
-                } else {
-                    // If slider is back to loaded amount, show "Load Results"
-                    startButtonMain.innerHTML = '<span class="button-icon">📊</span><span class="button-text">Load Analysis Results</span>';
-                }
-            }
-            const percentage = this.value;
+            const percentage = parseInt(this.value);
             const commentCount = Math.ceil(totalAvailableComments * (percentage / 100));
-            const estimatedTime = Math.max(1, Math.round((commentCount / 100) * 2 * 10) / 10); // Estimate ~2 seconds per 100 comments
             
-            // Update displays
-            document.getElementById('percentageDisplay').textContent = percentage + '%';
-            document.getElementById('commentCountEstimate').textContent = commentCount.toLocaleString();
-            document.getElementById('timeEstimate').textContent = `~${estimatedTime}s`;
-            
-            // Update accuracy estimate
-            const accuracyEl = document.getElementById('accuracyEstimate');
-            if (accuracyEl) {
-                if (percentage <= 30) {
-                    accuracyEl.textContent = 'Quick';
-                } else if (percentage <= 70) {
-                    accuracyEl.textContent = 'Good';
-                } else {
-                    accuracyEl.textContent = 'Best';
-                }
+            // Update the input field with the new value
+            const commentInput = document.getElementById('commentCountEstimate');
+            if (commentInput) {
+                commentInput.value = commentCount;
             }
             
-            // Update tip
-            const tipEl = document.getElementById('coverageTip');
-            if (tipEl) {
-                if (percentage <= 30) {
-                    tipEl.textContent = 'Quick analysis - good for a rapid overview';
-                } else if (percentage <= 70) {
-                    tipEl.textContent = 'Balanced analysis - recommended for most use cases';
-                } else {
-                    tipEl.textContent = 'Comprehensive analysis - best accuracy';
-                }
+            updateCoverageUI(commentCount);
+        });
+    }
+    
+    // Comment count input event listener
+    const commentCountInput = document.getElementById('commentCountEstimate');
+    if (commentCountInput) {
+        // Handle input changes
+        commentCountInput.addEventListener('input', function() {
+            isModified = true;
+            let value = parseInt(this.value) || 0;
+            const max = parseInt(this.getAttribute('max'));
+            const min = parseInt(this.getAttribute('min'));
+            
+            // Enforce min/max bounds
+            if (value > max) value = max;
+            if (value < min) value = min;
+            
+            updateCoverageUI(value);
+        });
+        
+        // Handle when user finishes typing (blur or enter key)
+        commentCountInput.addEventListener('blur', function() {
+            let value = parseInt(this.value) || 0;
+            const max = parseInt(this.getAttribute('max'));
+            const min = parseInt(this.getAttribute('min'));
+            
+            // Enforce bounds and update display
+            if (value > max) {
+                value = max;
+                this.value = max;
+            }
+            if (value < min) {
+                value = min;
+                this.value = min;
+            }
+            
+            updateCoverageUI(value);
+        });
+        
+        // Handle Enter key
+        commentCountInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                this.blur();
             }
         });
     }
@@ -1673,20 +1885,35 @@ function startSentimentAnalysis() {
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     
-    // Get the selected percentage - 25% for free users, slider value for pro users
+    // Get the selected comment count from the input field for Pro users
     const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
+    const commentCountInput = document.getElementById('commentCountEstimate');
     const percentageSlider = document.getElementById('commentPercentageSlider');
-    const selectedPercentage = isProUser && percentageSlider ? parseInt(percentageSlider.value) : 25;
-    // Use total available comments from video statistics, not just fetched comments
+    
+    // Use total available comments from video statistics
     const totalAvailable = {{ comment_stats.total_available or 0 }};
     const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0) or 0 }};
     const fetchedCommentsCount = {{ comment_stats.total_comments }};
     const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
     const fetchedComments = {{ comment_stats.fetched_comments }};
     const maxFreeComments = 1000; // Cap free analysis at 1000 comments
-    const commentsToAnalyze = isProUser ? 
-        Math.ceil(totalAvailableComments * (selectedPercentage / 100)) : 
-        Math.min(Math.ceil(totalAvailableComments * 0.25), maxFreeComments);
+    
+    // For Pro users, prefer the input value; for free users use 25%
+    let commentsToAnalyze;
+    let selectedPercentage;
+    
+    if (isProUser && commentCountInput) {
+        // Use the direct input value for Pro users
+        commentsToAnalyze = parseInt(commentCountInput.value) || Math.ceil(totalAvailableComments * 0.5);
+        // Ensure it's within bounds
+        commentsToAnalyze = Math.min(commentsToAnalyze, totalAvailableComments);
+        commentsToAnalyze = Math.max(commentsToAnalyze, 1);
+        selectedPercentage = Math.round((commentsToAnalyze / totalAvailableComments) * 100);
+    } else {
+        // Free users get 25% or max 1000 comments
+        selectedPercentage = 25;
+        commentsToAnalyze = Math.min(Math.ceil(totalAvailableComments * 0.25), maxFreeComments);
+    }
     
     // Check if we can use already loaded comments
     const usePreloaded = fetchedComments > 0 && 
