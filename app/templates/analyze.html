@@ -1364,7 +1364,6 @@
         </div>
     </div>
 </div>
-</script>
 {% endblock %}
 
 {% block extra_js %}
@@ -2381,11 +2380,43 @@ function displayResults(results) {
         aiSummaryEl.textContent = summary.summary;
     }
     
-    // Create charts (with small delay to ensure elements are visible)
+    // Create charts (with delay to ensure elements are visible and properly sized)
     setTimeout(() => {
-        createSentimentPieChart(sentiment);
-        createTimelineChart(results.timeline);
-    }, 100);
+        // Ensure the results div is visible first
+        const resultsDiv = document.getElementById('analysisResults');
+        if (resultsDiv && resultsDiv.style.display !== 'none') {
+            // Force canvas elements to have proper dimensions
+            const pieCanvas = document.getElementById('sentimentPieChart');
+            const timelineCanvas = document.getElementById('sentimentTimelineChart');
+            
+            if (pieCanvas) {
+                // Set explicit dimensions if needed
+                const parent = pieCanvas.parentElement;
+                if (parent) {
+                    pieCanvas.style.width = '100%';
+                    pieCanvas.style.height = '400px';
+                }
+                createSentimentPieChart(sentiment);
+            }
+            
+            if (timelineCanvas) {
+                // Set explicit dimensions if needed
+                const parent = timelineCanvas.parentElement;
+                if (parent) {
+                    timelineCanvas.style.width = '100%';
+                    timelineCanvas.style.height = '200px';
+                }
+                createTimelineChart(results.timeline);
+            }
+        } else {
+            console.error('Results div not visible, retrying charts...');
+            // Retry after a longer delay
+            setTimeout(() => {
+                createSentimentPieChart(sentiment);
+                createTimelineChart(results.timeline);
+            }, 500);
+        }
+    }, 200);
     
     // Display sample comments
     displaySampleComments(sentiment.individual_results);
@@ -2393,12 +2424,24 @@ function displayResults(results) {
 
 function createSentimentPieChart(sentiment) {
     try {
-        const ctx = document.getElementById('sentimentPieChart').getContext('2d');
+        console.log('Creating sentiment pie chart with data:', sentiment);
+        const canvas = document.getElementById('sentimentPieChart');
+        if (!canvas) {
+            console.error('Canvas element sentimentPieChart not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('Could not get 2D context from canvas');
+            return;
+        }
         
         if (charts.pie) charts.pie.destroy();
         
         // Use counts from either sentiment_counts or distribution
         const counts = (sentiment.sentiment_counts || sentiment.distribution || {positive: 0, neutral: 0, negative: 0});
+        console.log('Using sentiment counts:', counts);
         
         charts.pie = new Chart(ctx, {
             type: 'doughnut',
@@ -2501,11 +2544,25 @@ function buildMostMentionedConceptsHTML(summary) {
 
 function createTimelineChart(timeline) {
     try {
-        const ctx = document.getElementById('sentimentTimelineChart').getContext('2d');
+        console.log('Creating timeline chart with data:', timeline ? timeline.length : 'no timeline');
+        const canvas = document.getElementById('sentimentTimelineChart');
+        if (!canvas) {
+            console.error('Canvas element sentimentTimelineChart not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+            console.error('Could not get 2D context from timeline canvas');
+            return;
+        }
         
         if (charts.timeline) charts.timeline.destroy();
         
-        if (!timeline || timeline.length === 0) return;
+        if (!timeline || timeline.length === 0) {
+            console.log('No timeline data available');
+            return;
+        }
         
         // Process timeline data with smoothing and grouping
         const labels = [];
