@@ -814,8 +814,8 @@
                                     <div class="locked-overlay">
                                         <span class="lock-icon">🔒</span>
                                         <h6>Premium Feature: Choose Your Analysis Depth</h6>
-                                        <p class="mb-2"><strong>Free users:</strong> 10% sample analysis (up to 100 comments)</p>
-                                        <p class="mb-3"><strong>Pro users:</strong> Analyze 10% to 100% of all comments</p>
+                                        <p class="mb-2"><strong>Free users:</strong> 25% sample analysis (up to 1,000 comments)</p>
+                                        <p class="mb-3"><strong>Pro users:</strong> Analyze 25% to 100% of all comments</p>
                                         <a href="{{ url_for('auth.subscribe') }}" class="vibe-button small">
                                             <span class="button-icon">⭐</span>
                                             <span class="button-text">Upgrade to Pro - $10/month</span>
@@ -823,10 +823,10 @@
                                     </div>
                                     <div class="coverage-preview locked">
                                         <div class="slider-container">
-                                            <label class="slider-label">Analysis Depth <span style="color: #10b981; font-weight: 600;">(Free: 10%)</span></label>
-                                            <input type="range" class="coverage-slider" disabled value="10">
+                                            <label class="slider-label">Analysis Depth <span style="color: #10b981; font-weight: 600;">(Free: 25%)</span></label>
+                                            <input type="range" class="coverage-slider" disabled value="25">
                                             <div class="slider-values">
-                                                <span style="color: #10b981; font-weight: 600;">10% ✓</span>
+                                                <span style="color: #10b981; font-weight: 600;">25% ✓</span>
                                                 <span class="current-value">50%</span>
                                                 <span>100%</span>
                                             </div>
@@ -834,11 +834,11 @@
                                         <div class="coverage-stats">
                                             <div class="stat-badge locked">
                                                 <span class="stat-label">Comments</span>
-                                                <span class="stat-value" style="color: #10b981; font-weight: 600;">{{ [comment_stats.total_comments * 0.1, 100]|min|int }}</span>
+                                                <span class="stat-value" style="color: #10b981; font-weight: 600;">{{ [comment_stats.total_comments * 0.25, 1000]|min|int }}</span>
                                             </div>
                                             <div class="stat-badge locked">
                                                 <span class="stat-label">Time</span>
-                                                <span class="stat-value">~{{ (([comment_stats.total_comments * 0.1, 100]|min / 100) * 2)|round(1) }}s</span>
+                                                <span class="stat-value">~{{ (([comment_stats.total_comments * 0.25, 1000]|min / 100) * 2)|round(1) }}s</span>
                                             </div>
                                         </div>
                                     </div>
@@ -858,12 +858,12 @@
                                         <input type="range" 
                                                class="coverage-slider" 
                                                id="commentPercentageSlider" 
-                                               min="10" 
+                                               min="25" 
                                                max="100" 
-                                               step="10" 
+                                               step="5" 
                                                value="50">
                                         <div class="slider-values">
-                                            <span>10%</span>
+                                            <span>25%</span>
                                             <span class="current-value" id="percentageDisplay">50%</span>
                                             <span>100%</span>
                                         </div>
@@ -901,7 +901,7 @@
                             <strong>✨ Try VibeCheckAI Free!</strong>
                             Your free analysis will include:
                             <ul class="mb-0 mt-2" style="padding-left: 20px;">
-                                <li>Up to <strong>{{ [comment_stats.total_comments * 0.1, 100]|min|int }}</strong> comments (10% sample, max 100)</li>
+                                <li>Up to <strong>{{ [comment_stats.total_comments * 0.25, 1000]|min|int }}</strong> comments (25% sample, max 1,000)</li>
                                 <li>Full sentiment breakdown & charts</li>
                                 <li>AI-powered summary & insights</li>
                                 <li>Key discussion themes analysis</li>
@@ -1507,16 +1507,16 @@ function startSentimentAnalysis() {
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     
-    // Get the selected percentage - 10% for free users, slider value for pro users
+    // Get the selected percentage - 25% for free users, slider value for pro users
     const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
     const percentageSlider = document.getElementById('commentPercentageSlider');
-    const selectedPercentage = isProUser && percentageSlider ? parseInt(percentageSlider.value) : 10;
+    const selectedPercentage = isProUser && percentageSlider ? parseInt(percentageSlider.value) : 25;
     const totalComments = {{ comment_stats.total_comments }};
     const fetchedComments = {{ comment_stats.fetched_comments }};
-    const maxFreeComments = 100; // Cap free analysis at 100 comments
+    const maxFreeComments = 1000; // Cap free analysis at 1000 comments
     const commentsToAnalyze = isProUser ? 
         Math.ceil(totalComments * (selectedPercentage / 100)) : 
-        Math.min(Math.ceil(totalComments * 0.1), maxFreeComments);
+        Math.min(Math.ceil(totalComments * 0.25), maxFreeComments);
     
     // Check if we can use already loaded comments
     const usePreloaded = fetchedComments > 0 && 
