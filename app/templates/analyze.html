@@ -1201,7 +1201,19 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Check if comments are already loaded
     const fetchedComments = {{ comment_stats.fetched_comments }};
     // Use total_available if present, otherwise use the video statistics comment count
-    const totalAvailableComments = {{ comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments }};
+    // Debug: Log values to understand the multiplication issue
+    const totalAvailable = {{ comment_stats.total_available or 0 }};
+    const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0) or 0 }};
+    const fetchedCommentsCount = {{ comment_stats.total_comments }};  // This is the fetched count
+    
+    console.log('Debug - totalAvailable:', totalAvailable);
+    console.log('Debug - videoStatsComments:', videoStatsComments);
+    console.log('Debug - fetchedCommentsCount:', fetchedCommentsCount);
+    
+    // Use the correct total - prefer total_available, then video stats, NOT fetched count
+    const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
+    console.log('Debug - totalAvailableComments used:', totalAvailableComments);
+    
     const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
     let isModified = false; // Track if user has modified the slider
     
@@ -1513,7 +1525,10 @@ function startSentimentAnalysis() {
     const percentageSlider = document.getElementById('commentPercentageSlider');
     const selectedPercentage = isProUser && percentageSlider ? parseInt(percentageSlider.value) : 25;
     // Use total available comments from video statistics, not just fetched comments
-    const totalAvailableComments = {{ comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments }};
+    const totalAvailable = {{ comment_stats.total_available or 0 }};
+    const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0) or 0 }};
+    const fetchedCommentsCount = {{ comment_stats.total_comments }};
+    const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
     const fetchedComments = {{ comment_stats.fetched_comments }};
     const maxFreeComments = 1000; // Cap free analysis at 1000 comments
     const commentsToAnalyze = isProUser ? 

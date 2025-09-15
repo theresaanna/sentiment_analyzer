@@ -76,15 +76,14 @@ class EnhancedYouTubeService(YouTubeService):
         
         # Get video info first to know total comment count
         video_info = self.get_video_info(video_id, use_cache=use_cache)
-        # Note: YouTube's commentCount only includes top-level comments, not replies
-        total_top_level_comments = video_info['statistics']['comments']
+        # Note: YouTube's commentCount is the TOTAL count including all replies
+        total_comments_from_api = video_info['statistics']['comments']
         
-        logger.info(f"Video has {total_top_level_comments} top-level comments. Starting retrieval...")
+        logger.info(f"Video has {total_comments_from_api} total comments (including replies). Starting retrieval...")
         
         # Calculate how many comments we can realistically fetch
-        # Note: We estimate total with replies based on average reply rate
-        estimated_total_with_replies = int(total_top_level_comments * 1.5)  # Assume 50% of comments have replies
-        max_feasible = self._calculate_feasible_comments(estimated_total_with_replies, target_comments)
+        # Use the total from API as our estimate
+        max_feasible = self._calculate_feasible_comments(total_comments_from_api, target_comments)
         
         # Fetch comment threads
         all_comments = []
@@ -170,17 +169,17 @@ class EnhancedYouTubeService(YouTubeService):
                 actual_total_available = comments_fetched
             else:
                 # We were limited by pages/quota/target
-                # Use threads fetched vs total top-level comments for coverage
-                fetch_percentage = (threads_fetched / total_top_level_comments * 100) if total_top_level_comments > 0 else 0
-                # Estimate total available including replies
-                actual_total_available = int(total_top_level_comments * (1 + (replies_fetched / threads_fetched if threads_fetched > 0 else 0.5)))
+                # YouTube's commentCount is the total, so use that directly
+                actual_total_available = total_comments_from_api
+                # Calculate coverage based on what we fetched vs total available
+                fetch_percentage = (comments_fetched / actual_total_available * 100) if actual_total_available > 0 else 0
             
             result = {
                 'video': video_info,
                 'comments': all_comments,
                 'threads': all_threads,
                 'statistics': {
-                    'total_top_level_comments': total_top_level_comments,
+                    'total_top_level_comments': threads_fetched,  # Actual threads we fetched
                     'total_comments_available': actual_total_available,
                     'comments_fetched': comments_fetched,
                     'threads_fetched': threads_fetched,

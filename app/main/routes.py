@@ -116,10 +116,11 @@ def analyze_video(video_id):
         video_info = youtube_service.get_video_info(video_id)
         
         # Fetch maximum available comments using enhanced service
+        # Don't include replies by default to avoid confusion in counts
         result = youtube_service.get_all_available_comments(
             video_id=video_id,
             target_comments=max_comments,
-            include_replies=True,
+            include_replies=False,  # Changed to False to avoid count confusion
             sort_order='relevance'
         )
         comments = result['comments']
