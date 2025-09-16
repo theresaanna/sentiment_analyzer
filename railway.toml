@@ -8,13 +8,36 @@ builder = "NIXPACKS"
 providers = ["python"]
 
 [build.nixpacksPlan.phases.setup]
-nixPkgs = ["python311", "gcc", "postgresql", "redis"]
+# Ensure Python and packaging tools are present in the image
+nixPkgs = [
+    "python311",
+    "gcc",
+    "postgresql",
+    "redis",
+    "python311Packages.pip",
+    "python311Packages.setuptools",
+    "python311Packages.wheel",
+    "python311Packages.virtualenv"
+]
 
 [build.nixpacksPlan.phases.install]
+# Create a virtualenv and install into it to avoid PATH/packaging issues
 cmds = [
-    "pip install --upgrade pip",
-    "pip install -r requirements.txt",
+    "python3 -V",
+    "python3 -m pip --version || true",
+    "python3 -m pip install --upgrade pip setuptools wheel virtualenv",
+    "python3 -m virtualenv /opt/venv",
+    "/opt/venv/bin/pip --version",
+    "/opt/venv/bin/pip install --upgrade pip setuptools wheel",
+    "/opt/venv/bin/pip install -r requirements.txt",
     "echo 'Dependencies installed for all services'"
+]
+
+# Test phase to run during build (optional)
+[build.nixpacksPlan.phases.test]
+dependsOn = ["install"]
+cmds = [
+    "/opt/venv/bin/python scripts/run_tests_railway.py"
 ]
 
 # Deploy configuration
