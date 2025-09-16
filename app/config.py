@@ -72,8 +72,12 @@ class Config:
     # Rate limiting settings (for future implementation)
     RATELIMIT_STORAGE_URL = os.environ.get('REDIS_URL') or 'memory://'
     
-    # Application settings
-    MAX_COMMENTS_PER_VIDEO = int(os.environ.get('MAX_COMMENTS_PER_VIDEO', 10000))  # Increased for better analysis
+    # Application settings - Tiered comment limits
+    MAX_COMMENTS_ANONYMOUS = int(os.environ.get('MAX_COMMENTS_ANONYMOUS', 2500))  # Free tier - anonymous users
+    MAX_COMMENTS_FREE = int(os.environ.get('MAX_COMMENTS_FREE', 5000))  # Free tier - logged in users
+    MAX_COMMENTS_PRO = int(os.environ.get('MAX_COMMENTS_PRO', 50000))  # Pro tier - subscribers
+    MAX_COMMENTS_PER_VIDEO = int(os.environ.get('MAX_COMMENTS_PER_VIDEO', 50000))  # Absolute max
+    MAX_COMMENTS_PREVIEW = int(os.environ.get('MAX_COMMENTS_PREVIEW', 500))  # Fast preview mode
     CACHE_TIMEOUT = int(os.environ.get('CACHE_TIMEOUT', 300))  # 5 minutes
     
     # API Performance settings

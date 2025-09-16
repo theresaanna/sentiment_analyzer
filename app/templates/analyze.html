@@ -1408,13 +1408,13 @@
                 <!-- Compact Comment Coverage Info -->
                 <div class="comment-coverage-info mb-3">
                     <div class="coverage-summary">
-                        <div class="coverage-main">
-                            <span class="coverage-number">{{ "{:,}".format(comment_stats.total_comments) }}</span>
-                            <span class="coverage-text">comments analyzed</span>
+                    <div class="coverage-main">
+                        <span class="coverage-number comment-count-value" data-comment-total="true">{{ "{:,}".format(comment_stats.total_comments) }}</span>
+                        <span class="coverage-text">comments analyzed</span>
                             {% if comment_stats.fetch_percentage >= 99.9 %}
-                                <span class="badge badge-success ml-2">100% coverage</span>
+                                <span class="badge badge-success ml-2 fetch-percentage-badge">100% coverage</span>
                             {% elif comment_stats.fetch_percentage > 0 %}
-                                <span class="badge badge-info ml-2">{{ "%.1f"|format(comment_stats.fetch_percentage) }}% coverage</span>
+                                <span class="badge badge-info ml-2 fetch-percentage-badge">{{ "%.1f"|format(comment_stats.fetch_percentage) }}% coverage</span>
                             {% endif %}
                         </div>
                         <div class="coverage-details">
@@ -1422,8 +1422,8 @@
                                 <span class="detail-item">
                                     <i class="fas fa-comments"></i> {{ "{:,}".format(comment_stats.get('threads_fetched', 0)) }} threads
                                 </span>
-                                <span class="detail-item">
-                                    <i class="fas fa-reply"></i> {{ "{:,}".format(comment_stats.get('replies_count', 0)) }} replies
+                                <span class="detail-item" id="repliesDetailItem">
+                                    <i class="fas fa-reply"></i> <span class="replies-count-value">{{ "{:,}".format(comment_stats.get('replies_count', 0)) }}</span> replies
                                 </span>
                             {% endif %}
                             <span class="detail-item">
@@ -1931,6 +1931,66 @@ function applyStoredCorrections() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOMContentLoaded fired - initializing analyze page');
     
+    // Store original comment counts
+    const topLevelCount = {{ comment_stats.get('top_level_count', 0) }};
+    const repliesCount = {{ comment_stats.get('replies_count', 0) }};
+    const totalWithReplies = {{ comment_stats.get('total_comments', 0) }};
+    const totalTopLevelOnly = topLevelCount;
+    
+    // Function to update all comment counts on page
+    function updateCommentCounts(includeReplies) {
+        const newTotal = includeReplies ? totalWithReplies : totalTopLevelOnly;
+        
+        // Update total comments display in Comment Statistics section
+        const totalCommentsElement = document.querySelector('.comment-count-value');
+        if (totalCommentsElement) {
+            totalCommentsElement.textContent = newTotal.toLocaleString();
+        }
+        
+        // Update coverage badge
+        const percentageBadge = document.querySelector('.fetch-percentage-badge');
+        if (percentageBadge && totalAvailableComments > 0) {
+            const percentage = Math.min(100, Math.round((newTotal / totalAvailableComments) * 100));
+            if (percentage >= 99.9) {
+                percentageBadge.className = 'badge badge-success ml-2 fetch-percentage-badge';
+                percentageBadge.textContent = '100% coverage';
+            } else {
+                percentageBadge.className = 'badge badge-info ml-2 fetch-percentage-badge';
+                percentageBadge.textContent = `${percentage.toFixed(1)}% coverage`;
+            }
+        }
+        
+        // Show/hide replies detail item based on toggle state
+        const repliesDetailItem = document.getElementById('repliesDetailItem');
+        if (repliesDetailItem) {
+            repliesDetailItem.style.display = includeReplies ? 'inline' : 'none';
+        }
+        
+        // Update slider max and reconfigure
+        const effectiveTotal = Math.min(newTotal, totalAvailableComments);
+        window.currentTotalComments = effectiveTotal;
+        
+        // Reconfigure slider with new totals
+        configureSliderForUser();
+        
+        // Update current slider value if it exceeds new max
+        const currentValue = parseInt(unifiedSlider.value);
+        const maxValue = parseInt(unifiedSlider.max);
+        if (currentValue > maxValue) {
+            updateUnifiedUI(maxValue);
+        } else {
+            // Recalculate coverage percentage with new total
+            updateUnifiedUI(currentValue);
+        }
+        
+        // Update any displayed "total comments" text
+        document.querySelectorAll('[data-comment-total]').forEach(el => {
+            el.textContent = newTotal.toLocaleString();
+        });
+        
+        return newTotal;
+    }
+    
     // Initialize reply toggle
     const replyToggle = document.getElementById('includeRepliesToggle');
     const replyToggleLabel = document.getElementById('replyToggleLabel');
@@ -1938,14 +1998,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     if (replyToggle) {
         replyToggle.addEventListener('change', function() {
-            if (this.checked) {
+            const includeReplies = this.checked;
+            
+            // Update labels
+            if (includeReplies) {
                 replyToggleLabel.textContent = 'Include Reply Threads';
-                replyToggleDescription.textContent = 'Analyze both top-level comments and replies';
+                replyToggleDescription.textContent = `Analyze both top-level comments and replies (${repliesCount.toLocaleString()} replies)`;
             } else {
                 replyToggleLabel.textContent = 'Top-Level Comments Only';
-                replyToggleDescription.textContent = 'Analyze only direct responses to the video';
+                replyToggleDescription.textContent = `Analyze only direct responses to the video (${topLevelCount.toLocaleString()} comments)`;
             }
+            
+            // Update all comment counts on page
+            const newTotal = updateCommentCounts(includeReplies);
+            
+            // Log the change
+            console.log(`Reply toggle changed - Include replies: ${includeReplies}, New total: ${newTotal}`);
         });
+        
+        // Initialize with current state
+        const initialIncludeReplies = replyToggle.checked;
+        if (initialIncludeReplies && repliesCount > 0) {
+            replyToggleDescription.textContent = `Analyze both top-level comments and replies (${repliesCount.toLocaleString()} replies)`;
+        } else if (!initialIncludeReplies) {
+            replyToggleDescription.textContent = `Analyze only direct responses to the video (${topLevelCount.toLocaleString()} comments)`;
+        }
     }
     
     // Check if we have precomputed results from a completed job
@@ -2027,8 +2104,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('Debug - fetchedCommentsCount:', fetchedCommentsCount);
     
     // Use the correct total - prefer total_available, then video stats, NOT fetched count
-    const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount || 5000;
+    let totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount || 5000;
     console.log('Debug - totalAvailableComments used:', totalAvailableComments);
+    
+    // Track current total based on reply toggle state
+    window.currentTotalComments = totalAvailableComments;
     
     // Use global isAuthenticated and isProUser variables
     console.log('User status - isAuthenticated:', isAuthenticated, 'isProUser:', isProUser);
@@ -2065,15 +2145,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         let maxValue = 2500; // Default for logged out users
         let step = 5;
         
+        // Use currentTotalComments which respects the reply toggle state
+        const effectiveTotal = window.currentTotalComments || totalAvailableComments;
+        
         if (isProUser) {
-            // Pro users can analyze up to 100k or all (if less than 100k)
-            maxValue = Math.min(100000, totalAvailableComments);
-            step = totalAvailableComments > 10000 ? 1000 : 100;
+            // Pro users can analyze up to 50k or all (if less than 50k)
+            maxValue = Math.min(50000, effectiveTotal);
+            step = effectiveTotal > 10000 ? 500 : 100;
             
             // Add range indicators for Pro users
             if (sliderRangeIndicators) {
-                // Only show "All Comments" if total is <= 100k
-                const showAllComments = totalAvailableComments <= 100000 && totalAvailableComments > 10000;
+                // Only show "All Comments" if total is <= 50k
+                const showAllComments = effectiveTotal <= 50000 && effectiveTotal > 5000;
                 sliderRangeIndicators.innerHTML = `
                     <div class="range-indicator instant" data-range="instant">
                         <span class="range-label">Instant</span>
@@ -2081,21 +2164,21 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="range-indicator queue" data-range="queue">
                         <span class="range-label">Queue</span>
-                        <span class="range-limit">(≤10k)</span>
+                        <span class="range-limit">(≤ 5k)</span>
                     </div>
                     <div class="range-indicator pro-queue" data-range="pro-queue">
                         <span class="range-label">Pro Queue</span>
-                        <span class="range-limit">(≤100k)</span>
+                        <span class="range-limit">(≤50k)</span>
                     </div>
                     ${showAllComments ? `<div class="range-indicator all" data-range="all">
                         <span class="range-label">All Comments</span>
-                        <span class="range-limit">(${totalAvailableComments.toLocaleString()})</span>
+                        <span class="range-limit">(${effectiveTotal.toLocaleString()})</span>
                     </div>` : ''}
                 `;
             }
         } else if (isAuthenticated) {
-            // Logged in but not Pro - can queue up to 10k
-            maxValue = Math.min(10000, totalAvailableComments);
+            // Logged in but not Pro - can queue up to 5k
+            maxValue = Math.min(5000, effectiveTotal);
             step = 50;
             
             // Add range indicators for regular users (with Pro options disabled)
@@ -2107,11 +2190,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="range-indicator queue" data-range="queue">
                         <span class="range-label">Queue</span>
-                        <span class="range-limit">(≤10k)</span>
+                        <span class="range-limit">(≤ 5k)</span>
                     </div>
                     <div class="range-indicator disabled" data-range="pro-queue" title="Pro feature">
                         <span class="range-label">Pro Queue 👑</span>
-                        <span class="range-limit">(≤100k)</span>
+                        <span class="range-limit">(≤50k)</span>
                     </div>
                 `;
             }
@@ -2125,11 +2208,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     </div>
                     <div class="range-indicator disabled" data-range="queue" title="Sign in required">
                         <span class="range-label">Queue 🔒</span>
-                        <span class="range-limit">(≤10k)</span>
+                        <span class="range-limit">(≤ 5k)</span>
                     </div>
                     <div class="range-indicator disabled" data-range="pro-queue" title="Pro subscription required">
                         <span class="range-label">Pro Queue 👑</span>
-                        <span class="range-limit">(≤100k)</span>
+                        <span class="range-limit">(≤50k)</span>
                     </div>
                 `;
             }
@@ -2146,8 +2229,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Update max display
         if (sliderMax) {
-            sliderMax.textContent = maxValue >= 100000 ? 
-                (maxValue === totalAvailableComments ? 'All' : '100k') : 
+            sliderMax.textContent = maxValue >= 50000 ? 
+                (maxValue === effectiveTotal ? 'All' : '50k') : 
                 maxValue.toLocaleString();
         }
     }
@@ -2172,7 +2255,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Instant analysis range
             newMode = 'instant';
             buttonTextStr = 'Analyze Instantly';
-        } else if (value <= 10000) {
+        } else if (value <= 5000) {
             // Queue analysis range
             newMode = 'queue';
             icon = 'fas fa-clock';
@@ -2185,14 +2268,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (!isProUser && proTeaser) {
                 proTeaser.style.display = 'block';
             }
-        } else if (isProUser && value <= 100000) {
-            // Check if this should be "all" mode for videos with <= 100k comments
-            if (value === totalAvailableComments && totalAvailableComments <= 100000 && totalAvailableComments > 10000) {
+        } else if (isProUser && value <= 50000) {
+            // Check if this should be "all" mode for videos with <= 50k comments
+            const effectiveTotal = window.currentTotalComments || totalAvailableComments;
+            if (value === effectiveTotal && effectiveTotal <= 50000 && effectiveTotal > 5000) {
                 // This is "All Comments" mode
                 newMode = 'all';
                 icon = 'fas fa-infinity';
                 title = 'Complete Analysis';
-                description = `Analyze all ${totalAvailableComments.toLocaleString()} comments`;
+                description = `Analyze all ${effectiveTotal.toLocaleString()} comments`;
                 buttonIconEmoji = '✨';
                 buttonTextStr = 'Analyze All Comments';
             } else {
@@ -2216,7 +2300,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Update coverage percentage
         if (coveragePercent) {
-            const percentage = Math.min(100, Math.round((value / totalAvailableComments) * 100));
+            const effectiveTotal = window.currentTotalComments || totalAvailableComments;
+            const percentage = Math.min(100, Math.round((value / effectiveTotal) * 100));
             coveragePercent.textContent = `~${percentage}%`;
         }
         

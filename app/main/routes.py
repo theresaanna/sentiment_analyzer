@@ -99,8 +99,30 @@ def analyze_video(video_id):
         from app.services.enhanced_youtube_service import EnhancedYouTubeService
         youtube_service = EnhancedYouTubeService()
         
-        # Get more comments for better analysis (configurable)
-        max_comments = request.args.get('max_comments', type=int, default=1000)
+        # Get more comments for better analysis (configurable) - enforce user-based limits
+        from flask import current_app
+        from flask_login import current_user
+        
+        # Determine max comments based on user status
+        # For initial page load, only fetch a preview to speed up rendering
+        preview_mode = request.args.get('preview', 'true').lower() == 'true'
+        
+        if preview_mode:
+            # Fast preview mode - only load 100-500 comments for stats
+            max_comments = 500  # Quick load for stats display
+        else:
+            # Full mode - use tier limits
+            if current_user.is_authenticated:
+                if hasattr(current_user, 'is_subscribed') and current_user.is_subscribed:
+                    default_limit = current_app.config['MAX_COMMENTS_PRO']
+                else:
+                    default_limit = current_app.config['MAX_COMMENTS_FREE']
+            else:
+                default_limit = current_app.config['MAX_COMMENTS_ANONYMOUS']
+            
+            max_comments = request.args.get('max_comments', type=int, default=default_limit)
+            # Enforce the limit based on user type
+            max_comments = min(max_comments, default_limit)
         
         # Check if data is in cache first
         video_cached = cache.get('video_info', video_id) is not None
@@ -114,6 +136,22 @@ def analyze_video(video_id):
         
         # Fetch video info (will use cache if available)
         video_info = youtube_service.get_video_info(video_id)
+        
+        # Smart loading: Determine optimal initial load based on video size
+        total_video_comments = video_info.get('statistics', {}).get('comments', 0)
+        
+        # Adjust max_comments based on video size for faster initial load
+        if preview_mode and total_video_comments > 1000:
+            # For large videos in preview mode, load even less
+            if total_video_comments > 10000:
+                max_comments = 100  # Very fast load for huge videos
+            elif total_video_comments > 5000:
+                max_comments = 250  # Fast load for large videos
+            else:
+                max_comments = 500  # Standard preview
+        elif total_video_comments < 500:
+            # For small videos, just load all
+            max_comments = total_video_comments
         
         # Fetch maximum available comments using enhanced service
         # Don't include replies by default to avoid confusion in counts
@@ -691,7 +729,23 @@ def api_analyze_sentiment(video_id):
     try:
         # Get analysis parameters
         data = request.get_json() or {}
-        max_comments = data.get('max_comments', 100)
+        
+        # Determine max comments based on user status
+        from flask import current_app
+        from flask_login import current_user
+        
+        if current_user.is_authenticated:
+            if hasattr(current_user, 'is_subscribed') and current_user.is_subscribed:
+                user_limit = current_app.config['MAX_COMMENTS_PRO']
+            else:
+                user_limit = current_app.config['MAX_COMMENTS_FREE']
+        else:
+            user_limit = current_app.config['MAX_COMMENTS_ANONYMOUS']
+        
+        max_comments = data.get('max_comments', user_limit)
+        # Enforce the user's limit
+        max_comments = min(max_comments, user_limit)
+        
         percentage_selected = data.get('percentage_selected', 10)
         include_replies = data.get('include_replies', True)  # Default to True for backward compatibility
         

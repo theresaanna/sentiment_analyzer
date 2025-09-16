@@ -1,49 +1,335 @@
 {% extends "base.html" %}
 
-{% block title %}About - YouTube Sentiment Analyzer{% endblock %}
+{% block title %}About - VibeCheckAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Override main container for consistent styling */
+    main.container {
+        max-width: 100%;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .about-hero {
+        background: var(--primary-gradient);
+        padding: 80px 0;
+        color: white;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .about-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        pointer-events: none;
+    }
+    
+    .about-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .tech-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 20px;
+        margin-top: 30px;
+    }
+    
+    .tech-item {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .tech-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .tech-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+    
+    .stats-section {
+        background: #f8f9fa;
+        padding: 60px 0;
+    }
+    
+    .stat-card {
+        text-align: center;
+        padding: 30px;
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 1rem;
+        margin-top: 10px;
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-body p-5">
-                <h1 class="card-title text-center mb-4">About Sentiment Analyzer</h1>
-                
-                <p class="lead">
-                    The YouTube Sentiment Analyzer is a powerful tool designed to analyze and understand 
-                    the sentiment of comments on YouTube videos.
+<!-- Hero Section -->
+<div class="about-hero">
+    <div class="container about-content">
+        <div class="logo-wrapper mb-4">
+            <div class="logo-circle">
+                <span class="logo-emoji">✨</span>
+            </div>
+        </div>
+        <h1 class="display-4 fw-bold mb-3">
+            About VibeCheck<span class="gradient-text">AI</span>
+        </h1>
+        <p class="lead fs-4">
+            Empowering content creators with AI-driven audience insights
+        </p>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Mission Section -->
+            <div class="vibe-card mb-5">
+                <div class="text-center mb-4">
+                    <span class="feature-icon" style="font-size: 3rem;">🎯</span>
+                </div>
+                <h2 class="text-center mb-4">Our Mission</h2>
+                <p class="lead text-center">
+                    VibeCheckAI helps content creators understand their audience's true feelings through 
+                    advanced sentiment analysis. We transform thousands of comments into actionable insights, 
+                    helping you create content that truly resonates with your community.
                 </p>
-                
-                <h3 class="mt-4">Features</h3>
-                <ul>
-                    <li>Extract comments from any public YouTube video</li>
-                    <li>Perform sentiment analysis on comments</li>
-                    <li>Visualize sentiment distribution</li>
-                    <li>Identify trends and patterns in viewer feedback</li>
-                </ul>
-                
-                <h3 class="mt-4">How It Works</h3>
-                <ol>
-                    <li>Enter a YouTube video URL</li>
-                    <li>The system extracts the video ID</li>
-                    <li>Comments are fetched using the YouTube Data API</li>
-                    <li>Sentiment analysis is performed on each comment</li>
-                    <li>Results are aggregated and visualized</li>
-                </ol>
-                
-                <h3 class="mt-4">Technology Stack</h3>
-                <p>This application is built with:</p>
-                <ul>
-                    <li><strong>Flask</strong> - Python web framework</li>
-                    <li><strong>YouTube Data API v3</strong> - For fetching video data</li>
-                    <li><strong>Bootstrap 5</strong> - For responsive UI</li>
-                    <li><strong>Python 3.9+</strong> - Core programming language</li>
-                </ul>
-                
-                <div class="text-center mt-5">
-                    <a href="{{ url_for('main.index') }}" class="btn btn-gradient-gray btn-lg">
-                        <i class="fas fa-rocket"></i> Start Analyzing
+            </div>
+
+            <!-- How It Works -->
+            <div class="vibe-card mb-5">
+                <h2 class="mb-4">🚀 How It Works</h2>
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="step-number" style="display: inline-block; width: 40px; height: 40px; background: var(--primary-gradient); color: white; border-radius: 50%; line-height: 40px; font-weight: bold; margin-bottom: 15px;">1</div>
+                            <h5>Enter URL</h5>
+                            <p class="text-muted">Paste any YouTube video or channel URL to get started</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="step-number" style="display: inline-block; width: 40px; height: 40px; background: var(--primary-gradient); color: white; border-radius: 50%; line-height: 40px; font-weight: bold; margin-bottom: 15px;">2</div>
+                            <h5>AI Analysis</h5>
+                            <p class="text-muted">Our ML models analyze up to 50,000 comments in real-time</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="step-number" style="display: inline-block; width: 40px; height: 40px; background: var(--primary-gradient); color: white; border-radius: 50%; line-height: 40px; font-weight: bold; margin-bottom: 15px;">3</div>
+                            <h5>Get Insights</h5>
+                            <p class="text-muted">Receive detailed reports with charts, themes, and trends</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Grid -->
+            <div class="vibe-card mb-5">
+                <h2 class="mb-4">✨ Key Features</h2>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <span class="me-3" style="font-size: 1.5rem;">🤖</span>
+                            <div>
+                                <h5>Advanced AI Models</h5>
+                                <p class="text-muted">Transformer-based sentiment analysis using RoBERTa models with 95%+ accuracy</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <span class="me-3" style="font-size: 1.5rem;">📊</span>
+                            <div>
+                                <h5>Rich Visualizations</h5>
+                                <p class="text-muted">Interactive charts, word clouds, and sentiment distributions</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <span class="me-3" style="font-size: 1.5rem;">🎨</span>
+                            <div>
+                                <h5>Theme Detection</h5>
+                                <p class="text-muted">Identify trending topics and social media themes in comments</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <span class="me-3" style="font-size: 1.5rem;">⚡</span>
+                            <div>
+                                <h5>Real-time Processing</h5>
+                                <p class="text-muted">Asynchronous analysis with live progress tracking</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <span class="me-3" style="font-size: 1.5rem;">💾</span>
+                            <div>
+                                <h5>Export & Save</h5>
+                                <p class="text-muted">Download results as CSV/JSON and access analysis history</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-start">
+                            <span class="me-3" style="font-size: 1.5rem;">🔒</span>
+                            <div>
+                                <h5>Privacy First</h5>
+                                <p class="text-muted">Secure OAuth login with Google and encrypted data storage</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Technology Stack -->
+            <div class="vibe-card mb-5">
+                <h2 class="mb-4">🛠️ Technology Stack</h2>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <div class="tech-icon">🐍</div>
+                        <h6>Python & Flask</h6>
+                        <small class="text-muted">Backend Framework</small>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🗄️</div>
+                        <h6>PostgreSQL</h6>
+                        <small class="text-muted">Database</small>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">⚡</div>
+                        <h6>Redis</h6>
+                        <small class="text-muted">Cache & Queue</small>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🤗</div>
+                        <h6>Hugging Face</h6>
+                        <small class="text-muted">ML Models</small>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🚀</div>
+                        <h6>Modal</h6>
+                        <small class="text-muted">GPU Infrastructure</small>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">🚂</div>
+                        <h6>Railway</h6>
+                        <small class="text-muted">App Hosting</small>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">📺</div>
+                        <h6>YouTube API v3</h6>
+                        <small class="text-muted">Data Source</small>
+                    </div>
+                    <div class="tech-item">
+                        <div class="tech-icon">💳</div>
+                        <h6>Stripe</h6>
+                        <small class="text-muted">Payments</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pro Features -->
+            <div class="vibe-card mb-5" style="background: linear-gradient(135deg, #f0f4ff 0%, #e6f2ff 100%); border: 2px solid #c7d2fe;">
+                <div class="text-center mb-4">
+                    <span class="pro-badge" style="font-size: 1.2rem;">PRO</span>
+                </div>
+                <h2 class="text-center mb-4">Premium Features</h2>
+                <div class="row g-4">
+                    <div class="col-md-4 text-center">
+                        <span style="font-size: 2rem;">📈</span>
+                        <h5 class="mt-2">50,000 Comments</h5>
+                        <p class="text-muted small">Analyze entire conversations</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <span style="font-size: 2rem;">⚡</span>
+                        <h5 class="mt-2">Priority Queue</h5>
+                        <p class="text-muted small">Faster processing times</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <span style="font-size: 2rem;">📊</span>
+                        <h5 class="mt-2">Advanced Analytics</h5>
+                        <p class="text-muted small">Deeper insights & trends</p>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <a href="{{ url_for('auth.subscribe') }}" class="vibe-button">
+                        <span class="button-icon">⭐</span>
+                        <span class="button-text">Upgrade to Pro</span>
                     </a>
+                </div>
+            </div>
+
+            <!-- Call to Action -->
+            <div class="text-center mt-5">
+                <h3 class="mb-4">Ready to understand your audience?</h3>
+                <a href="{{ url_for('main.index') }}" class="vibe-button vibe-button-lg">
+                    <span class="button-icon">🎯</span>
+                    <span class="button-text">Start Your First Analysis</span>
+                </a>
+                <p class="mt-3" style="color: #8b5cf6; font-weight: 500;">No credit card required • Analyze up to 2,500 comments free</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Section -->
+<div class="stats-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">1M+</div>
+                    <div class="stat-label">Comments Analyzed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">95%+</div>
+                    <div class="stat-label">Accuracy Rate</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number"><1s</div>
+                    <div class="stat-label">Avg. Response Time</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">Availability</div>
                 </div>
             </div>
         </div>

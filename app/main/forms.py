@@ -54,10 +54,10 @@ class EnhancedYouTubeURLForm(FlaskForm):
             Optional(),
             NumberRange(min=10, max=50000, message='Must be between 10 and 50,000')
         ],
-        default=1000,
+        default=2500,
         render_kw={
             'class': 'form-control',
-            'placeholder': '1000',
+            'placeholder': '2500',
             'min': '10',
             'max': '50000'
         }

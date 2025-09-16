@@ -15,7 +15,7 @@ A production-ready Flask web application that analyzes the sentiment of YouTube 
 
 ### Core Functionality
 - 📹 **YouTube Integration**: Extract and analyze videos/channels from various URL formats
-- 💬 **Comment Analysis**: Fetch and analyze up to 10,000+ comments per video
+- 💬 **Comment Analysis**: Fetch and analyze comments (2.5K free / 5K logged-in / 50K pro)
 - 🤖 **Advanced ML Models**: Transformer-based sentiment analysis with confidence scoring
 - 📊 **Rich Visualizations**: Interactive charts, word clouds, and sentiment distributions
 - 🎯 **Social Media Themes**: Detect trends like mental health, relationships, career discussions
@@ -129,7 +129,7 @@ STRIPE_WEBHOOK_SECRET=your-stripe-webhook-secret
 ```bash
 # Performance
 PRECOMPUTE_ANALYSIS_ON_PRELOAD=true
-PRELOAD_ANALYSIS_LIMIT=500
+PRELOAD_ANALYSIS_LIMIT=2500
 
 # Email (for notifications)
 MAIL_SERVER=smtp.gmail.com
@@ -377,7 +377,7 @@ railway run python
 ## Recent Features & Improvements
 
 ### Completed ✅
-- [x] Full YouTube API integration with 10K+ comment support
+- [x] Full YouTube API integration with up to 50K comment support
 - [x] Transformer-based sentiment analysis (RoBERTa)
 - [x] Real-time analysis with progress tracking
 - [x] Interactive visualizations (charts, word clouds)
@@ -484,12 +484,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- **YouTube Data API v3** for video data access
-- **Hugging Face** for transformer models
-- **Modal** for GPU infrastructure
-- **Railway** for seamless deployment
-- **Flask** community for the excellent framework
-- **Bootstrap** team for UI components
+- **[YouTube Data API v3](https://developers.google.com/youtube/v3)** for video data access
+- **[Hugging Face](https://huggingface.co/)** for transformer models
+- **[Modal](https://modal.com/)** for GPU infrastructure and ML service hosting
+- **[Railway](https://railway.app/)** for seamless deployment and application hosting
+- **[Flask](https://flask.palletsprojects.com/)** community for the excellent framework
+- **[Bootstrap](https://getbootstrap.com/)** team for UI components
 - All contributors and users of VibeCheckAI
 
 ## Contact

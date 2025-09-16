@@ -1193,6 +1193,54 @@ main {
     margin: 30px auto;
 }
 
+.footer-hosting {
+    margin-bottom: 20px;
+    font-size: 0.95rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+}
+
+.hosting-label {
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.hosting-link {
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    font-weight: 600;
+    transition: var(--transition);
+    position: relative;
+}
+
+.hosting-link:hover {
+    color: white;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.hosting-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: white;
+    transition: width 0.3s ease;
+}
+
+.hosting-link:hover::after {
+    width: 100%;
+}
+
+.hosting-separator {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.8rem;
+}
+
 .footer-copyright {
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.9rem;
@@ -1230,6 +1278,16 @@ main {
     .example-url {
         font-size: 0.9rem;
         padding: 10px 15px;
+    }
+    
+    .footer-hosting {
+        flex-wrap: wrap;
+        font-size: 0.9rem;
+        gap: 8px;
+    }
+    
+    .hosting-separator {
+        display: none;
     }
 }
 
