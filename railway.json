@@ -20,7 +20,7 @@
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "sh -c \"flask db upgrade && gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 1 --worker-class sync --preload --log-level info --access-logfile - run:app\"",
+    "startCommand": "./start_web.sh",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10,
     "healthcheckPath": "/",

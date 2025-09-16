@@ -25,6 +25,7 @@ COPY . .
 RUN chmod +x railway_build.sh || true
 RUN chmod +x scripts/deploy_production_db.py || true
 RUN chmod +x scripts/run_tests_railway.py || true
+RUN chmod +x start_web.sh || true
 
 # Run unit tests during build; fail the build if tests fail
 # This uses the project-provided test runner which skips integration tests by default
@@ -36,6 +37,5 @@ RUN RAILWAY_RUN_TESTS=true python scripts/run_tests_railway.py
 # Railway will use PORT environment variable
 EXPOSE 8000
 
-# Use shell form to allow environment variable substitution
-# Start gunicorn directly
-CMD gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 4 --worker-class gthread --log-level info --access-logfile - run:app
+# Use startup script to handle PORT variable properly
+CMD ["./start_web.sh"]
