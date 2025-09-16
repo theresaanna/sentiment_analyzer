@@ -12,23 +12,12 @@ from app.models import User, AnalysisJob
 class TestQueueAnalysisRoute:
     """Test the queue analysis endpoint."""
     
-    @patch('app.main.analysis_queue_routes.EnhancedYouTubeService')
-    def test_queue_analysis_success(self, mock_youtube_service, authenticated_client, test_user):
+    def test_queue_analysis_success(self, authenticated_client, test_user):
         """Test successful job queuing."""
-        # Mock YouTube service
-        mock_instance = MagicMock()
-        mock_instance.get_video_info.return_value = {
-            'video_id': 'test123',
-            'title': 'Test Video',
-            'channel_title': 'Test Channel',
-            'statistics': {'comments': 1000}
-        }
-        mock_youtube_service.return_value = mock_instance
-        
         with authenticated_client.session_transaction() as sess:
             sess['_user_id'] = str(test_user.id)
         
-        response = authenticated_client.post('/api/queue/analyze', 
+        response = authenticated_client.post('/api/analyze/queue', 
             data=json.dumps({
                 'video_id': 'test123',
                 'comment_count': 100,
@@ -41,17 +30,17 @@ class TestQueueAnalysisRoute:
         data = json.loads(response.data)
         assert data['success'] is True
         assert 'job_id' in data
-        assert data['status'] == 'queued'
         
-        # Check job was created in database
+        # Check job was created in database and is queued
         job = AnalysisJob.query.filter_by(video_id='test123').first()
         assert job is not None
         assert job.comment_count_requested == 100
         assert job.include_replies is True
+        assert job.status == 'queued'
     
     def test_queue_analysis_missing_video_id(self, authenticated_client):
         """Test queuing without video_id."""
-        response = authenticated_client.post('/api/queue/analyze',
+        response = authenticated_client.post('/api/analyze/queue',
             data=json.dumps({
                 'comment_count': 100
             }),
@@ -61,30 +50,33 @@ class TestQueueAnalysisRoute:
         assert response.status_code == 400
         data = json.loads(response.data)
         assert data['success'] is False
-        assert 'video_id' in data['error'].lower()
+        assert 'valid video id' in data['error'].lower()
     
-    def test_queue_analysis_invalid_comment_count(self, authenticated_client):
-        """Test queuing with invalid comment count."""
-        response = authenticated_client.post('/api/queue/analyze',
+    def test_queue_analysis_comment_count_capped(self, authenticated_client, test_user):
+        """Test queuing caps comment_count at 10000 for Pro users."""
+        with authenticated_client.session_transaction() as sess:
+            sess['_user_id'] = str(test_user.id)
+        
+        response = authenticated_client.post('/api/analyze/queue',
             data=json.dumps({
                 'video_id': 'test123',
-                'comment_count': -50  # Invalid
+                'comment_count': 200000
             }),
             content_type='application/json'
         )
         
-        assert response.status_code == 400
-        data = json.loads(response.data)
-        assert data['success'] is False
+        assert response.status_code == 200
+        job = AnalysisJob.query.filter_by(video_id='test123').first()
+        assert job is not None
+        assert job.comment_count_requested == 10000
     
-    @patch('app.main.analysis_queue_routes.EnhancedYouTubeService')
-    def test_queue_analysis_youtube_error(self, mock_youtube_service, authenticated_client):
-        """Test handling of YouTube API errors."""
-        mock_instance = MagicMock()
-        mock_instance.get_video_info.side_effect = Exception('YouTube API error')
-        mock_youtube_service.return_value = mock_instance
+    @patch('app.main.analysis_queue_routes.db.session.commit', side_effect=Exception('DB error'))
+    def test_queue_analysis_db_error(self, mock_commit, authenticated_client, test_user):
+        """Test handling of database errors on queue."""
+        with authenticated_client.session_transaction() as sess:
+            sess['_user_id'] = str(test_user.id)
         
-        response = authenticated_client.post('/api/queue/analyze',
+        response = authenticated_client.post('/api/analyze/queue',
             data=json.dumps({
                 'video_id': 'test123',
                 'comment_count': 100
@@ -95,23 +87,14 @@ class TestQueueAnalysisRoute:
         assert response.status_code == 500
         data = json.loads(response.data)
         assert data['success'] is False
-        assert 'error' in data
+        assert 'db error' in data['error'].lower()
     
-    @patch('app.main.analysis_queue_routes.EnhancedYouTubeService')
-    def test_queue_duplicate_job(self, mock_youtube_service, authenticated_client, test_user):
+    def test_queue_duplicate_job(self, authenticated_client, test_user):
         """Test handling duplicate job requests."""
-        mock_instance = MagicMock()
-        mock_instance.get_video_info.return_value = {
-            'video_id': 'test123',
-            'title': 'Test Video',
-            'channel_title': 'Test Channel'
-        }
-        mock_youtube_service.return_value = mock_instance
-        
         with authenticated_client.session_transaction() as sess:
             sess['_user_id'] = str(test_user.id)
         
-        # Create existing job
+        # Create existing job in processing state
         existing_job = AnalysisJob(
             user_id=test_user.id,
             video_id='test123',
@@ -121,8 +104,8 @@ class TestQueueAnalysisRoute:
         db.session.add(existing_job)
         db.session.commit()
         
-        # Try to queue another
-        response = authenticated_client.post('/api/queue/analyze',
+        # Try to queue another job for same video
+        response = authenticated_client.post('/api/analyze/queue',
             data=json.dumps({
                 'video_id': 'test123',
                 'comment_count': 100
@@ -130,11 +113,12 @@ class TestQueueAnalysisRoute:
             content_type='application/json'
         )
         
+        # Should return 409 conflict
+        assert response.status_code == 409
         data = json.loads(response.data)
-        # Should either return existing job or create new one
-        assert response.status_code in [200, 409]
-        if response.status_code == 409:
-            assert 'already' in data.get('message', '').lower()
+        assert data['success'] is False
+        assert 'already in progress' in data['error'].lower()
+        assert 'job_id' in data  # Should return existing job ID
 
 
 class TestJobStatusRoute:
@@ -154,17 +138,18 @@ class TestJobStatusRoute:
             db.session.commit()
             job_id = job.job_id
         
-        response = authenticated_client.get(f'/api/queue/status/{job_id}')
+        response = authenticated_client.get(f'/api/analyze/job/{job_id}')
         
         assert response.status_code == 200
         data = json.loads(response.data)
-        assert data['status'] == 'processing'
-        assert data['progress'] == 50
-        assert data['video_id'] == 'test123'
+        assert data['success'] is True
+        assert data['job']['status'] == 'processing'
+        assert data['job']['progress'] == 50
+        assert data['job']['video_id'] == 'test123'
     
     def test_get_job_status_not_found(self, authenticated_client):
         """Test getting status for non-existent job."""
-        response = authenticated_client.get('/api/queue/status/nonexistent_job')
+        response = authenticated_client.get('/api/analyze/job/nonexistent_job')
         
         assert response.status_code == 404
         data = json.loads(response.data)
@@ -198,7 +183,7 @@ class TestJobStatusRoute:
             'password': 'password123'
         })
         
-        response = client.get(f'/api/queue/status/{job_id}')
+        response = client.get(f'/api/analyze/job/{job_id}')
         
         # Should not be able to see other user's job
         assert response.status_code in [403, 404]
@@ -230,7 +215,7 @@ class TestJobResultsRoute:
             db.session.commit()
             job_id = job.job_id
         
-        response = authenticated_client.get(f'/api/queue/results/{job_id}')
+        response = authenticated_client.get(f'/api/analyze/job/{job_id}/results')
         
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -252,12 +237,12 @@ class TestJobResultsRoute:
             db.session.commit()
             job_id = job.job_id
         
-        response = authenticated_client.get(f'/api/queue/results/{job_id}')
+        response = authenticated_client.get(f'/api/analyze/job/{job_id}/results')
         
-        assert response.status_code == 202
+        assert response.status_code == 400
         data = json.loads(response.data)
         assert data['success'] is False
-        assert 'not ready' in data['message'].lower()
+        assert 'not completed' in data['error'].lower()
     
     def test_get_job_results_failed(self, app, authenticated_client, test_user):
         """Test getting results for failed job."""
@@ -273,13 +258,12 @@ class TestJobResultsRoute:
             db.session.commit()
             job_id = job.job_id
         
-        response = authenticated_client.get(f'/api/queue/results/{job_id}')
+        response = authenticated_client.get(f'/api/analyze/job/{job_id}/results')
         
-        assert response.status_code == 500
+        assert response.status_code == 400
         data = json.loads(response.data)
         assert data['success'] is False
-        assert 'failed' in data['error'].lower()
-        assert 'rate limit' in data['error_details'].lower()
+        assert 'not completed' in data['error'].lower()
 
 
 class TestCancelJobRoute:
@@ -298,7 +282,7 @@ class TestCancelJobRoute:
             db.session.commit()
             job_id = job.job_id
         
-        response = authenticated_client.post(f'/api/queue/cancel/{job_id}')
+        response = authenticated_client.delete(f'/api/analyze/job/{job_id}')
         
         assert response.status_code == 200
         data = json.loads(response.data)
@@ -323,14 +307,12 @@ class TestCancelJobRoute:
             db.session.commit()
             job_id = job.job_id
         
-        response = authenticated_client.post(f'/api/queue/cancel/{job_id}')
+        response = authenticated_client.delete(f'/api/analyze/job/{job_id}')
         
-        # May or may not be able to cancel processing job
-        assert response.status_code in [200, 400]
+        # Should be able to cancel processing job
+        assert response.status_code == 200
         data = json.loads(response.data)
-        
-        if response.status_code == 400:
-            assert 'cannot cancel' in data['error'].lower()
+        assert data['success'] is True
     
     def test_cancel_completed_job(self, app, authenticated_client, test_user):
         """Test cancelling a completed job (should fail)."""
@@ -345,12 +327,12 @@ class TestCancelJobRoute:
             db.session.commit()
             job_id = job.job_id
         
-        response = authenticated_client.post(f'/api/queue/cancel/{job_id}')
+        response = authenticated_client.delete(f'/api/analyze/job/{job_id}')
         
         assert response.status_code == 400
         data = json.loads(response.data)
         assert data['success'] is False
-        assert 'already completed' in data['error'].lower()
+        assert 'cannot cancel' in data['error'].lower()
 
 
 class TestUserJobsRoute:
@@ -372,14 +354,15 @@ class TestUserJobsRoute:
             db.session.add_all(jobs)
             db.session.commit()
         
-        response = authenticated_client.get('/api/queue/my-jobs')
+        response = authenticated_client.get('/api/user/analysis-jobs')
         
         assert response.status_code == 200
         data = json.loads(response.data)
+        assert data['success'] is True
         assert 'jobs' in data
         assert len(data['jobs']) == 4
         
-        # Check ordering (newest first)
+        # Check statuses present
         statuses = [job['status'] for job in data['jobs']]
         assert set(statuses) == {'queued', 'processing', 'completed', 'failed'}
     
@@ -408,10 +391,11 @@ class TestUserJobsRoute:
             db.session.commit()
         
         # Get only completed jobs
-        response = authenticated_client.get('/api/queue/my-jobs?status=completed')
+        response = authenticated_client.get('/api/user/analysis-jobs?status=completed')
         
         assert response.status_code == 200
         data = json.loads(response.data)
+        assert data['success'] is True
         assert len(data['jobs']) == 3
         assert all(job['status'] == 'completed' for job in data['jobs'])
     
@@ -430,19 +414,20 @@ class TestUserJobsRoute:
             db.session.commit()
         
         # Get first page
-        response = authenticated_client.get('/api/queue/my-jobs?page=1&per_page=10')
+        response = authenticated_client.get('/api/user/analysis-jobs?limit=10&offset=0')
         
         assert response.status_code == 200
         data = json.loads(response.data)
+        assert data['success'] is True
         assert len(data['jobs']) == 10
         assert data['total'] == 25
-        assert data['page'] == 1
-        assert data['has_next'] is True
+        assert data['limit'] == 10
+        assert data['offset'] == 0
         
-        # Get last page
-        response = authenticated_client.get('/api/queue/my-jobs?page=3&per_page=10')
+        # Get last chunk
+        response = authenticated_client.get('/api/user/analysis-jobs?limit=10&offset=20')
         
         assert response.status_code == 200
         data = json.loads(response.data)
+        assert data['success'] is True
         assert len(data['jobs']) == 5
-        assert data['has_next'] is False
