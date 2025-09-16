@@ -27,7 +27,7 @@ cmds = [
 ]
 
 [start]
-cmd = "python scripts/railway_startup.py && gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 4 --worker-class gthread run:app"
+cmd = "python scripts/railway_startup.py && python start.py"
 
 [variables]
 RAILWAY_RUN_TESTS = "true"
