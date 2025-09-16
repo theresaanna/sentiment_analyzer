@@ -8,12 +8,12 @@ builder = "NIXPACKS"
 providers = ["python"]
 
 [build.nixpacksPlan.phases.setup]
-nixPkgs = ["python310", "python310Packages.pip", "gcc", "postgresql", "redis"]
+nixPkgs = ["python311", "gcc", "postgresql", "redis"]
 
 [build.nixpacksPlan.phases.install]
 cmds = [
-    "python -m pip install --upgrade pip",
-    "python -m pip install -r requirements.txt",
+    "pip install --upgrade pip",
+    "pip install -r requirements.txt",
     "echo 'Dependencies installed for all services'"
 ]
 
