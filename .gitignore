@@ -188,8 +188,8 @@ data/training/*.csv
 data/exports/*.csv
 data/exports/*.json
 
-# Project specific test files
-test_*.py
+# Project specific test files (only in root, not in tests/)
+/test_*.py
 requirements_updated.txt
 
 # Redis dump files
