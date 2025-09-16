@@ -2,12 +2,12 @@
 # This configuration runs tests during the build phase
 
 [phases.setup]
-nixPkgs = ["python310", "gcc", "postgresql", "redis"]
+nixPkgs = ["python310", "python310Packages.pip", "gcc", "postgresql", "redis"]
 
 [phases.install]
 cmds = [
-    "pip install --upgrade pip",
-    "pip install -r requirements.txt",
+    "python -m pip install --upgrade pip",
+    "python -m pip install -r requirements.txt",
     "echo '📦 Dependencies installed successfully'"
 ]
 
