@@ -133,10 +133,14 @@ def analyze_video(video_id):
         replies_count = 0
         
         for comment in comments:
-            unique_commenters.add(comment['author_channel_id'])
-            author = comment['author']
+            # Try to get unique identifier with fallbacks
+            author_id = comment.get('author_channel_id') or comment.get('author_id') or comment.get('author')
+            if author_id:
+                unique_commenters.add(author_id)
+            author = comment.get('author', 'Anonymous')
             commenter_frequency[author] = commenter_frequency.get(author, 0) + 1
-            total_length += len(comment['text'])
+            comment_text = comment.get('text', '')
+            total_length += len(comment_text)
             if comment.get('is_reply', False):
                 replies_count += 1
         
@@ -612,10 +616,12 @@ def api_analyze_sentiment(video_id):
         data = request.get_json() or {}
         max_comments = data.get('max_comments', 100)
         percentage_selected = data.get('percentage_selected', 10)
+        include_replies = data.get('include_replies', True)  # Default to True for backward compatibility
         
-        # Generate analysis_id based on percentage and video_id for consistency
+        # Generate analysis_id based on percentage, video_id, and reply setting for consistency
         # This ensures the same ID is used regardless of exact comment count
-        analysis_id = f"sentiment_{video_id}_{percentage_selected}pct_{max_comments}"
+        reply_suffix = "with_replies" if include_replies else "no_replies"
+        analysis_id = f"sentiment_{video_id}_{percentage_selected}pct_{max_comments}_{reply_suffix}"
         
         print(f"API: Received request - video_id: {video_id}, max_comments: {max_comments}, percentage: {percentage_selected}")
         print(f"API: Generated analysis_id: {analysis_id}")
@@ -648,7 +654,7 @@ def api_analyze_sentiment(video_id):
         # Start analysis in background thread
         thread = threading.Thread(
             target=run_sentiment_analysis,
-            args=(video_id, max_comments, analysis_id)
+            args=(video_id, max_comments, analysis_id, include_replies)
         )
         thread.daemon = True
         thread.start()
@@ -667,12 +673,12 @@ def api_analyze_sentiment(video_id):
         }), 500
 
 
-def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
+def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str, include_replies: bool = True):
     """
     Run sentiment analysis in background.
     """
     try:
-        print(f"Starting sentiment analysis for {video_id} with {max_comments} comments, ID: {analysis_id}")
+        print(f"Starting sentiment analysis for {video_id} with {max_comments} comments, include_replies={include_replies}, ID: {analysis_id}")
         
         # Update status
         cache.set('analysis_status', analysis_id, {'status': 'fetching_comments', 'progress': 10}, ttl_hours=1)
@@ -683,7 +689,7 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         result = youtube_service.get_all_available_comments(
             video_id=video_id,
             target_comments=max_comments,
-            include_replies=True,
+            include_replies=include_replies,  # Use the parameter from frontend
             sort_order='relevance'
         )
         video_info = result['video']
@@ -944,7 +950,14 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str):
         replies_count = 0
         
         for comment in comments:
-            unique_commenters.add(comment.get('author_channel_id', comment.get('author', 'unknown')))
+            # Try multiple fields to get unique identifier
+            author_id = comment.get('author_channel_id') or comment.get('author_id') or comment.get('author', 'unknown')
+            if author_id and author_id != 'unknown':
+                unique_commenters.add(author_id)
+            else:
+                # Fall back to author name if no ID available
+                unique_commenters.add(comment.get('author', f'user_{len(unique_commenters)}'))
+            
             author = comment.get('author', 'Anonymous')
             commenter_frequency[author] = commenter_frequency.get(author, 0) + 1
             total_length += len(comment.get('text', ''))

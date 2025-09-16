@@ -36,7 +36,335 @@
         </p>
         </div>
       </div>
+      
+      <!-- Analysis History Section -->
+      <div class="vibe-card mt-4">
+        <div class="card-header-vibe">
+          <h4 class="mb-0">
+            <span class="emoji-icon">📊</span> Your Analysis History
+            {% if current_user.is_subscribed %}
+            <small class="text-muted ms-2">(PRO & Free Jobs)</small>
+            {% endif %}
+          </h4>
+        </div>
+        <div class="card-body">
+          <!-- Filter buttons -->
+          <div class="btn-group mb-3" role="group" aria-label="Filter jobs">
+            <button type="button" class="btn btn-sm btn-outline-primary active" onclick="filterJobs('all')">All</button>
+            <button type="button" class="btn btn-sm btn-outline-warning" onclick="filterJobs('pro')"><i class="fas fa-star"></i> PRO Only</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="filterJobs('free')">Free Only</button>
+            <button type="button" class="btn btn-sm btn-outline-info" onclick="filterJobs('active')">Active</button>
+            <button type="button" class="btn btn-sm btn-outline-success" onclick="filterJobs('completed')">Completed</button>
+          </div>
+          <div id="analysis-history-loading" class="text-center py-3">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+          </div>
+          <div id="analysis-history-content" style="display: none;">
+            <!-- Will be populated by JavaScript -->
+          </div>
+          <div id="analysis-history-empty" style="display: none;" class="text-center py-4">
+            <p class="text-muted">No analyses yet. Start analyzing YouTube videos to see them here!</p>
+            <a href="{{ url_for('main.index') }}" class="vibe-button">
+              <span class="button-icon">🎬</span>
+              <span class="button-text">Analyze a Video</span>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
+
+<style>
+.analysis-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.analysis-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+  border-color: #667eea;
+}
+
+.analysis-item[onclick]:hover {
+  background-color: #f8f9ff;
+}
+
+.analysis-status {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.status-completed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-processing {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-queued {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-failed {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.sentiment-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.9em;
+  font-weight: 500;
+  margin-left: 10px;
+}
+
+.sentiment-positive {
+  background-color: #28a745;
+  color: white;
+}
+
+.sentiment-neutral {
+  background-color: #6c757d;
+  color: white;
+}
+
+.sentiment-negative {
+  background-color: #dc3545;
+  color: white;
+}
+
+.progress-bar-container {
+  height: 20px;
+  background-color: #f0f0f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  transition: width 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.8em;
+  font-weight: 600;
+}
+</style>
+
+<script>
+let allJobs = [];  // Store all jobs for filtering
+let currentFilter = 'all';
+
+// Load analysis history when page loads
+document.addEventListener('DOMContentLoaded', function() {
+  loadAnalysisHistory();
+  
+  // Refresh every 10 seconds if there are active jobs
+  setInterval(function() {
+    if (document.querySelector('.status-processing, .status-queued')) {
+      loadAnalysisHistory();
+    }
+  }, 10000);
+});
+
+function loadAnalysisHistory() {
+  fetch('/api/user/analysis-jobs?limit=50')  // Get more jobs for filtering
+    .then(response => response.json())
+    .then(data => {
+      const loadingDiv = document.getElementById('analysis-history-loading');
+      const contentDiv = document.getElementById('analysis-history-content');
+      const emptyDiv = document.getElementById('analysis-history-empty');
+      
+      loadingDiv.style.display = 'none';
+      
+      if (data.success && data.jobs && data.jobs.length > 0) {
+        allJobs = data.jobs;  // Store all jobs
+        applyFilter();  // Apply current filter
+      } else {
+        contentDiv.style.display = 'none';
+        emptyDiv.style.display = 'block';
+      }
+    })
+    .catch(error => {
+      console.error('Error loading analysis history:', error);
+      document.getElementById('analysis-history-loading').innerHTML = 
+        '<p class="text-danger">Error loading analysis history</p>';
+    });
+}
+
+function filterJobs(filter) {
+  currentFilter = filter;
+  
+  // Update button states
+  document.querySelectorAll('.btn-group button').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  event.target.classList.add('active');
+  
+  applyFilter();
+}
+
+function applyFilter() {
+  let filteredJobs = allJobs;
+  
+  switch(currentFilter) {
+    case 'pro':
+      filteredJobs = allJobs.filter(job => job.comment_count_requested > 2500);
+      break;
+    case 'free':
+      filteredJobs = allJobs.filter(job => job.comment_count_requested <= 2500);
+      break;
+    case 'active':
+      filteredJobs = allJobs.filter(job => ['queued', 'processing'].includes(job.status));
+      break;
+    case 'completed':
+      filteredJobs = allJobs.filter(job => job.status === 'completed');
+      break;
+  }
+  
+  const contentDiv = document.getElementById('analysis-history-content');
+  const emptyDiv = document.getElementById('analysis-history-empty');
+  
+  if (filteredJobs.length > 0) {
+    contentDiv.innerHTML = renderAnalysisJobs(filteredJobs);
+    contentDiv.style.display = 'block';
+    emptyDiv.style.display = 'none';
+  } else {
+    contentDiv.innerHTML = `<p class="text-center text-muted">No ${currentFilter === 'all' ? '' : currentFilter} jobs found</p>`;
+    contentDiv.style.display = 'block';
+    emptyDiv.style.display = 'none';
+  }
+}
+
+function renderAnalysisJobs(jobs) {
+  return jobs.map(job => {
+    const date = new Date(job.created_at);
+    const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+    
+    // Determine if this is a PRO job based on comment count or metadata
+    const isPro = job.comment_count_requested > 2500;
+    const jobTypeLabel = isPro ? 
+      '<span class="badge bg-warning text-dark ms-2"><i class="fas fa-star"></i> PRO</span>' : 
+      '<span class="badge bg-secondary ms-2">Free</span>';
+    
+    let statusBadge = `<span class="analysis-status status-${job.status}">${job.status}</span>`;
+    let actionButton = '';
+    let progressBar = '';
+    let sentimentBadge = '';
+    let timeEstimate = '';
+    let isClickable = false;
+    let jobUrl = `/analysis/${job.job_id}`;
+    
+    if (job.status === 'completed' && job.has_results) {
+      actionButton = `<a href="${jobUrl}" class="btn btn-sm btn-primary">View Results</a>`;
+      isClickable = true;
+      // We'll need to get sentiment from results when available
+    } else if (job.status === 'processing' || job.status === 'queued') {
+      progressBar = `
+        <div class="progress-bar-container">
+          <div class="progress-bar-fill" style="width: ${job.progress}%">
+            ${job.progress}%
+          </div>
+        </div>
+      `;
+      
+      // Add time estimates
+      let timeEstimate = '';
+      if (job.status === 'queued' && job.queue_position) {
+        timeEstimate = `<small class="text-muted">Position #${job.queue_position} in queue`;
+        if (job.estimated_wait_time) {
+          const waitMinutes = Math.round(job.estimated_wait_time / 60);
+          timeEstimate += ` • ~${waitMinutes} min wait`;
+        }
+        timeEstimate += '</small>';
+      } else if (job.status === 'processing' && job.estimated_processing_time) {
+        const remainingMinutes = Math.round(job.estimated_processing_time / 60);
+        timeEstimate = `<small class="text-muted">~${remainingMinutes} min remaining</small>`;
+      }
+      
+      if (job.status === 'processing') {
+        actionButton = `<button class="btn btn-sm btn-warning" onclick="cancelJob('${job.job_id}', event); return false;">Cancel</button>`;
+      }
+      isClickable = true; // Can click to view status page
+    } else if (job.status === 'failed') {
+      actionButton = `<small class="text-danger">${job.error_message || 'Analysis failed'}</small>`;
+    }
+    
+    // Make the whole card clickable for viewable jobs
+    const clickHandler = isClickable ? `onclick="window.location.href='${jobUrl}'" style="cursor: pointer;"` : '';
+    
+    return `
+      <div class="analysis-item" ${clickHandler}>
+        <div class="d-flex justify-content-between align-items-start">
+          <div class="flex-grow-1">
+            <h6>
+              ${job.video_title || 'Loading video title...'}
+              ${jobTypeLabel}
+              ${isClickable ? '<i class="fas fa-external-link-alt ms-2" style="font-size: 0.8em; opacity: 0.6;"></i>' : ''}
+            </h6>
+            <small class="text-muted">
+              ${job.channel_name ? `Channel: ${job.channel_name} • ` : ''}
+              ${dateStr}
+              ${isPro ? ` • ${job.comment_count_requested.toLocaleString()} comments` : ''}
+            </small>
+            ${progressBar}
+            <div class="mt-2">
+              ${statusBadge}
+              ${sentimentBadge}
+              ${job.comment_count_processed ? `<small class="ms-2">${job.comment_count_processed} comments analyzed</small>` : ''}
+              ${timeEstimate ? `<br>${timeEstimate}` : ''}
+            </div>
+          </div>
+          <div class="ms-3">
+            ${actionButton}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function cancelJob(jobId, event) {
+  // Prevent the click from bubbling up to the parent div
+  if (event) {
+    event.stopPropagation();
+  }
+  
+  if (confirm('Are you sure you want to cancel this analysis?')) {
+    fetch(`/api/analyze/job/${jobId}`, { method: 'DELETE' })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          loadAnalysisHistory();
+        } else {
+          alert('Error cancelling job: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error cancelling job:', error);
+        alert('Failed to cancel job');
+      });
+  }
+  return false; // Prevent default action
+}
+</script>
 {% endblock %}

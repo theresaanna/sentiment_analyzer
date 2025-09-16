@@ -258,6 +258,224 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
     
+    /* Enhanced Loading Experience Styles */
+    .analysis-loading-content {
+        text-align: center;
+        padding: 2rem;
+    }
+    
+    /* Custom Vibe Spinner */
+    .vibe-spinner {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin: 0 auto;
+    }
+    
+    .vibe-spinner-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        animation: vibeRotate 8s linear infinite;
+    }
+    
+    .vibe-emoji {
+        position: absolute;
+        font-size: 2rem;
+        animation: emojiPulse 2s ease-in-out infinite;
+    }
+    
+    .vibe-emoji:nth-child(1) {
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        animation-delay: 0s;
+    }
+    
+    .vibe-emoji:nth-child(2) {
+        top: 50%;
+        right: 0;
+        transform: translateY(-50%);
+        animation-delay: 0.5s;
+    }
+    
+    .vibe-emoji:nth-child(3) {
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        animation-delay: 1s;
+    }
+    
+    .vibe-emoji:nth-child(4) {
+        top: 50%;
+        left: 0;
+        transform: translateY(-50%);
+        animation-delay: 1.5s;
+    }
+    
+    @keyframes vibeRotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    @keyframes emojiPulse {
+        0%, 100% { 
+            transform: scale(1) translateX(var(--tx, -50%)) translateY(var(--ty, 0));
+            opacity: 0.7;
+        }
+        50% { 
+            transform: scale(1.2) translateX(var(--tx, -50%)) translateY(var(--ty, 0));
+            opacity: 1;
+        }
+    }
+    
+    /* Loading Status Text */
+    .loading-status {
+        color: #667eea;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        animation: fadeInOut 3s ease-in-out infinite;
+    }
+    
+    .loading-substatus {
+        color: #718096;
+        font-size: 0.95rem;
+        margin-bottom: 1.5rem;
+        font-style: italic;
+        animation: fadeInOut 4s ease-in-out infinite;
+    }
+    
+    @keyframes fadeInOut {
+        0%, 100% { opacity: 0.8; }
+        50% { opacity: 1; }
+    }
+    
+    /* Stylized Progress Bar */
+    .vibe-progress-container {
+        max-width: 400px;
+        margin: 0 auto 2rem;
+    }
+    
+    .vibe-progress-bar {
+        height: 28px;
+        background: #e2e8f0;
+        border-radius: 20px;
+        overflow: hidden;
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.08);
+    }
+    
+    .vibe-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        border-radius: 20px;
+        transition: width 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
+        position: relative;
+        width: 0%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .vibe-progress-glow {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: 100px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        animation: progressGlow 2s linear infinite;
+    }
+    
+    @keyframes progressGlow {
+        0% { transform: translateX(-100px); }
+        100% { transform: translateX(100px); }
+    }
+    
+    .vibe-progress-text {
+        margin-top: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .vibe-progress-text #progressText {
+        font-weight: 600;
+        color: #667eea;
+        font-size: 1.1rem;
+    }
+    
+    .progress-detail {
+        color: #718096;
+        font-size: 0.85rem;
+        font-style: italic;
+    }
+    
+    /* Fun Facts Section */
+    .loading-fun-fact {
+        background: linear-gradient(135deg, #faf5ff 0%, #f3e7fc 100%);
+        border: 1px solid #e9d5ff;
+        border-radius: 12px;
+        padding: 12px 20px;
+        margin-top: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: slideUp 0.5s ease-out;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .loading-fun-fact i {
+        color: #f59e0b;
+        font-size: 1.2rem;
+        animation: bulbBlink 2s ease-in-out infinite;
+    }
+    
+    @keyframes bulbBlink {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    #funFactText {
+        flex: 1;
+        color: #6b46c1;
+        font-size: 0.9rem;
+        transition: opacity 0.3s ease-in-out;
+    }
+    
+    /* Error Container Animations */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .error-container.animated {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    .error-container details summary:hover {
+        text-decoration: underline;
+    }
+    
     .stat-icon {
         font-size: 1.2rem;
         margin-right: 10px;
@@ -379,6 +597,49 @@
     
     .pro-upgrade-banner .btn {
         white-space: nowrap;
+    }
+    
+    /* New coverage UI styles */
+    .option-card {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 15px;
+        transition: all 0.3s;
+    }
+    
+    .option-card:hover {
+        border-color: #667eea;
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+    }
+    
+    .option-card h6 {
+        color: #2d3748;
+        margin-bottom: 8px;
+        font-size: 1rem;
+    }
+    
+    .option-card p {
+        color: #6c757d;
+        margin-bottom: 12px;
+    }
+    
+    .pro-features-teaser {
+        background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+        border: 1px solid #e0e7ff;
+        border-radius: 8px;
+        padding: 15px;
+        text-align: center;
+    }
+    
+    .coverage-free-user, .coverage-logged-in {
+        padding: 20px;
+    }
+    
+    .analysis-options {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
     }
     
     /* Editable comment count input styles */
@@ -846,6 +1107,63 @@
         color: #dc3545;
     }
     
+    /* Toggle Switch Styles */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 28px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 28px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    input:focus + .toggle-slider {
+        box-shadow: 0 0 1px #667eea;
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(32px);
+    }
+    
+    .reply-toggle-section {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+    
     .feedback-notice {
         background: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -984,25 +1302,25 @@
                             {% endif %}
                         </div>
                         <div class="coverage-details">
-                            {% if comment_stats.threads_fetched > 0 %}
+                            {% if comment_stats.get('threads_fetched', 0) > 0 %}
                                 <span class="detail-item">
-                                    <i class="fas fa-comments"></i> {{ "{:,}".format(comment_stats.threads_fetched) }} threads
+                                    <i class="fas fa-comments"></i> {{ "{:,}".format(comment_stats.get('threads_fetched', 0)) }} threads
                                 </span>
                                 <span class="detail-item">
-                                    <i class="fas fa-reply"></i> {{ "{:,}".format(comment_stats.replies_count) }} replies
+                                    <i class="fas fa-reply"></i> {{ "{:,}".format(comment_stats.get('replies_count', 0)) }} replies
                                 </span>
                             {% endif %}
                             <span class="detail-item">
-                                <i class="fas fa-clock"></i> {{ comment_stats.fetch_time | format_fetch_time }}
+                                <i class="fas fa-clock"></i> {{ comment_stats.get('fetch_time', 0) | format_fetch_time }}
                             </span>
                             <span class="detail-item">
-                                <i class="fas fa-tachometer-alt"></i> {{ "%.0f"|format(comment_stats.comments_per_second) }} /sec
+                                <i class="fas fa-tachometer-alt"></i> {{ "%.0f"|format(comment_stats.get('comments_per_second', 0)) }} /sec
                             </span>
                         </div>
                     </div>
                     
-                    {% if comment_stats.top_level_count > 0 and comment_stats.replies_count > 0 %}
-                        {% set avg_replies_per_thread = (comment_stats.replies_count / comment_stats.top_level_count)|round(1) %}
+                    {% if comment_stats.get('top_level_count', 0) > 0 and comment_stats.get('replies_count', 0) > 0 %}
+                        {% set avg_replies_per_thread = (comment_stats.get('replies_count', 0) / comment_stats.get('top_level_count', 1))|round(1) %}
                         {% if avg_replies_per_thread > 20 %}
                             <div class="mt-2">
                                 <span class="badge badge-warning">
@@ -1018,28 +1336,28 @@
                     <div class="stat-item">
                         <div class="stat-icon text-primary"><i class="fas fa-users"></i></div>
                         <div class="stat-content">
-                            <div class="stat-value">{{ comment_stats.unique_commenters }}</div>
+                            <div class="stat-value">{{ comment_stats.get('unique_commenters', 0) }}</div>
                             <div class="stat-label">Unique Users</div>
                         </div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-icon text-success"><i class="fas fa-text-width"></i></div>
                         <div class="stat-content">
-                            <div class="stat-value">{{ comment_stats.avg_comment_length }}</div>
+                            <div class="stat-value">{{ comment_stats.get('avg_comment_length', 0) }}</div>
                             <div class="stat-label">Avg Length</div>
                         </div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-icon text-info"><i class="fas fa-comment-dots"></i></div>
                         <div class="stat-content">
-                            <div class="stat-value">{{ comment_stats.top_level_count }}</div>
+                            <div class="stat-value">{{ comment_stats.get('top_level_count', 0) }}</div>
                             <div class="stat-label">Threads</div>
                         </div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-icon text-warning"><i class="fas fa-reply"></i></div>
                         <div class="stat-content">
-                            <div class="stat-value">{{ comment_stats.replies_count }}</div>
+                            <div class="stat-value">{{ comment_stats.get('replies_count', 0) }}</div>
                             <div class="stat-label">Replies</div>
                         </div>
                     </div>
@@ -1063,14 +1381,14 @@
                 {% endif %}
                 
                 <!-- Top Commenters -->
-                {% if comment_stats.top_commenters %}
+                {% if comment_stats.get('top_commenters') %}
                 <div class="card bg-light mb-3">
                     <div class="card-header">
                         <h5 class="mb-0"><i class="fas fa-trophy"></i> Most Active Commenters</h5>
                     </div>
                     <div class="card-body">
                         <ol class="list-group list-group-flush">
-                            {% for author, count in comment_stats.top_commenters %}
+                            {% for author, count in comment_stats.get('top_commenters', []) %}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span><strong>#{{ loop.index }}</strong> {{ author }}</span>
                                 <span class="badge badge-primary badge-pill">{{ count }} comments</span>
@@ -1096,64 +1414,40 @@
                         </div>
                         
                         <div class="coverage-body">
-                            {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
-                                <!-- Locked State for Free Users -->
-                                <div class="coverage-locked">
-                                    <div class="locked-overlay">
-                                        <span class="lock-icon">🔒</span>
-                                        <h6>Premium Feature: Choose Your Analysis Depth</h6>
-                                        <p class="mb-2"><strong>Free users:</strong> 25% sample analysis (up to 1,000 comments)</p>
-                                        <p class="mb-3"><strong>Pro users:</strong> Analyze 25% to 100% of all comments</p>
-                                        <a href="{{ url_for('auth.subscribe') }}" class="vibe-button small">
-                                            <span class="button-icon">⭐</span>
-                                            <span class="button-text">Upgrade to Pro - $10/month</span>
-                                        </a>
-                                    </div>
-                                    <div class="coverage-preview locked">
-                                        <div class="slider-container">
-                                            <label class="slider-label">Analysis Depth <span style="color: #10b981; font-weight: 600;">(Free: 25%)</span></label>
-                                            <input type="range" class="coverage-slider" disabled value="25">
-                                            <div class="slider-values">
-                                                <span style="color: #10b981; font-weight: 600;">25% ✓</span>
-                                                <span class="current-value">50%</span>
-                                                <span>100%</span>
-                                            </div>
-                                        </div>
-                                        <div class="coverage-stats">
-                                            <div class="stat-badge locked">
-                                                <span class="stat-label">Comments</span>
-                                            <span class="stat-value" style="color: #10b981; font-weight: 600;">{{ [(comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments) * 0.25, 1000]|min|int }}</span>
-                                            </div>
-                                            <div class="stat-badge locked">
-                                                <span class="stat-label">Time</span>
-                                            <span class="stat-value">~{{ (([(comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments) * 0.25, 1000]|min / 100) * 2)|round(1) }}s</span>
-                                            </div>
+                            <!-- Reply Toggle Section -->
+                            <div class="reply-toggle-section mb-3">
+                                <div class="d-flex align-items-center justify-content-center">
+                                    <label class="toggle-switch mb-0">
+                                        <input type="checkbox" id="includeRepliesToggle" checked>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <div class="ml-3">
+                                        <strong id="replyToggleLabel">Include Reply Threads</strong>
+                                        <div class="small text-muted" id="replyToggleDescription">
+                                            Analyze both top-level comments and replies
                                         </div>
                                     </div>
                                 </div>
-                            {% else %}
-                                <!-- Unlocked State for Pro Users -->
-                                <div class="coverage-unlocked">
+                            </div>
+                            <hr class="my-3">
+                            {% if not current_user.is_authenticated %}
+                                <!-- Free Users (Not Logged In) -->
+                                <div class="coverage-free-user">
                                     <div class="slider-container">
                                         <label class="slider-label">
-                                            Analysis Depth
-                                            {% if comment_stats.fetched_comments > 0 %}
-                                                <span class="badge badge-success ml-2" style="font-size: 0.8rem;">
-                                                    <i class="fas fa-check-circle"></i> {{ comment_stats.fetched_comments }} preloaded
-                                                </span>
-                                            {% endif %}
+                                            Comment Count <span style="color: #10b981; font-weight: 600;">(Free: 5-2,500)</span>
                                         </label>
                                         <input type="range" 
                                                class="coverage-slider" 
-                                               id="commentPercentageSlider" 
-                                               min="25" 
-                                               max="100" 
+                                               id="commentSliderFree" 
+                                               min="5" 
+                                               max="2500" 
                                                step="5" 
-                                               value="50">
+                                               value="1000">
                                         <div class="slider-values">
-                                            <span>25%</span>
-                                            <span class="current-value" id="percentageDisplay">50%</span>
-                                            <span>100%</span>
+                                            <span>5</span>
+                                            <span class="current-value" id="commentDisplayFree">1,000</span>
+                                            <span>2,500</span>
                                         </div>
                                     </div>
                                     <div class="coverage-stats">
@@ -1161,31 +1455,112 @@
                                             <span class="stat-label">Comments</span>
                                             <input type="number" 
                                                    class="stat-value-input" 
-                                                   id="commentCountEstimate" 
-                                                   value="{{ ((comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments) * 0.5)|int }}"
-                                                   min="1"
-                                                   max="{{ comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments }}"
-                                                   data-total="{{ comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments }}">
+                                                   id="commentCountFree" 
+                                                   value="1000"
+                                                   min="5"
+                                                   max="2500">
                                         </div>
                                         <div class="stat-badge">
                                             <span class="stat-label">Est. Time</span>
-                                            <span class="stat-value" id="timeEstimate">~{{ (((comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments) * 0.5 / 100) * 2)|round(1) }}s</span>
-                                        </div>
-                                        <div class="stat-badge">
-                                            <span class="stat-label">Accuracy</span>
-                                            <span class="stat-value" id="accuracyEstimate">Good</span>
+                                            <span class="stat-value" id="timeEstimateFree">~20s</span>
                                         </div>
                                     </div>
-                                    <p class="coverage-tip">
-                                        <span class="tip-icon">💡</span>
-                                        <span id="coverageTip">Balanced analysis - recommended for most use cases</span>
-                                    </p>
+                                    <div class="pro-features-teaser mt-3">
+                                        <p class="mb-2"><i class="fas fa-lock"></i> <strong>Want to analyze more comments?</strong></p>
+                                        <p class="small mb-2">Sign in to queue analysis jobs up to 10,000 comments!</p>
+                                        <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Sign In</a>
+                                        <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-primary ml-2">Create Account</a>
+                                    </div>
                                 </div>
+                            {% elif current_user.is_authenticated %}
+                                <!-- Logged In Users (Both Free and Pro) -->
+                                <div class="coverage-logged-in">
+                                    <div class="analysis-options">
+                                        <div class="option-card mb-3">
+                                            <h6><i class="fas fa-bolt"></i> Instant Analysis</h6>
+                                            <p class="small">Analyze up to 2,500 comments instantly</p>
+                                            <div class="slider-container">
+                                                <input type="range" 
+                                                       class="coverage-slider" 
+                                                       id="commentSliderInstant" 
+                                                       min="5" 
+                                                       max="2500" 
+                                                       step="5" 
+                                                       value="1000">
+                                                <div class="slider-values">
+                                                    <span>5</span>
+                                                    <span class="current-value" id="commentDisplayInstant">1,000</span>
+                                                    <span>2,500</span>
+                                                </div>
+                                            </div>
+                                            <button class="vibe-button mt-3 w-100" id="instantAnalysisBtn">
+                                                <span class="button-icon">🧠</span>
+                                                <span class="button-text">Analyze Instantly</span>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="option-card">
+                                            <h6><i class="fas fa-clock"></i> Queue Large Analysis</h6>
+                                            <p class="small">
+                                                Queue up to 10,000 comments for background processing
+                                                {% if current_user.is_subscribed %}
+                                                    <span class="badge badge-success ml-1">Pro Feature</span>
+                                                {% endif %}
+                                            </p>
+                                            <div class="slider-container">
+                                                <input type="range" 
+                                                       class="coverage-slider" 
+                                                       id="commentSliderQueue" 
+                                                       min="2501" 
+                                                       max="10000" 
+                                                       step="100" 
+                                                       value="5000"
+                                                       {% if not current_user.is_subscribed %}disabled{% endif %}>
+                                                <div class="slider-values">
+                                                    <span>2,501</span>
+                                                    <span class="current-value" id="commentDisplayQueue">5,000</span>
+                                                    <span>10,000</span>
+                                                </div>
+                                            </div>
+                                            <button class="vibe-button mt-3 w-100" id="queueAnalysisBtn" {% if not current_user.is_subscribed %}disabled{% endif %}>
+                                                <span class="button-icon">⏰</span>
+                                                <span class="button-text">Queue Analysis</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="coverage-stats mt-3">
+                                        <div class="stat-badge">
+                                            <span class="stat-label">Mode</span>
+                                            <span class="stat-value" id="analysisMode">Instant</span>
+                                        </div>
+                                        <div class="stat-badge">
+                                            <span class="stat-label">Comments</span>
+                                            <input type="number" 
+                                                   class="stat-value-input" 
+                                                   id="commentCountLoggedIn" 
+                                                   value="1000"
+                                                   min="5"
+                                                   max="10000">
+                                        </div>
+                                        <div class="stat-badge">
+                                            <span class="stat-label">Est. Time</span>
+                                            <span class="stat-value" id="timeEstimateLoggedIn">~20s</span>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if current_user.is_subscribed %}
+                                    <div class="pro-badge-display mt-3 text-center">
+                                        <span class="badge badge-success"><i class="fas fa-star"></i> Pro Account Active</span>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <!-- This else block intentionally left empty -->
                             {% endif %}
                         </div>
                     </div>
                     
-                    {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
+                    {% if not current_user.is_authenticated %}
                         <!-- Free User CTA -->
                         <button id="startSentimentAnalysisMain" class="vibe-button free-analysis pulse-animation">
                             <span class="button-icon">🧠</span>
@@ -1195,23 +1570,27 @@
                             <strong>✨ Try VibeCheckAI Free!</strong>
                             Your free analysis will include:
                             <ul class="mb-0 mt-2" style="padding-left: 20px;">
-                                <li>Up to <strong>{{ [(comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments) * 0.25, 1000]|min|int }}</strong> comments (25% sample, max 1,000)</li>
+                                <li>Analyze <strong>5 to 2,500</strong> comments instantly</li>
                                 <li>Full sentiment breakdown & charts</li>
                                 <li>AI-powered summary & insights</li>
                                 <li>Key discussion themes analysis</li>
                             </ul>
                             <small>
-                                <a href="{{ url_for('auth.subscribe') }}" style="color: #5a67d8; text-decoration: underline;">
-                                    Upgrade to Pro</a> to analyze all {{ comment_stats.total_available or (video_info.statistics.comments if video_info else 0) or comment_stats.total_comments }} comments with adjustable depth
+                                <a href="{{ url_for('auth.login') }}" style="color: #5a67d8; text-decoration: underline;">
+                                    Sign in</a> to queue analyses up to 10,000 comments
                             </small>
                         </div>
                     {% else %}
-                        <!-- Pro User CTA -->
-                        <button id="startSentimentAnalysisMain" class="vibe-button pulse-animation">
-                            <span class="button-icon">🧠</span>
-                            <span class="button-text">Analyze Sentiment</span>
-                        </button>
-                        <p class="text-muted mt-2 mb-0">Get AI-powered insights into the emotional tone of these comments</p>
+                        <!-- Logged In Users - buttons are in the option cards above -->
+                        <div class="text-center text-muted">
+                            <p class="mb-0">
+                                {% if current_user.is_subscribed %}
+                                    <i class="fas fa-star text-warning"></i> Pro: Choose instant or queued analysis above
+                                {% else %}
+                                    Choose instant or queued analysis above
+                                {% endif %}
+                            </p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
@@ -1231,16 +1610,37 @@
             <div class="card-body">
                 <!-- Progress Section -->
                 <div id="analysisProgress" class="progress-container">
-                    <div class="text-center">
-                        <div class="spinner-border text-primary mb-3" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
-                        <h5 id="progressStatus">Initializing analysis...</h5>
-                        <div class="progress mt-3" style="height: 25px; width: 300px; margin: 0 auto;">
-                            <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
-                                 role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                <span id="progressText">0%</span>
+                    <div class="analysis-loading-content">
+                        <!-- Custom animated vibes spinner -->
+                        <div class="vibe-spinner mb-4">
+                            <div class="vibe-spinner-inner">
+                                <span class="vibe-emoji">🎭</span>
+                                <span class="vibe-emoji">😊</span>
+                                <span class="vibe-emoji">😐</span>
+                                <span class="vibe-emoji">😔</span>
                             </div>
+                        </div>
+                        
+                        <h4 id="progressStatus" class="loading-status">Initializing vibe check...</h4>
+                        <p id="progressSubStatus" class="loading-substatus">Warming up the sentiment engines...</p>
+                        
+                        <!-- Styled progress bar -->
+                        <div class="vibe-progress-container">
+                            <div class="vibe-progress-bar">
+                                <div id="progressBar" class="vibe-progress-fill">
+                                    <div class="vibe-progress-glow"></div>
+                                </div>
+                            </div>
+                            <div class="vibe-progress-text">
+                                <span id="progressText">0%</span>
+                                <span id="progressDetail" class="progress-detail"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Fun facts during loading -->
+                        <div id="loadingFunFact" class="loading-fun-fact">
+                            <i class="fas fa-lightbulb"></i>
+                            <span id="funFactText">Did you know? The average YouTube comment is 27 words long!</span>
                         </div>
                     </div>
                 </div>
@@ -1485,6 +1885,90 @@ function applyStoredCorrections() {
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', async function() {
+    console.log('DOMContentLoaded fired - initializing analyze page');
+    
+    // Initialize reply toggle
+    const replyToggle = document.getElementById('includeRepliesToggle');
+    const replyToggleLabel = document.getElementById('replyToggleLabel');
+    const replyToggleDescription = document.getElementById('replyToggleDescription');
+    
+    if (replyToggle) {
+        replyToggle.addEventListener('change', function() {
+            if (this.checked) {
+                replyToggleLabel.textContent = 'Include Reply Threads';
+                replyToggleDescription.textContent = 'Analyze both top-level comments and replies';
+            } else {
+                replyToggleLabel.textContent = 'Top-Level Comments Only';
+                replyToggleDescription.textContent = 'Analyze only direct responses to the video';
+            }
+        });
+    }
+    
+    // Check if we have precomputed results from a completed job
+    {% if precomputed_results %}
+    console.log('Found precomputed results from job, displaying immediately');
+    // Show sentiment analysis section and results
+    const section = document.getElementById('sentimentAnalysisSection');
+    const progressDiv = document.getElementById('analysisProgress');
+    const resultsDiv = document.getElementById('analysisResults');
+    
+    if (section) {
+        section.style.display = 'block';
+        section.classList.add('active');
+    }
+    if (progressDiv) progressDiv.style.display = 'none';
+    if (resultsDiv) resultsDiv.style.display = 'block';
+    
+    // Display the precomputed results
+    const precomputedData = {{ precomputed_results|tojson }};
+    console.log('Precomputed data:', precomputedData);
+    
+    // Format it correctly for displayResults function
+    const formattedResults = {
+        sentiment: {
+            overall_sentiment: precomputedData.overall_sentiment || 'neutral',
+            distribution: precomputedData.distribution || {positive: 0, neutral: 0, negative: 0},
+            distribution_percentage: precomputedData.percentages || {positive: 0, neutral: 0, negative: 0},
+            sentiment_counts: precomputedData.distribution || {positive: 0, neutral: 0, negative: 0},
+            sentiment_percentages: precomputedData.percentages || {positive: 0, neutral: 0, negative: 0},
+            average_confidence: precomputedData.average_confidence || 0,
+            sentiment_score: precomputedData.sentiment_score || 0,
+            total_analyzed: precomputedData.total_analyzed || 0,
+            individual_results: precomputedData.individual_results || [],
+            model: precomputedData.model || 'enhanced-sentiment-v1'
+        },
+        summary: {
+            summary: precomputedData.summary || 'Analysis completed successfully.'
+        }
+    };
+    
+    console.log('Formatted results:', formattedResults);
+    displayResults(formattedResults);
+    
+    // Update comment statistics if we have updated_stats from the job
+    {% if updated_stats %}
+    console.log('Found updated_stats from job, updating comment statistics display');
+    const updatedStats = {{ updated_stats|tojson }};
+    updateCommentStatistics(updatedStats);
+    {% endif %}
+    
+    // Show sample comments section
+    const samplesSection = document.getElementById('sampleCommentsSection');
+    if (samplesSection) {
+        samplesSection.style.display = 'block';
+    }
+    {% endif %}
+    
+    // Add debug button for testing
+    const debugDiv = document.createElement('div');
+    debugDiv.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
+    debugDiv.innerHTML = `
+        <button onclick="testAnalysisAPI()" style="background: #ff6b6b; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">
+            🐛 Test API
+        </button>
+    `;
+    document.body.appendChild(debugDiv);
+    
     // Load user's previous feedback first
     await loadUserFeedback();
     
@@ -1492,12 +1976,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     
     // Check if comments are already loaded
-    const fetchedComments = {{ comment_stats.fetched_comments }};
+    const fetchedComments = {{ comment_stats.fetched_comments|default(0) }};
     // Use total_available if present, otherwise use the video statistics comment count
     // Debug: Log values to understand the multiplication issue
-    const totalAvailable = {{ comment_stats.total_available or 0 }};
-    const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0) or 0 }};
-    const fetchedCommentsCount = {{ comment_stats.total_comments }};  // This is the fetched count
+    const totalAvailable = {{ comment_stats.total_available|default(0) }};
+    const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0)|default(0) }};
+    const fetchedCommentsCount = {{ comment_stats.total_comments|default(0) }};  // This is the fetched count
     
     console.log('Debug - totalAvailable:', totalAvailable);
     console.log('Debug - videoStatsComments:', videoStatsComments);
@@ -1507,7 +1991,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
     console.log('Debug - totalAvailableComments used:', totalAvailableComments);
     
-    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
+    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson|default('false') }};
     let isModified = false; // Track if user has modified the slider
     
     // If comments are already loaded, update UI
@@ -1519,31 +2003,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             startButtonMain.innerHTML = '<span class="button-icon">📊</span><span class="button-text">Load Analysis Results</span>';
         }
         
-        // For Pro users, set slider to match loaded percentage
-        const percentageSlider = document.getElementById('commentPercentageSlider');
-        if (isProUser && percentageSlider) {
-            percentageSlider.value = loadedPercentage;
-            document.getElementById('percentageDisplay').textContent = loadedPercentage + '%';
-            document.getElementById('commentCountEstimate').textContent = fetchedComments.toLocaleString();
-            const estimatedTime = Math.max(1, Math.round((fetchedComments / 100) * 2 * 10) / 10);
-            document.getElementById('timeEstimate').textContent = `~${estimatedTime}s`;
-            
-            // Update accuracy estimate
-            const accuracyEl = document.getElementById('accuracyEstimate');
-            if (accuracyEl) {
-                if (loadedPercentage <= 30) {
-                    accuracyEl.textContent = 'Quick';
-                } else if (loadedPercentage <= 70) {
-                    accuracyEl.textContent = 'Good';
-                } else {
-                    accuracyEl.textContent = 'Best';
-                }
+        // For logged-in users, update the interface to show preloaded comments
+        const loggedInInput = document.getElementById('commentCountLoggedIn');
+        const instantSlider = document.getElementById('commentSliderInstant');
+        const instantDisplay = document.getElementById('commentDisplayInstant');
+        
+        if (loggedInInput && fetchedComments <= 2500) {
+            // Update instant analysis slider for preloaded comments
+            loggedInInput.value = fetchedComments;
+            if (instantSlider) {
+                instantSlider.value = fetchedComments;
             }
-            
-            // Update tip
-            const tipEl = document.getElementById('coverageTip');
-            if (tipEl) {
-                tipEl.textContent = `${fetchedComments} comments already loaded - click to analyze`;
+            if (instantDisplay) {
+                instantDisplay.textContent = fetchedComments.toLocaleString();
             }
         }
     }
@@ -1551,134 +2023,220 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (startButton) {
         startButton.addEventListener('click', startSentimentAnalysis);
     }
-    if (startButtonMain) {
+    // For free users (not logged in), keep the main button handler
+    const isUserAuthenticated = {{ current_user.is_authenticated|tojson|default('false') }};
+    if (startButtonMain && !isUserAuthenticated) {
         startButtonMain.addEventListener('click', startSentimentAnalysis);
     }
     
-    // Function to update all UI elements based on comment count
-    function updateCoverageUI(commentCount) {
-        const percentage = Math.round((commentCount / totalAvailableComments) * 100);
-        const estimatedTime = Math.max(1, Math.round((commentCount / 100) * 2 * 10) / 10);
+    // Note: Old updateCoverageUI function removed - now using specific UI update functions
+    
+    // Note: Old percentage slider code removed - all users now use the new interface
+    
+    // ============= NEW HANDLERS FOR FREE AND LOGGED-IN USER SLIDERS =============
+    
+    // Global mode variable for logged-in users
+    let currentMode = 'instant'; // 'instant' or 'queue'
+    let instantValue = 1000;
+    let queueValue = 5000;
+    
+    // Free User Slider and Input Handlers
+    const freeSlider = document.getElementById('commentSliderFree');
+    const freeInput = document.getElementById('commentCountFree');
+    const freeDisplay = document.getElementById('commentDisplayFree');
+    const freeTimeEstimate = document.getElementById('timeEstimateFree');
+    
+    function updateFreeUI(value) {
+        value = Math.min(2500, Math.max(5, parseInt(value) || 5));
         
-        // Update slider if it exists
-        if (percentageSlider) {
-            percentageSlider.value = percentage;
-        }
-        
-        // Update displays
-        document.getElementById('percentageDisplay').textContent = percentage + '%';
+        // Update all related elements
+        if (freeSlider) freeSlider.value = value;
+        if (freeInput) freeInput.value = value;
+        if (freeDisplay) freeDisplay.textContent = value.toLocaleString();
         
         // Update time estimate
-        const timeEl = document.getElementById('timeEstimate');
-        if (timeEl) {
-            // Use the time formatter if over 60 seconds
+        if (freeTimeEstimate) {
+            const estimatedTime = Math.max(1, Math.round((value / 100) * 2 * 10) / 10);
             if (estimatedTime >= 60) {
                 const minutes = estimatedTime / 60;
-                if (minutes < 2) {
-                    timeEl.textContent = `~${minutes.toFixed(1)} minute`;
-                } else {
-                    timeEl.textContent = `~${minutes.toFixed(1)} minutes`;
-                }
+                freeTimeEstimate.textContent = minutes < 2 ? 
+                    `~${minutes.toFixed(1)} minute` : 
+                    `~${minutes.toFixed(1)} minutes`;
             } else {
-                timeEl.textContent = `~${estimatedTime}s`;
-            }
-        }
-        
-        // Update accuracy estimate
-        const accuracyEl = document.getElementById('accuracyEstimate');
-        if (accuracyEl) {
-            if (percentage <= 30) {
-                accuracyEl.textContent = 'Quick';
-            } else if (percentage <= 70) {
-                accuracyEl.textContent = 'Good';
-            } else {
-                accuracyEl.textContent = 'Best';
-            }
-        }
-        
-        // Update tip
-        const tipEl = document.getElementById('coverageTip');
-        if (tipEl) {
-            if (percentage <= 30) {
-                tipEl.textContent = 'Quick analysis - good for a rapid overview';
-            } else if (percentage <= 70) {
-                tipEl.textContent = 'Balanced analysis - recommended for most use cases';
-            } else {
-                tipEl.textContent = 'Comprehensive analysis - best accuracy';
-            }
-        }
-        
-        // Update button text if needed
-        if (fetchedComments > 0 && startButtonMain) {
-            if (Math.abs(commentCount - fetchedComments) > 5) {
-                startButtonMain.innerHTML = '<span class="button-icon">🧠</span><span class="button-text">Analyze Sentiment</span>';
-            } else {
-                startButtonMain.innerHTML = '<span class="button-icon">📊</span><span class="button-text">Load Analysis Results</span>';
+                freeTimeEstimate.textContent = `~${estimatedTime}s`;
             }
         }
     }
     
-    // Percentage slider event listener for Pro users
-    const percentageSlider = document.getElementById('commentPercentageSlider');
-    if (percentageSlider) {
-        percentageSlider.addEventListener('input', function() {
-            isModified = true;
-            const percentage = parseInt(this.value);
-            const commentCount = Math.ceil(totalAvailableComments * (percentage / 100));
-            
-            // Update the input field with the new value
-            const commentInput = document.getElementById('commentCountEstimate');
-            if (commentInput) {
-                commentInput.value = commentCount;
-            }
-            
-            updateCoverageUI(commentCount);
+    if (freeSlider) {
+        freeSlider.addEventListener('input', function() {
+            updateFreeUI(this.value);
         });
     }
     
-    // Comment count input event listener
-    const commentCountInput = document.getElementById('commentCountEstimate');
-    if (commentCountInput) {
-        // Handle input changes
-        commentCountInput.addEventListener('input', function() {
-            isModified = true;
-            let value = parseInt(this.value) || 0;
-            const max = parseInt(this.getAttribute('max'));
-            const min = parseInt(this.getAttribute('min'));
-            
-            // Enforce min/max bounds
-            if (value > max) value = max;
-            if (value < min) value = min;
-            
-            updateCoverageUI(value);
+    if (freeInput) {
+        freeInput.addEventListener('input', function() {
+            updateFreeUI(this.value);
         });
         
-        // Handle when user finishes typing (blur or enter key)
-        commentCountInput.addEventListener('blur', function() {
-            let value = parseInt(this.value) || 0;
-            const max = parseInt(this.getAttribute('max'));
-            const min = parseInt(this.getAttribute('min'));
-            
-            // Enforce bounds and update display
-            if (value > max) {
-                value = max;
-                this.value = max;
-            }
-            if (value < min) {
-                value = min;
-                this.value = min;
-            }
-            
-            updateCoverageUI(value);
+        freeInput.addEventListener('blur', function() {
+            updateFreeUI(this.value);
         });
         
-        // Handle Enter key
-        commentCountInput.addEventListener('keypress', function(e) {
+        freeInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 this.blur();
             }
         });
+    }
+    
+    // Logged-In User Instant Analysis Slider
+    const instantSlider = document.getElementById('commentSliderInstant');
+    const instantDisplay = document.getElementById('commentDisplayInstant');
+    const loggedInInput = document.getElementById('commentCountLoggedIn');
+    const loggedInTimeEstimate = document.getElementById('timeEstimateLoggedIn');
+    const analysisModeEl = document.getElementById('analysisMode');
+    
+    // Queue Analysis Slider
+    const queueSlider = document.getElementById('commentSliderQueue');
+    const queueDisplay = document.getElementById('commentDisplayQueue');
+    const queueBtn = document.getElementById('queueAnalysisBtn');
+    
+    function updateLoggedInUI(value, mode) {
+        if (mode === 'instant') {
+            instantValue = Math.min(2500, Math.max(5, parseInt(value) || 5));
+            if (instantSlider) instantSlider.value = instantValue;
+            if (instantDisplay) instantDisplay.textContent = instantValue.toLocaleString();
+        } else {
+            queueValue = Math.min(10000, Math.max(2501, parseInt(value) || 2501));
+            if (queueSlider) queueSlider.value = queueValue;
+            if (queueDisplay) queueDisplay.textContent = queueValue.toLocaleString();
+        }
+        
+        // Update the main input and display based on current mode
+        const activeValue = currentMode === 'instant' ? instantValue : queueValue;
+        if (loggedInInput) loggedInInput.value = activeValue;
+        
+        // Update time estimate
+        if (loggedInTimeEstimate) {
+            if (currentMode === 'queue') {
+                loggedInTimeEstimate.textContent = 'Queued';
+            } else {
+                const estimatedTime = Math.max(1, Math.round((activeValue / 100) * 2 * 10) / 10);
+                if (estimatedTime >= 60) {
+                    const minutes = estimatedTime / 60;
+                    loggedInTimeEstimate.textContent = minutes < 2 ? 
+                        `~${minutes.toFixed(1)} minute` : 
+                        `~${minutes.toFixed(1)} minutes`;
+                } else {
+                    loggedInTimeEstimate.textContent = `~${estimatedTime}s`;
+                }
+            }
+        }
+        
+        // Update mode display
+        if (analysisModeEl) {
+            analysisModeEl.textContent = currentMode === 'instant' ? 'Instant' : 'Queue';
+        }
+    }
+    
+    if (instantSlider) {
+        instantSlider.addEventListener('input', function() {
+            currentMode = 'instant';
+            updateLoggedInUI(this.value, 'instant');
+            // Enable instant slider, disable queue slider
+            if (queueSlider) queueSlider.disabled = true;
+            this.disabled = false;
+        });
+        
+        // Click on instant area to activate it
+        instantSlider.parentElement.parentElement.addEventListener('click', function(e) {
+            if (e.target !== queueBtn && !e.target.closest('#queueAnalysisBtn')) {
+                currentMode = 'instant';
+                instantSlider.disabled = false;
+                if (queueSlider) queueSlider.disabled = true;
+                updateLoggedInUI(instantValue, 'instant');
+            }
+        });
+    }
+    
+    if (queueSlider) {
+        queueSlider.addEventListener('input', function() {
+            currentMode = 'queue';
+            updateLoggedInUI(this.value, 'queue');
+        });
+        
+        // Click on queue area to activate it
+        queueSlider.parentElement.parentElement.addEventListener('click', function(e) {
+            if (e.target !== queueBtn && !e.target.closest('#queueAnalysisBtn')) {
+                currentMode = 'queue';
+                queueSlider.disabled = false;
+                if (instantSlider) instantSlider.disabled = true;
+                updateLoggedInUI(queueValue, 'queue');
+            }
+        });
+    }
+    
+    if (loggedInInput) {
+        loggedInInput.addEventListener('input', function() {
+            const value = parseInt(this.value) || 5;
+            
+            // Determine which mode based on value
+            if (value <= 2500) {
+                currentMode = 'instant';
+                updateLoggedInUI(value, 'instant');
+            } else {
+                currentMode = 'queue';
+                updateLoggedInUI(value, 'queue');
+            }
+        });
+        
+        loggedInInput.addEventListener('blur', function() {
+            const value = parseInt(this.value) || 5;
+            if (value <= 2500) {
+                currentMode = 'instant';
+                updateLoggedInUI(value, 'instant');
+            } else {
+                currentMode = 'queue';
+                updateLoggedInUI(value, 'queue');
+            }
+        });
+    }
+    
+    // Instant Analysis Button
+    const instantBtn = document.getElementById('instantAnalysisBtn');
+    if (instantBtn) {
+        instantBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            currentMode = 'instant';
+            // Trigger the sentiment analysis with instant mode
+            startSentimentAnalysis();
+        });
+    }
+    
+    // Queue Analysis Button
+    if (queueBtn) {
+        queueBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Switch to queue mode
+            currentMode = 'queue';
+            if (queueSlider) queueSlider.disabled = false;
+            if (instantSlider) instantSlider.disabled = true;
+            updateLoggedInUI(queueValue, 'queue');
+            
+            // Trigger the sentiment analysis with queue mode
+            startSentimentAnalysis();
+        });
+    }
+    
+    // Enable queue slider for Pro users by default
+    if (isProUser && queueSlider) {
+        console.log('Pro user detected - enabling queue slider');
+        // Remove the disabled attribute for Pro users
+        queueSlider.disabled = false;
     }
     
 });
@@ -1790,9 +2348,8 @@ function formatEnhancedSummary(insights) {
 
 
 function updateCommentStatistics(stats) {
-    // Only update if we have stats and Pro users analyzed more than originally fetched
-    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
-    if (!stats || !isProUser) return;
+    // Update stats for all users when sentiment analysis is done
+    if (!stats) return;
     
     // Add a visual indicator that stats have been updated
     const commentAnalysisHeaders = document.querySelectorAll('.card-header-vibe h3');
@@ -1846,15 +2403,31 @@ function updateCommentStatistics(stats) {
         }
     };
     
-    // Update each statistic - target specific comment stats cards (skip video stats)
-    const commentStatsSection = document.querySelectorAll('.vibe-card')[1]; // Second vibe-card is Comment Analysis
-    if (commentStatsSection) {
-        const statsCards = commentStatsSection.querySelectorAll('.stats-card');
-        if (statsCards.length >= 4) {
-            updateStatCard('.vibe-card:nth-of-type(2) .row:nth-of-type(2) .col-md-6:nth-child(1) .stats-value', stats.unique_commenters, true);
-            updateStatCard('.vibe-card:nth-of-type(2) .row:nth-of-type(2) .col-md-6:nth-child(2) .stats-value', stats.avg_comment_length);
-            updateStatCard('.vibe-card:nth-of-type(2) .row:nth-of-type(2) .col-md-6:nth-child(3) .stats-value', stats.top_level_count, true);
-            updateStatCard('.vibe-card:nth-of-type(2) .row:nth-of-type(2) .col-md-6:nth-child(4) .stats-value', stats.replies_count, true);
+    // Update each statistic - using the correct selectors for the new grid layout
+    const commentStatsGrid = document.querySelector('.comment-stats-grid');
+    if (commentStatsGrid) {
+        // Update Unique Users
+        const uniqueUsersEl = commentStatsGrid.querySelector('.stat-item:nth-child(1) .stat-value');
+        if (uniqueUsersEl) {
+            uniqueUsersEl.textContent = stats.unique_commenters || 0;
+        }
+        
+        // Update Avg Length
+        const avgLengthEl = commentStatsGrid.querySelector('.stat-item:nth-child(2) .stat-value');
+        if (avgLengthEl) {
+            avgLengthEl.textContent = stats.avg_comment_length || 0;
+        }
+        
+        // Update Threads (top_level_count)
+        const threadsEl = commentStatsGrid.querySelector('.stat-item:nth-child(3) .stat-value');
+        if (threadsEl) {
+            threadsEl.textContent = stats.top_level_count || 0;
+        }
+        
+        // Update Replies
+        const repliesEl = commentStatsGrid.querySelector('.stat-item:nth-child(4) .stat-value');
+        if (repliesEl) {
+            repliesEl.textContent = stats.replies_count || 0;
         }
     }
     
@@ -1877,6 +2450,28 @@ function updateCommentStatistics(stats) {
 }
 
 function startSentimentAnalysis() {
+    console.log('startSentimentAnalysis called');
+    
+    // Clear any existing loading intervals
+    if (messageRotationInterval) {
+        clearInterval(messageRotationInterval);
+        messageRotationInterval = null;
+    }
+    if (factRotationInterval) {
+        clearInterval(factRotationInterval);
+        factRotationInterval = null;
+    }
+    if (progressAnimationFrame) {
+        cancelAnimationFrame(progressAnimationFrame);
+        progressAnimationFrame = null;
+    }
+    
+    // Reset progress values
+    lastProgressValue = 0;
+    targetProgress = 0;
+    currentMessageIndex = 0;
+    currentFactIndex = 0;
+    
     const videoId = '{{ video_id }}';
     const section = document.getElementById('sentimentAnalysisSection');
     const progressDiv = document.getElementById('analysisProgress');
@@ -1884,35 +2479,106 @@ function startSentimentAnalysis() {
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     
-    // Get the selected comment count from the input field for Pro users
-    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson }};
-    const commentCountInput = document.getElementById('commentCountEstimate');
-    const percentageSlider = document.getElementById('commentPercentageSlider');
+    // Get the selected comment count based on user type and interface
+    const isAuthenticated = {{ current_user.is_authenticated|tojson|default('false') }};
+    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson|default('false') }};
     
     // Use total available comments from video statistics
-    const totalAvailable = {{ comment_stats.total_available or 0 }};
-    const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0) or 0 }};
-    const fetchedCommentsCount = {{ comment_stats.total_comments }};
+    const totalAvailable = {{ comment_stats.total_available|default(0) }};
+    const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0)|default(0) }};
+    const fetchedCommentsCount = {{ comment_stats.total_comments|default(0) }};
     const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
-    const fetchedComments = {{ comment_stats.fetched_comments }};
-    const maxFreeComments = 1000; // Cap free analysis at 1000 comments
+    const fetchedComments = {{ comment_stats.fetched_comments|default(0) }};
+    const maxFreeComments = 2500; // Updated free limit to 2,500
     
-    // For Pro users, prefer the input value; for free users use 25%
     let commentsToAnalyze;
     let selectedPercentage;
     
-    if (isProUser && commentCountInput) {
-        // Use the direct input value for Pro users
-        commentsToAnalyze = parseInt(commentCountInput.value) || Math.ceil(totalAvailableComments * 0.5);
-        // Ensure it's within bounds
-        commentsToAnalyze = Math.min(commentsToAnalyze, totalAvailableComments);
-        commentsToAnalyze = Math.max(commentsToAnalyze, 1);
-        selectedPercentage = Math.round((commentsToAnalyze / totalAvailableComments) * 100);
+    // Determine which input to use based on user status
+    if (!isAuthenticated) {
+        // Free users (not logged in) - use free slider/input
+        const freeInput = document.getElementById('commentCountFree');
+        if (freeInput) {
+            commentsToAnalyze = parseInt(freeInput.value) || 1000;
+        } else {
+            commentsToAnalyze = 1000; // Default
+        }
+        commentsToAnalyze = Math.min(commentsToAnalyze, maxFreeComments);
+        commentsToAnalyze = Math.max(commentsToAnalyze, 5);
     } else {
-        // Free users get 25% or max 1000 comments
-        selectedPercentage = 25;
-        commentsToAnalyze = Math.min(Math.ceil(totalAvailableComments * 0.25), maxFreeComments);
+        // All logged-in users (both free and pro) use the same interface
+        const loggedInInput = document.getElementById('commentCountLoggedIn');
+        const analysisModeEl = document.getElementById('analysisMode');
+        const isQueueMode = analysisModeEl && analysisModeEl.textContent === 'Queue';
+        
+        console.log('Logged-in user analysis:', JSON.stringify({
+            inputValue: loggedInInput ? loggedInInput.value : 'no input',
+            mode: isQueueMode ? 'queue' : 'instant',
+            maxFreeComments: maxFreeComments
+        }, null, 2));
+        
+        if (isQueueMode) {
+            // Queue mode - create a background job
+            commentsToAnalyze = parseInt(loggedInInput.value) || 5000;
+            commentsToAnalyze = Math.min(commentsToAnalyze, 10000);
+            commentsToAnalyze = Math.max(commentsToAnalyze, 2501);
+            
+            // Queue the analysis job
+            console.log('Queueing job for', commentsToAnalyze, 'comments');
+            
+            // Calculate estimated time
+            const estimatedMinutes = Math.round((commentsToAnalyze / 100) * 1.5 / 60);
+            const timeText = estimatedMinutes > 1 ? `${estimatedMinutes} minutes` : '1 minute';
+            
+            fetch('/api/analyze/queue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    video_id: videoId,
+                    comment_count: commentsToAnalyze,
+                    include_replies: document.getElementById('includeRepliesToggle')?.checked ?? true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`Analysis queued! Estimated time: ~${timeText}`, 'success');
+                    // Redirect to the analysis status page
+                    setTimeout(() => {
+                        window.location.href = `/analysis/${data.job_id}`;
+                    }, 1500);
+                } else {
+                    showToast(`Error: ${data.error}`, 'error');
+                    // Re-enable buttons
+                    if (queueBtn) {
+                        queueBtn.disabled = false;
+                        queueBtn.innerHTML = '<span class="button-icon">⏰</span><span class="button-text">Queue Analysis</span>';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error queueing analysis:', error);
+                showToast('Failed to queue analysis', 'error');
+                // Re-enable buttons
+                if (queueBtn) {
+                    queueBtn.disabled = false;
+                    queueBtn.innerHTML = '<span class="button-icon">⏰</span><span class="button-text">Queue Analysis</span>';
+                }
+            });
+            
+            return;
+        } else {
+            // Instant mode
+            commentsToAnalyze = parseInt(loggedInInput.value) || 1000;
+            commentsToAnalyze = Math.min(commentsToAnalyze, maxFreeComments);
+            commentsToAnalyze = Math.max(commentsToAnalyze, 5);
+            console.log('Instant mode - final commentsToAnalyze:', commentsToAnalyze);
+        }
     }
+    
+    selectedPercentage = Math.round((commentsToAnalyze / totalAvailableComments) * 100);
     
     // Check if we can use already loaded comments
     const usePreloaded = fetchedComments > 0 && 
@@ -1924,15 +2590,36 @@ function startSentimentAnalysis() {
     progressDiv.style.display = 'flex';
     resultsDiv.style.display = 'none';
     
-    // Disable both buttons with appropriate text
+    // Initialize fun fact
+    const funFactText = document.getElementById('funFactText');
+    if (funFactText) {
+        funFactText.textContent = funFacts[0];
+    }
+    
+    // Disable appropriate buttons with loading text
     const loadingText = usePreloaded ? 'Loading Cached Results...' : 'Analyzing...';
+    
+    // Handle different button scenarios
     if (startButton) {
         startButton.disabled = true;
         startButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
     }
-    if (startButtonMain) {
+    
+    // For free users, disable main button
+    if (startButtonMain && !isAuthenticated) {
         startButtonMain.disabled = true;
         startButtonMain.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+    }
+    
+    // For logged-in users, disable the instant/queue buttons
+    const instantBtn = document.getElementById('instantAnalysisBtn');
+    const queueBtn = document.getElementById('queueAnalysisBtn');
+    if (instantBtn) {
+        instantBtn.disabled = true;
+        instantBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+    }
+    if (queueBtn) {
+        queueBtn.disabled = true;
     }
     
     // Scroll to sentiment analysis section
@@ -1996,6 +2683,17 @@ function startSentimentAnalysis() {
 }
 
 function initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage) {
+    // Get reply toggle state
+    const includeRepliesToggle = document.getElementById('includeRepliesToggle');
+    const includeReplies = includeRepliesToggle ? includeRepliesToggle.checked : true;
+    
+    console.log('Initiating analysis with:', JSON.stringify({
+        videoId: videoId,
+        commentsToAnalyze: commentsToAnalyze,
+        selectedPercentage: selectedPercentage,
+        includeReplies: includeReplies
+    }, null, 2));
+    
     // Start analysis with selected number of comments
     fetch(`/api/analyze/sentiment/${videoId}`, {
         method: 'POST',
@@ -2004,7 +2702,8 @@ function initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage) {
         },
         body: JSON.stringify({
             max_comments: commentsToAnalyze,  // Use calculated count based on percentage
-            percentage_selected: selectedPercentage  // Send percentage for logging
+            percentage_selected: selectedPercentage,  // Send percentage for logging
+            include_replies: includeReplies  // Send reply toggle state
         })
     })
     .then(response => {
@@ -2078,36 +2777,163 @@ function checkAnalysisStatus() {
         });
 }
 
+// Fun loading messages
+const loadingMessages = {
+    fetching_comments: [
+        "Reticulating comment splines...",
+        "Downloading hot takes from the cloud...",
+        "Harvesting fresh opinions...",
+        "Summoning the comment spirits...",
+        "Deploying YouTube API ninjas...",
+        "Gathering digital discourse...",
+        "Extracting text vibes from the matrix..."
+    ],
+    analyzing_sentiment: [
+        "Calibrating emotional sensors...",
+        "Teaching AI about human feelings...",
+        "Decoding sentiment wavelengths...",
+        "Consulting the vibe oracle...",
+        "Computing emotional algorithms...",
+        "Analyzing the mood spectrum...",
+        "Processing digital emotions...",
+        "Calculating happiness quotients...",
+        "Measuring sentiment particles..."
+    ],
+    generating_summary: [
+        "Crafting wisdom from chaos...",
+        "Distilling comment essence...",
+        "Generating insight crystals...",
+        "Compiling the final verdict...",
+        "Preparing your custom report...",
+        "Assembling thought molecules...",
+        "Weaving the narrative tapestry..."
+    ]
+};
+
+const funFacts = [
+    "Did you know? The average YouTube comment is 27 words long!",
+    "Fun fact: 70% of YouTube comments are positive or neutral!",
+    "YouTube gets over 500 hours of video uploaded every minute!",
+    "The first YouTube comment ever was 'Interesting...' in 2005!",
+    "Comments with emojis get 33% more engagement! 😊",
+    "YouTube comments support over 75 languages worldwide!",
+    "The most liked YouTube comment has over 4 million likes!",
+    "Did you know? Comments peak within the first 2 hours of upload!",
+    "YouTube's algorithm considers comment sentiment for recommendations!"
+];
+
+let messageRotationInterval = null;
+let currentMessageIndex = 0;
+let factRotationInterval = null;
+let currentFactIndex = 0;
+let lastProgressValue = 0;
+let targetProgress = 0;
+let progressAnimationFrame = null;
+
 function updateProgress(status) {
     const progressBar = document.getElementById('progressBar');
     const progressText = document.getElementById('progressText');
     const progressStatus = document.getElementById('progressStatus');
+    const progressSubStatus = document.getElementById('progressSubStatus');
+    const progressDetail = document.getElementById('progressDetail');
+    const funFactText = document.getElementById('funFactText');
     
-    const progress = status.progress || 0;
-    progressBar.style.width = progress + '%';
-    progressBar.setAttribute('aria-valuenow', progress);
-    progressText.textContent = progress + '%';
+    // Set target progress for smooth animation
+    targetProgress = status.progress || 0;
     
-    // Update status text
-    let statusText = 'Processing...';
+    // Smooth progress bar animation
+    function animateProgress() {
+        if (Math.abs(lastProgressValue - targetProgress) > 0.5) {
+            lastProgressValue += (targetProgress - lastProgressValue) * 0.1;
+            progressBar.style.width = lastProgressValue + '%';
+            progressText.textContent = Math.round(lastProgressValue) + '%';
+            progressAnimationFrame = requestAnimationFrame(animateProgress);
+        } else {
+            lastProgressValue = targetProgress;
+            progressBar.style.width = targetProgress + '%';
+            progressText.textContent = Math.round(targetProgress) + '%';
+        }
+    }
+    
+    if (progressAnimationFrame) {
+        cancelAnimationFrame(progressAnimationFrame);
+    }
+    animateProgress();
+    
+    // Main status messages
+    let mainStatus = 'Initializing vibe check...';
+    let subStatus = '';
+    let messagePool = [];
+    
     switch(status.status) {
         case 'fetching_comments':
-            statusText = '🎬 Fetching additional comments from YouTube for analysis...';
+            mainStatus = 'Downloading Comments';
+            subStatus = loadingMessages.fetching_comments[0];
+            messagePool = loadingMessages.fetching_comments;
+            progressDetail.textContent = `${status.current || 0} fetched`;
             break;
         case 'using_cached':
-            statusText = '📊 Using preloaded comments for analysis...';
+            mainStatus = 'Loading Cached Data';
+            subStatus = 'Retrieving pre-analyzed vibes...';
+            progressDetail.textContent = 'Fast mode activated';
             break;
         case 'analyzing_sentiment':
-            statusText = `🧠 Analyzing comment contents... (${status.current || 0}/${status.total || 0} comments)`;
+            mainStatus = 'Analyzing Sentiment';
+            subStatus = loadingMessages.analyzing_sentiment[0];
+            messagePool = loadingMessages.analyzing_sentiment;
+            progressDetail.textContent = `${status.current || 0}/${status.total || 0} comments`;
             break;
         case 'generating_summary':
-            statusText = '🤖 Our AI is generating results...';
+            mainStatus = 'Generating Insights';
+            subStatus = loadingMessages.generating_summary[0];
+            messagePool = loadingMessages.generating_summary;
+            progressDetail.textContent = 'Almost there!';
             break;
         case 'completed':
-            statusText = '✨ Analysis complete!';
+            mainStatus = '✨ Analysis Complete!';
+            subStatus = 'Your results are ready!';
+            progressDetail.textContent = '';
+            // Clear intervals when complete
+            if (messageRotationInterval) {
+                clearInterval(messageRotationInterval);
+            }
+            if (factRotationInterval) {
+                clearInterval(factRotationInterval);
+            }
             break;
     }
-    progressStatus.textContent = statusText;
+    
+    progressStatus.textContent = mainStatus;
+    progressSubStatus.textContent = subStatus;
+    
+    // Start rotating messages for this status
+    if (messagePool.length > 0 && status.status !== 'completed') {
+        if (messageRotationInterval) {
+            clearInterval(messageRotationInterval);
+        }
+        currentMessageIndex = 0;
+        
+        messageRotationInterval = setInterval(() => {
+            currentMessageIndex = (currentMessageIndex + 1) % messagePool.length;
+            progressSubStatus.textContent = messagePool[currentMessageIndex];
+            progressSubStatus.style.animation = 'none';
+            setTimeout(() => {
+                progressSubStatus.style.animation = 'fadeInOut 4s ease-in-out infinite';
+            }, 10);
+        }, 3000);
+    }
+    
+    // Rotate fun facts
+    if (!factRotationInterval && status.status !== 'completed') {
+        factRotationInterval = setInterval(() => {
+            currentFactIndex = (currentFactIndex + 1) % funFacts.length;
+            funFactText.style.opacity = '0';
+            setTimeout(() => {
+                funFactText.textContent = funFacts[currentFactIndex];
+                funFactText.style.opacity = '1';
+            }, 300);
+        }, 5000);
+    }
 }
 
 function fetchAnalysisResults() {
@@ -2153,13 +2979,23 @@ function fetchAnalysisResults() {
 }
 
 function displayResults(results) {
-    console.log('displayResults called with:', results);
+    console.log('displayResults called with results:', JSON.stringify(results ? Object.keys(results) : 'null', null, 2));
+    if (results) {
+        console.log('Results sentiment data:', JSON.stringify(results.sentiment, null, 2));
+        console.log('Results summary data:', JSON.stringify(results.summary ? Object.keys(results.summary) : 'no summary', null, 2));
+    }
     const progressDiv = document.getElementById('analysisProgress');
     const resultsDiv = document.getElementById('analysisResults');
     const samplesSection = document.getElementById('sampleCommentsSection');
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     const videoId = '{{ video_id }}';
+    
+    console.log('Element check:', {
+        progressDiv: progressDiv ? 'found' : 'not found',
+        resultsDiv: resultsDiv ? 'found' : 'not found',
+        samplesSection: samplesSection ? 'found' : 'not found'
+    });
     
     // Guard: ensure results have sentiment payload
     if (!results || !results.sentiment) {
@@ -2174,22 +3010,39 @@ function displayResults(results) {
     }
     
     // Hide progress, show results
+    console.log('Hiding progress, showing results');
     progressDiv.style.display = 'none';
     resultsDiv.style.display = 'block';
+    console.log('Results div display style:', resultsDiv.style.display);
     
     // Show sample comments section
     if (samplesSection) {
         samplesSection.style.display = 'block';
     }
     
-    // Re-enable both buttons
+    // Re-enable appropriate buttons
     if (startButton) {
         startButton.innerHTML = '<i class="fas fa-sync"></i> Re-analyze';
         startButton.disabled = false;
     }
-    if (startButtonMain) {
+    
+    // Re-enable main button for free users
+    const isAuthenticated = {{ current_user.is_authenticated|tojson|default('false') }};
+    if (startButtonMain && !isAuthenticated) {
         startButtonMain.innerHTML = '<i class="fas fa-sync"></i> Re-analyze';
         startButtonMain.disabled = false;
+    }
+    
+    // Re-enable instant/queue buttons for logged-in users
+    const instantBtn = document.getElementById('instantAnalysisBtn');
+    const queueBtn = document.getElementById('queueAnalysisBtn');
+    if (instantBtn) {
+        instantBtn.innerHTML = '<span class="button-icon">🧠</span><span class="button-text">Analyze Again</span>';
+        instantBtn.disabled = false;
+    }
+    if (queueBtn) {
+        queueBtn.innerHTML = '<span class="button-icon">⏰</span><span class="button-text">Queue Analysis</span>';
+        queueBtn.disabled = false;
     }
     
     // Get sentiment data
@@ -2197,28 +3050,68 @@ function displayResults(results) {
     
     // Overall sentiment
     const overallEl = document.getElementById('overallSentiment');
-    // Convert score to percentage if it's not already; handle missing keys
-    const rawScore = (typeof sentiment.sentiment_score === 'number') ? sentiment.sentiment_score : 0;
-    const sentimentScorePercent = rawScore > 1 ? rawScore.toFixed(1) : (rawScore * 100).toFixed(1);
+    console.log('Overall sentiment element:', overallEl ? 'found' : 'not found');
+    
+    // Determine overall sentiment from distribution
+    let overallSentiment = 'neutral';
+    let sentimentScore = 50; // Default neutral score
+    
+    if (sentiment.distribution) {
+        const pos = sentiment.distribution.positive || 0;
+        const neg = sentiment.distribution.negative || 0;
+        const neu = sentiment.distribution.neutral || 0;
+        const total = pos + neg + neu;
+        
+        if (total > 0) {
+            // Calculate sentiment score: 0 = very negative, 50 = neutral, 100 = very positive
+            sentimentScore = ((pos - neg) / total * 50) + 50;
+            
+            // Determine overall sentiment based on distribution
+            if (pos > neg && pos > neu) {
+                overallSentiment = 'positive';
+            } else if (neg > pos && neg > neu) {
+                overallSentiment = 'negative';
+            } else {
+                overallSentiment = 'neutral';
+            }
+        }
+    }
+    
     const rawConf = (typeof sentiment.average_confidence === 'number') ? sentiment.average_confidence : 0;
     const confPercent = rawConf > 1 ? rawConf.toFixed(1) : (rawConf * 100).toFixed(1);
     const totalAnalyzed = sentiment.total_analyzed || (Array.isArray(sentiment.individual_results) ? sentiment.individual_results.length : 0);
-    overallEl.innerHTML = `
-        <strong>${sentiment.overall_sentiment || 'neutral'}</strong> 
-        (Score: ${sentimentScorePercent}%, 
-        Confidence: ${confPercent}%)
-        <br>
-        <small>Analyzed ${totalAnalyzed} comments using advanced sentiment analysis</small>
-    `;
+    
+    if (overallEl) {
+        const htmlContent = `
+            <strong>${overallSentiment.charAt(0).toUpperCase() + overallSentiment.slice(1)}</strong> 
+            (Score: ${sentimentScore.toFixed(1)}%, 
+            Confidence: ${confPercent}%)
+            <br>
+            <small>Analyzed ${totalAnalyzed} comments using advanced sentiment analysis</small>
+        `;
+        console.log('Setting overall sentiment HTML:', htmlContent);
+        overallEl.innerHTML = htmlContent;
+    } else {
+        console.error('overallSentiment element not found!');
+    }
     
     // AI Summary with Enhanced Details
     const summary = results.summary;
     const aiSummaryEl = document.getElementById('aiSummary');
+    console.log('AI Summary element:', aiSummaryEl ? 'found' : 'not found');
+    console.log('Summary data:', summary);
     
-    // Format the enhanced summary for better readability
-    if (summary.detailed_insights) {
-        const insights = summary.detailed_insights;
+    // Display the summary
+    if (aiSummaryEl && summary) {
+        if (summary.summary) {
+            aiSummaryEl.innerHTML = `<p>${summary.summary}</p>`;
+            console.log('Set summary text:', summary.summary);
+        } else {
+            aiSummaryEl.innerHTML = '<p>Summary not available</p>';
+        }
         
+        // Skip complex processing for now - just display basic summary
+        /*
         // Check for any reception type sections
         const receptionTypes = [
             { marker: '⚡ CONTROVERSY DETECTED:', type: 'controversy', icon: 'fas fa-bolt', alertClass: 'alert-warning' },
@@ -2371,55 +3264,71 @@ function displayResults(results) {
             aiSummaryEl.innerHTML += conceptsHTML;
         }
         
-        // Add reception box after main summary if it exists
-        if (receptionContent) {
-            aiSummaryEl.innerHTML += receptionContent;
+            // Add reception box after main summary if it exists
+            if (receptionContent) {
+                aiSummaryEl.innerHTML += receptionContent;
+            }
         }
-    } else {
-        // Fallback to plain summary
-        aiSummaryEl.textContent = summary.summary;
+        */
     }
     
     // Create charts (with delay to ensure elements are visible and properly sized)
+    console.log('Attempting to create charts...');
     setTimeout(() => {
-        // Ensure the results div is visible first
-        const resultsDiv = document.getElementById('analysisResults');
-        if (resultsDiv && resultsDiv.style.display !== 'none') {
-            // Force canvas elements to have proper dimensions
-            const pieCanvas = document.getElementById('sentimentPieChart');
-            const timelineCanvas = document.getElementById('sentimentTimelineChart');
-            
-            if (pieCanvas) {
-                // Set explicit dimensions if needed
-                const parent = pieCanvas.parentElement;
-                if (parent) {
-                    pieCanvas.style.width = '100%';
-                    pieCanvas.style.height = '400px';
-                }
-                createSentimentPieChart(sentiment);
-            }
-            
-            if (timelineCanvas) {
-                // Set explicit dimensions if needed
-                const parent = timelineCanvas.parentElement;
-                if (parent) {
-                    timelineCanvas.style.width = '100%';
-                    timelineCanvas.style.height = '200px';
-                }
-                createTimelineChart(results.timeline);
-            }
-        } else {
-            console.error('Results div not visible, retrying charts...');
-            // Retry after a longer delay
-            setTimeout(() => {
-                createSentimentPieChart(sentiment);
-                createTimelineChart(results.timeline);
-            }, 500);
+        try {
+            console.log('Creating sentiment pie chart...');
+            createSentimentPieChart(sentiment);
+        } catch (error) {
+            console.error('Error creating pie chart:', error);
         }
-    }, 200);
+        
+        try {
+            console.log('Creating timeline chart...');
+            console.log('Timeline data:', results.timeline);
+            
+            // Use timeline data if available, otherwise create from individual results
+            let timelineData = results.timeline;
+            
+            // If no timeline data, try to create it from individual results
+            if (!timelineData || timelineData.length === 0) {
+                console.log('No timeline data provided, generating from individual results...');
+                if (sentiment.individual_results && sentiment.individual_results.length > 0) {
+                    timelineData = sentiment.individual_results.map((item, index) => ({
+                        sentiment: item.predicted_sentiment || item.sentiment || 'neutral',
+                        score: item.sentiment_scores || {
+                            positive: item.predicted_sentiment === 'positive' ? 0.8 : 0.1,
+                            neutral: item.predicted_sentiment === 'neutral' ? 0.8 : 0.1,
+                            negative: item.predicted_sentiment === 'negative' ? 0.8 : 0.1
+                        },
+                        text_preview: (item.text || '').substring(0, 100),
+                        index: index
+                    }));
+                    console.log('Generated timeline data from individual results:', timelineData.length, 'items');
+                }
+            }
+            
+            if (timelineData && timelineData.length > 0) {
+                createTimelineChart(timelineData);
+            } else {
+                console.log('No timeline data available to display');
+                // Hide the timeline chart section if no data
+                const timelineCard = document.querySelector('#sentimentTimelineChart').closest('.card');
+                if (timelineCard) {
+                    timelineCard.style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Error creating timeline chart:', error);
+        }
+    }, 500);
     
     // Display sample comments
-    displaySampleComments(sentiment.individual_results);
+    console.log('Displaying sample comments...');
+    try {
+        displaySampleComments(sentiment.individual_results);
+    } catch (error) {
+        console.error('Error displaying sample comments:', error);
+    }
 }
 
 function createSentimentPieChart(sentiment) {
@@ -2561,6 +3470,14 @@ function createTimelineChart(timeline) {
         
         if (!timeline || timeline.length === 0) {
             console.log('No timeline data available');
+            // Show a message instead of an empty chart
+            const timelineCard = canvas.closest('.card');
+            if (timelineCard) {
+                const cardBody = timelineCard.querySelector('.card-body');
+                if (cardBody) {
+                    cardBody.innerHTML = '<p class="text-muted text-center py-3">Timeline data not available for this analysis</p>';
+                }
+            }
             return;
         }
         
@@ -2570,8 +3487,10 @@ function createTimelineChart(timeline) {
         const neutralData = [];
         const negativeData = [];
         
+        console.log('Processing timeline data, sample item:', timeline[0]);
+        
         // Group comments for smoother visualization
-        const groupSize = Math.max(3, Math.ceil(timeline.length / 20)); // Create ~20 groups max
+        const groupSize = Math.max(1, Math.ceil(timeline.length / 20)); // Create ~20 groups max
         const groups = [];
         
         for (let i = 0; i < timeline.length; i += groupSize) {
@@ -2579,14 +3498,36 @@ function createTimelineChart(timeline) {
             
             // Calculate average sentiment for the group
             let avgPositive = 0, avgNeutral = 0, avgNegative = 0;
+            let validItems = 0;
+            
             group.forEach(item => {
-                const sc = item.score || item.sentiment_scores || {positive: 0, neutral: 1, negative: 0};
+                const sc = item.score || item.sentiment_scores || {};
+                
+                // Handle case where scores might not exist - use sentiment label as fallback
+                if (Object.keys(sc).length === 0) {
+                    const sentiment = item.sentiment || item.predicted_sentiment || 'neutral';
+                    if (sentiment === 'positive') {
+                        sc.positive = 0.8;
+                        sc.neutral = 0.15;
+                        sc.negative = 0.05;
+                    } else if (sentiment === 'negative') {
+                        sc.positive = 0.05;
+                        sc.neutral = 0.15;
+                        sc.negative = 0.8;
+                    } else {
+                        sc.positive = 0.1;
+                        sc.neutral = 0.8;
+                        sc.negative = 0.1;
+                    }
+                }
+                
                 avgPositive += (sc.positive || 0);
                 avgNeutral += (sc.neutral || 0);
                 avgNegative += (sc.negative || 0);
+                validItems++;
             });
             
-            const groupCount = group.length;
+            const groupCount = validItems || 1;
             groups.push({
                 positive: (avgPositive / groupCount) * 100,
                 neutral: (avgNeutral / groupCount) * 100,
@@ -2594,6 +3535,8 @@ function createTimelineChart(timeline) {
                 index: i
             });
         }
+        
+        console.log('Created', groups.length, 'groups from timeline data');
         
         // Create labels and data from groups
         groups.forEach((group, idx) => {
@@ -3011,15 +3954,172 @@ function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
+// Debug function to test API directly
+window.testAnalysisAPI = async function() {
+    console.log('===== TEST API START =====');
+    const videoId = '{{ video_id }}';
+    console.log('Video ID:', videoId);
+    
+    try {
+        // Test 1: Start analysis
+        console.log('Test 1: Starting analysis with 100 comments...');
+        const response = await fetch(`/api/analyze/sentiment/${videoId}`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({max_comments: 100})
+        });
+        
+        const data = await response.json();
+        console.log('Analysis start response:', data);
+        
+        if (data.success && data.analysis_id) {
+            console.log('Analysis ID:', data.analysis_id);
+            
+            // Test 2: Check status
+            setTimeout(async () => {
+                console.log('Test 2: Checking status...');
+                const statusResponse = await fetch(`/api/analyze/status/${data.analysis_id}`);
+                const statusData = await statusResponse.json();
+                console.log('Status response:', statusData);
+                
+                // Test 3: Get results
+                if (statusData.success && statusData.status.status === 'completed') {
+                    console.log('Test 3: Getting results...');
+                    const resultsResponse = await fetch(`/api/analyze/results/${data.analysis_id}`);
+                    const resultsData = await resultsResponse.json();
+                    console.log('Results response:', resultsData);
+                    
+                    if (resultsData.success && resultsData.results) {
+                        console.log('SUCCESS! Results received:', resultsData.results);
+                        // Try to display them
+                        displayResults(resultsData.results);
+                    }
+                }
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('Test API Error:', error);
+    }
+    
+    console.log('===== TEST API END =====');
+}
+
 function showError(error) {
     const progressDiv = document.getElementById('analysisProgress');
     const startButton = document.getElementById('startSentimentAnalysis');
     const startButtonMain = document.getElementById('startSentimentAnalysisMain');
     
+    // Clear any loading intervals
+    if (messageRotationInterval) {
+        clearInterval(messageRotationInterval);
+        messageRotationInterval = null;
+    }
+    if (factRotationInterval) {
+        clearInterval(factRotationInterval);
+        factRotationInterval = null;
+    }
+    if (progressAnimationFrame) {
+        cancelAnimationFrame(progressAnimationFrame);
+        progressAnimationFrame = null;
+    }
+    
+    // Parse and improve error messages
+    let errorTitle = "Oops! Something went wrong";
+    let errorMessage = error;
+    let errorIcon = "fas fa-exclamation-triangle";
+    let suggestions = [];
+    
+    // Handle specific error patterns
+    if (error.includes("futures unfinished") || error.includes("timeout")) {
+        errorTitle = "Analysis Timeout";
+        errorIcon = "fas fa-clock";
+        errorMessage = "The analysis is taking longer than expected. This usually happens when processing many comments.";
+        suggestions = [
+            "Try analyzing fewer comments (reduce the slider value)",
+            "Wait a moment for the service to recover",
+            "If the problem persists, try again in a few minutes"
+        ];
+    } else if (error.includes("memory") || error.includes("cache")) {
+        errorTitle = "Service Temporarily Busy";
+        errorIcon = "fas fa-server";
+        errorMessage = "Our servers are experiencing high demand right now.";
+        suggestions = [
+            "Please wait a moment and try again",
+            "Consider analyzing fewer comments",
+            "Try during off-peak hours for better performance"
+        ];
+    } else if (error.includes("not found")) {
+        errorTitle = "Analysis Not Found";
+        errorIcon = "fas fa-search";
+        errorMessage = "The analysis results couldn't be found. They may have expired.";
+        suggestions = [
+            "Start a fresh analysis",
+            "Make sure you haven't waited too long"
+        ];
+    } else if (error.includes("network") || error.includes("fetch")) {
+        errorTitle = "Connection Issue";
+        errorIcon = "fas fa-wifi";
+        errorMessage = "There was a problem connecting to our analysis service.";
+        suggestions = [
+            "Check your internet connection",
+            "Refresh the page and try again",
+            "Disable any ad blockers or VPNs that might interfere"
+        ];
+    } else if (error.includes("high load") || error.includes("service")) {
+        errorTitle = "Service Under Load";
+        errorIcon = "fas fa-chart-line";
+        errorMessage = "Our sentiment analysis service is experiencing high demand.";
+        suggestions = [
+            "Try with a smaller number of comments",
+            "Wait a few minutes before retrying",
+            "Consider using the queue option if available"
+        ];
+    }
+    
+    // Build suggestions HTML
+    let suggestionsHtml = '';
+    if (suggestions.length > 0) {
+        suggestionsHtml = `
+            <div class="mt-3">
+                <h6 class="font-weight-bold">What you can try:</h6>
+                <ul class="mb-0">
+                    ${suggestions.map(s => `<li>${s}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+    
     progressDiv.innerHTML = `
-        <div class="alert alert-danger">
-            <h5 class="alert-heading">Analysis Error</h5>
-            <p>${error}</p>
+        <div class="error-container animated fadeIn">
+            <div class="alert alert-danger border-0 shadow-sm" style="border-radius: 12px; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);">
+                <div class="d-flex align-items-start">
+                    <div class="error-icon-wrapper mr-3" style="font-size: 2rem; color: #dc2626;">
+                        <i class="${errorIcon}"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="alert-heading mb-2" style="color: #991b1b;">${errorTitle}</h5>
+                        <p class="mb-0" style="color: #7f1d1d;">${errorMessage}</p>
+                        ${suggestionsHtml}
+                        
+                        <!-- Debug info (hidden by default) -->
+                        <details class="mt-3">
+                            <summary style="cursor: pointer; color: #991b1b; font-size: 0.85rem;">
+                                <i class="fas fa-bug"></i> Technical details
+                            </summary>
+                            <pre class="mt-2 p-2 bg-white rounded" style="font-size: 0.75rem; color: #6b7280; max-height: 100px; overflow-y: auto;">${error}</pre>
+                        </details>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Retry button with animation -->
+            <div class="text-center mt-3">
+                <button class="btn btn-lg" onclick="location.reload()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 25px; padding: 12px 30px; border: none; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s;" 
+                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)'" 
+                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)'">
+                    <i class="fas fa-redo mr-2"></i> Refresh & Try Again
+                </button>
+            </div>
         </div>
     `;
     

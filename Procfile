@@ -1,2 +1,3 @@
-release: echo "Skipping database migrations for now"
+release: flask db upgrade
 web: gunicorn --bind 0.0.0.0:${PORT:-8000} --timeout 120 --workers 1 --threads 1 --worker-class sync --log-level info --access-logfile - run:app
+worker: python analysis_worker.py

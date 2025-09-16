@@ -255,22 +255,57 @@ class SentimentAPIClient:
                     confidence_sum += 0.5
         else:
             # Use concurrent processing for larger batches
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                futures = [executor.submit(analyze_chunk, chunk) for chunk in chunks]
-                for future in as_completed(futures, timeout=30):  # Add timeout
+            import concurrent.futures
+            
+            # Track completed and failed futures
+            completed_count = 0
+            failed_count = 0
+            total_futures = len(chunks)
+            
+            try:
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    futures = [executor.submit(analyze_chunk, chunk) for chunk in chunks]
+                    
+                    # Process completed futures with timeout
                     try:
-                        chunk_results = future.result(timeout=5)
-                        for result in chunk_results:
-                            results.append(result)
-                            sentiment = result['predicted_sentiment']
-                            distribution[sentiment] += 1
-                            confidence_sum += result['confidence']
-                    except Exception as e:
-                        print(f"Chunk processing failed: {e}")
-                        # Add neutral results for failed chunk
-                        for _ in range(chunk_size):
+                        for future in as_completed(futures, timeout=30):
+                            try:
+                                chunk_results = future.result(timeout=5)
+                                completed_count += 1
+                                for result in chunk_results:
+                                    results.append(result)
+                                    sentiment = result['predicted_sentiment']
+                                    distribution[sentiment] += 1
+                                    confidence_sum += result['confidence']
+                            except Exception as e:
+                                failed_count += 1
+                                print(f"Chunk processing failed: {e}")
+                                # Add neutral results for failed chunk
+                                for _ in range(chunk_size):
+                                    results.append({
+                                        'text': 'Error processing',
+                                        'predicted_sentiment': 'neutral',
+                                        'sentiment': 'neutral',
+                                        'confidence': 0.5,
+                                        'sentiment_scores': {'positive': 0.0, 'neutral': 1.0, 'negative': 0.0}
+                                    })
+                                    distribution['neutral'] += 1
+                                    confidence_sum += 0.5
+                    
+                    except concurrent.futures.TimeoutError as timeout_err:
+                        # Handle timeout gracefully
+                        unfinished_count = total_futures - completed_count - failed_count
+                        print(f"Sentiment analysis timeout: {unfinished_count} chunks unfinished out of {total_futures}")
+                        
+                        # Cancel remaining futures
+                        for future in futures:
+                            if not future.done():
+                                future.cancel()
+                        
+                        # Add neutral results for unfinished chunks
+                        for _ in range(unfinished_count * chunk_size):
                             results.append({
-                                'text': 'Error processing',
+                                'text': 'Processing timeout',
                                 'predicted_sentiment': 'neutral',
                                 'sentiment': 'neutral',
                                 'confidence': 0.5,
@@ -278,6 +313,21 @@ class SentimentAPIClient:
                             })
                             distribution['neutral'] += 1
                             confidence_sum += 0.5
+                        
+                        # If we have at least some results, continue
+                        if completed_count > 0:
+                            print(f"Continuing with {completed_count}/{total_futures} completed chunks")
+                        else:
+                            # If no chunks completed, raise a more user-friendly error
+                            raise Exception("Analysis is taking longer than expected. The service might be experiencing high load. Please try again with fewer comments or wait a moment before retrying.")
+                    
+            except Exception as executor_error:
+                if "longer than expected" in str(executor_error):
+                    raise  # Re-raise our custom error
+                else:
+                    # Generic executor error
+                    print(f"Executor error: {executor_error}")
+                    raise Exception(f"Analysis service error: Unable to process comments at this time. Please try again.")
         
         total = len(results)
         pct = {k: (v / total * 100.0 if total else 0.0) for k, v in distribution.items()}
@@ -465,18 +515,33 @@ class SentimentAPIClient:
             
             return summary
 
-        # Always use fallback summary generation for reliability
-        # The Modal service's summarize endpoint is not reliable yet
-        summary_text = generate_intelligent_summary(compact_sentiment)
-        
-        return {
-            'summary': {
-                'summary': summary_text,
-                'method': 'intelligent_fallback',
-                'comments_analyzed': compact_sentiment.get('total_analyzed', 0),
-                'confidence': compact_sentiment.get('average_confidence', 0),
+        # Use enhanced summary generator for better insights
+        try:
+            from app.services.summary_enhancer import get_enhanced_summary
+            # Pass full comments list (not just texts) for richer analysis
+            enhanced_summary = get_enhanced_summary(comments, compact_sentiment)
+            
+            return {
+                'summary': {
+                    'summary': enhanced_summary,
+                    'method': 'enhanced_intelligent',
+                    'comments_analyzed': compact_sentiment.get('total_analyzed', 0),
+                    'confidence': compact_sentiment.get('average_confidence', 0),
+                }
             }
-        }
+        except Exception as e:
+            print(f"Enhanced summary generation failed: {e}, using fallback")
+            # Fall back to original summary generation
+            summary_text = generate_intelligent_summary(compact_sentiment)
+            
+            return {
+                'summary': {
+                    'summary': summary_text,
+                    'method': 'intelligent_fallback',
+                    'comments_analyzed': compact_sentiment.get('total_analyzed', 0),
+                    'confidence': compact_sentiment.get('average_confidence', 0),
+                }
+            }
 
 
 # Singleton instance

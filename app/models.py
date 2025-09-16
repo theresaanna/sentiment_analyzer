@@ -3,6 +3,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from flask import current_app
 import jwt
+import uuid
 from app import db, login_manager
 
 
@@ -118,6 +119,122 @@ class UserChannel(db.Model):
     __table_args__ = (
         db.UniqueConstraint('user_id', 'channel_id', name='uq_user_channel'),
     )
+
+
+class AnalysisJob(db.Model):
+    """Track queued sentiment analysis jobs for background processing."""
+    id = db.Column(db.Integer, primary_key=True)
+    job_id = db.Column(db.String(100), nullable=False, unique=True, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False, index=True)
+    
+    # Video information
+    video_id = db.Column(db.String(20), nullable=False)
+    video_title = db.Column(db.Text, nullable=True)
+    video_url = db.Column(db.String(500), nullable=True)
+    channel_name = db.Column(db.String(200), nullable=True)
+    
+    # Job details
+    comment_count_requested = db.Column(db.Integer, nullable=False)
+    comment_count_processed = db.Column(db.Integer, default=0)
+    include_replies = db.Column(db.Boolean, default=True, nullable=False)  # Whether to include reply threads
+    status = db.Column(db.String(50), nullable=False, default='queued', index=True)
+    # Status values: queued, processing, completed, failed, cancelled
+    progress = db.Column(db.Integer, default=0)  # 0-100 percentage
+    error_message = db.Column(db.Text, nullable=True)
+    
+    # Results storage
+    results = db.Column(db.JSON, nullable=True)  # Store full analysis results
+    
+    # Timestamps
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None), index=True)
+    started_at = db.Column(db.DateTime, nullable=True)
+    completed_at = db.Column(db.DateTime, nullable=True)
+    processing_time_seconds = db.Column(db.Float, nullable=True)
+    
+    # Relationships
+    user = db.relationship('User', backref=db.backref('analysis_jobs', lazy='dynamic'))
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.job_id:
+            self.job_id = f"job_{uuid.uuid4().hex[:12]}_{self.video_id}"
+    
+    def to_dict(self):
+        """Convert job to dictionary for API responses."""
+        # Calculate queue position if queued
+        queue_position = None
+        estimated_wait_time = None
+        estimated_processing_time = None
+        
+        if self.status == 'queued':
+            # Count jobs ahead in queue
+            from datetime import datetime, timezone
+            queue_position = AnalysisJob.query.filter(
+                AnalysisJob.status == 'queued',
+                AnalysisJob.created_at < self.created_at
+            ).count() + 1
+            
+            # Count currently processing jobs
+            processing_count = AnalysisJob.query.filter_by(status='processing').count()
+            
+            # Estimate time based on average processing time and queue position
+            # Fetch time: ~1 second per 100 comments
+            # Analysis time: ~0.5 seconds per 100 comments  
+            # Total: ~1.5 seconds per 100 comments
+            estimated_processing_time = (self.comment_count_requested / 100) * 1.5
+            
+            # Get average processing time from recent jobs
+            recent_jobs = AnalysisJob.query.filter(
+                AnalysisJob.status == 'completed',
+                AnalysisJob.processing_time_seconds.isnot(None)
+            ).order_by(AnalysisJob.completed_at.desc()).limit(10).all()
+            
+            if recent_jobs:
+                avg_time = sum(j.processing_time_seconds for j in recent_jobs) / len(recent_jobs)
+                # Use actual average if available
+                estimated_processing_time = avg_time
+            
+            # Wait time = (position - 1) * average processing time + current job time
+            if processing_count > 0:
+                # Add time for currently processing job (assume 50% complete)
+                estimated_wait_time = estimated_processing_time * 0.5
+            else:
+                estimated_wait_time = 0
+                
+            # Add time for jobs ahead in queue
+            if queue_position > 1:
+                estimated_wait_time += (queue_position - 1) * estimated_processing_time
+        
+        elif self.status == 'processing' and self.started_at:
+            # For processing jobs, estimate remaining time
+            from datetime import datetime, timezone
+            elapsed = (datetime.now(timezone.utc).replace(tzinfo=None) - self.started_at).total_seconds()
+            if self.progress > 0:
+                total_estimated = (elapsed / self.progress) * 100
+                estimated_processing_time = total_estimated - elapsed
+            else:
+                estimated_processing_time = (self.comment_count_requested / 100) * 1.5
+        
+        return {
+            'job_id': self.job_id,
+            'video_id': self.video_id,
+            'video_title': self.video_title,
+            'channel_name': self.channel_name,
+            'comment_count_requested': self.comment_count_requested,
+            'comment_count_processed': self.comment_count_processed,
+            'include_replies': self.include_replies,
+            'status': self.status,
+            'progress': self.progress,
+            'error_message': self.error_message,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'started_at': self.started_at.isoformat() if self.started_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'processing_time_seconds': self.processing_time_seconds,
+            'has_results': bool(self.results),
+            'queue_position': queue_position,
+            'estimated_wait_time': estimated_wait_time,
+            'estimated_processing_time': estimated_processing_time
+        }
 
 
 class SentimentFeedback(db.Model):

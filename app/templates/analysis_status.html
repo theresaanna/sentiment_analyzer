@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% block title %}Analysis in Progress - VibeCheckAI{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="vibe-card">
+        <div class="card-header-vibe">
+          <h3 class="mb-0">
+            <span class="emoji-icon">⏳</span> Analysis Status
+          </h3>
+        </div>
+        <div class="card-body">
+          <h4>{{ job.video_title or 'Loading video information...' }}</h4>
+          {% if job.channel_name %}
+          <p class="text-muted">Channel: {{ job.channel_name }}</p>
+          {% endif %}
+          
+          <div class="status-section mt-4">
+            <h5>Current Status: <span class="status-badge status-{{ job.status }}">{{ job.status|upper }}</span></h5>
+            
+            {% if job.status == 'queued' %}
+              <p class="mt-3">Your analysis is queued and will begin processing shortly.</p>
+              <div class="estimate-info mt-3" id="queueInfo">
+                <!-- Will be populated by JavaScript -->
+              </div>
+            {% elif job.status == 'processing' %}
+              <p class="mt-3">Your analysis is currently being processed.</p>
+              <div class="estimate-info mt-3" id="processingInfo">
+                <!-- Will be populated by JavaScript -->
+              </div>
+            {% elif job.status == 'failed' %}
+              <div class="alert alert-danger mt-3">
+                <strong>Analysis Failed:</strong> {{ job.error_message or 'An unexpected error occurred.' }}
+              </div>
+            {% elif job.status == 'cancelled' %}
+              <div class="alert alert-warning mt-3">
+                <strong>Analysis Cancelled:</strong> This analysis was cancelled.
+              </div>
+            {% endif %}
+            
+            {% if job.status in ['queued', 'processing'] %}
+            <div class="progress-container mt-4">
+              <div class="progress" style="height: 30px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" 
+                     style="width: {{ job.progress }}%"
+                     aria-valuenow="{{ job.progress }}" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                  {{ job.progress }}%
+                </div>
+              </div>
+            </div>
+            
+            <div class="status-details mt-3">
+              {% if job.comment_count_processed %}
+              <p><strong>Comments Processed:</strong> {{ job.comment_count_processed }} / {{ job.comment_count_requested }}</p>
+              {% endif %}
+              {% if job.started_at %}
+              <p><strong>Started:</strong> {{ job.started_at.strftime('%I:%M %p') }}</p>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
+          
+          <div class="actions mt-4 text-center">
+            {% if job.status in ['queued', 'processing'] %}
+              <button class="btn btn-warning" onclick="cancelJob()">
+                <i class="bi bi-x-circle"></i> Cancel Analysis
+              </button>
+            {% endif %}
+            
+            <a href="{{ url_for('auth.profile') }}" class="btn btn-secondary">
+              <i class="bi bi-arrow-left"></i> Back to Profile
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="text-center mt-3">
+        <small class="text-muted">This page will automatically refresh every 5 seconds</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.status-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.9em;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-queued {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.status-processing {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-completed {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.status-failed {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-cancelled {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.progress {
+  background-color: #f0f0f0;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  font-weight: bold;
+}
+
+.status-details {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.status-details p {
+  margin-bottom: 5px;
+}
+
+.estimate-info .alert {
+  background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+  border: 1px solid #667eea30;
+}
+
+.estimate-info .alert p {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.estimate-info .alert p:last-child {
+  margin-bottom: 0;
+  padding-top: 10px;
+  border-top: 1px solid #667eea20;
+  font-weight: 500;
+}
+
+.estimate-info i {
+  color: #667eea;
+  width: 20px;
+  text-align: center;
+}
+</style>
+
+<script>
+const jobId = "{{ job.job_id }}";
+let refreshInterval;
+
+function checkStatus() {
+  fetch(`/api/analyze/job/${jobId}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && data.job) {
+        if (data.job.status === 'completed') {
+          // Redirect to results page
+          window.location.href = `/analysis/${jobId}`;
+        } else if (data.job.status === 'failed' || data.job.status === 'cancelled') {
+          // Stop refreshing if job failed or was cancelled
+          clearInterval(refreshInterval);
+          // Reload page to show updated status
+          window.location.reload();
+        } else {
+          // Update progress if still processing
+          updateProgress(data.job);
+        }
+      }
+    })
+    .catch(error => {
+      console.error('Error checking status:', error);
+    });
+}
+
+function formatTime(seconds) {
+  if (!seconds || seconds < 0) return 'calculating...';
+  
+  if (seconds < 60) {
+    return `${Math.round(seconds)} seconds`;
+  } else if (seconds < 3600) {
+    const minutes = Math.round(seconds / 60);
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  } else {
+    const hours = Math.round(seconds / 3600);
+    return `${hours} hour${hours !== 1 ? 's' : ''}`;
+  }
+}
+
+function updateProgress(job) {
+  // Update progress bar
+  const progressBar = document.querySelector('.progress-bar');
+  if (progressBar) {
+    progressBar.style.width = job.progress + '%';
+    progressBar.textContent = job.progress + '%';
+    progressBar.setAttribute('aria-valuenow', job.progress);
+  }
+  
+  // Update status badge
+  const statusBadge = document.querySelector('.status-badge');
+  if (statusBadge) {
+    statusBadge.className = `status-badge status-${job.status}`;
+    statusBadge.textContent = job.status.toUpperCase();
+  }
+  
+  // Update video title if available
+  if (job.video_title) {
+    const titleElement = document.querySelector('h4');
+    if (titleElement && titleElement.textContent.includes('Loading')) {
+      titleElement.textContent = job.video_title;
+    }
+  }
+  
+  // Update comment count if available
+  if (job.comment_count_processed) {
+    const detailsDiv = document.querySelector('.status-details');
+    if (detailsDiv) {
+      const commentP = detailsDiv.querySelector('p:first-child');
+      if (commentP) {
+        commentP.innerHTML = `<strong>Comments Processed:</strong> ${job.comment_count_processed} / ${job.comment_count_requested}`;
+      }
+    }
+  }
+  
+  // Update time estimates
+  if (job.status === 'queued') {
+    const queueInfo = document.getElementById('queueInfo');
+    if (queueInfo) {
+      let html = '<div class="alert alert-info">';
+      if (job.queue_position) {
+        html += `<p><i class="bi bi-list-ol"></i> <strong>Queue Position:</strong> #${job.queue_position}</p>`;
+      }
+      if (job.estimated_wait_time !== null && job.estimated_wait_time !== undefined) {
+        html += `<p><i class="bi bi-clock"></i> <strong>Estimated Wait Time:</strong> ${formatTime(job.estimated_wait_time)}</p>`;
+      }
+      if (job.estimated_processing_time !== null && job.estimated_processing_time !== undefined) {
+        html += `<p><i class="bi bi-gear"></i> <strong>Estimated Processing Time:</strong> ${formatTime(job.estimated_processing_time)}</p>`;
+        const totalTime = (job.estimated_wait_time || 0) + job.estimated_processing_time;
+        html += `<p><i class="bi bi-check-circle"></i> <strong>Total Estimated Time:</strong> ${formatTime(totalTime)}</p>`;
+      }
+      html += '</div>';
+      queueInfo.innerHTML = html;
+    }
+  } else if (job.status === 'processing') {
+    const processingInfo = document.getElementById('processingInfo');
+    if (processingInfo) {
+      let html = '<div class="alert alert-info">';
+      if (job.estimated_processing_time !== null && job.estimated_processing_time !== undefined) {
+        html += `<p><i class="bi bi-hourglass-split"></i> <strong>Estimated Time Remaining:</strong> ${formatTime(job.estimated_processing_time)}</p>`;
+      }
+      if (job.comment_count_processed && job.comment_count_requested) {
+        const rate = job.progress > 0 ? Math.round(job.comment_count_processed / (job.progress / 100) / 60) : 0;
+        html += `<p><i class="bi bi-speedometer"></i> <strong>Processing Rate:</strong> ~${rate} comments/second</p>`;
+      }
+      html += '</div>';
+      processingInfo.innerHTML = html;
+    }
+  }
+}
+
+function cancelJob() {
+  if (confirm('Are you sure you want to cancel this analysis?')) {
+    fetch(`/api/analyze/job/${jobId}`, { method: 'DELETE' })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Analysis cancelled successfully');
+          window.location.href = "{{ url_for('auth.profile') }}";
+        } else {
+          alert('Error cancelling analysis: ' + data.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error cancelling job:', error);
+        alert('Error cancelling analysis');
+      });
+  }
+}
+
+// Start checking status immediately and then every 5 seconds
+checkStatus();
+refreshInterval = setInterval(checkStatus, 5000);
+
+// Clean up interval when page is unloaded
+window.addEventListener('beforeunload', () => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+});
+</script>
+{% endblock %}

@@ -7,7 +7,7 @@ from flask_login import login_required, current_user
 from app.main import bp
 # Lazy import heavy services within endpoints to speed startup
 from app.cache import cache
-from app.models import db, UserChannel, Channel, Video
+from app.models import db, UserChannel, Channel, Video, AnalysisJob
 
 
 def require_pro():
@@ -138,92 +138,100 @@ def _queue_key() -> str:
 @bp.route('/api/preload/comments/<video_id>', methods=['POST'])
 @login_required
 def api_preload_comments(video_id):
+    """Queue a comment preload job (PRO feature) using the unified AnalysisJob system."""
     guard = require_pro()
     if guard:
         return guard
-    user_id = current_user.id
-
-    # Enforce concurrency by checking active set size
-    try:
-        if cache.enabled and cache.redis_client.scard(_active_key(user_id)) >= MAX_CONCURRENT_JOBS_PER_USER:
-            return jsonify({'success': False, 'error': 'Too many active jobs. Please wait for some to finish.'}), 429
-    except Exception:
-        pass
-
+    
+    # Get target comment count
     body = request.get_json(silent=True) or {}
     raw_target = body.get('target_comments', None)
-    target_comments = None
+    target_comments = 5000  # Default for PRO preload
     if raw_target not in (None, '', 'null', 'None'):
         try:
-            target_comments = int(raw_target)
+            target_comments = min(int(raw_target), 10000)  # Cap at 10k
         except Exception:
             return jsonify({'success': False, 'error': 'target_comments must be an integer or null'}), 400
-
-    import uuid
-    job_id = f"preload_{uuid.uuid4().hex}"
-    payload = {
-        'type': 'preload',
-        'job_id': job_id,
-        'user_id': user_id,
-        'video_id': video_id,
-        'target_comments': target_comments,
-        'requested_at': datetime.utcnow().isoformat() + 'Z'
-    }
-
-    # Initialize status
-    cache.set('preload_status', job_id, {
-        'status': 'queued',
-        'progress': 0,
-        'video_id': video_id,
-        'job_type': 'preload'
-    }, ttl_hours=6)
-
-    # Push to queue
-    try:
-        if cache.enabled:
-            cache.redis_client.lpush(_queue_key(), json.dumps(payload))
-            # Track jobs per user for status retrieval
-            user_list = f"jobs:by_user:{user_id}"
-            cache.redis_client.lpush(user_list, job_id)
-            cache.redis_client.ltrim(user_list, 0, 99)  # keep latest 100
-        else:
-            return jsonify({'success': False, 'error': 'Redis not enabled for job queue'}), 500
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'Queue error: {str(e)}'}), 500
-
-    return jsonify({'success': True, 'job_id': job_id})
+    
+    # Check if job already exists
+    from app.utils.youtube import build_youtube_url
+    existing_job = AnalysisJob.query.filter_by(
+        user_id=current_user.id,
+        video_id=video_id
+    ).filter(
+        AnalysisJob.status.in_(['queued', 'processing'])
+    ).first()
+    
+    if existing_job:
+        return jsonify({
+            'success': False,
+            'error': 'Analysis already in progress for this video',
+            'job_id': existing_job.job_id
+        }), 409
+    
+    # Create new analysis job with PRO preload metadata
+    job = AnalysisJob(
+        user_id=current_user.id,
+        video_id=video_id,
+        video_url=build_youtube_url(video_id),
+        comment_count_requested=target_comments,
+        status='queued'
+    )
+    
+    # Store metadata to indicate this is a PRO preload
+    job.results = {'job_type': 'pro_preload', 'preload_only': True}
+    
+    db.session.add(job)
+    db.session.commit()
+    
+    # Add to Redis queue for faster processing
+    if cache.enabled:
+        cache.redis_client.lpush('analysis_jobs:queue', job.job_id)
+        # Also maintain backward compatibility with old status tracking
+        cache.set('preload_status', job.job_id, {
+            'status': 'queued',
+            'progress': 0,
+            'video_id': video_id,
+            'job_type': 'preload'
+        }, ttl_hours=6)
+    
+    return jsonify({'success': True, 'job_id': job.job_id})
 
 
 @bp.route('/api/jobs/status')
 @login_required
 def api_jobs_status():
+    """Get job status from unified AnalysisJob system."""
     guard = require_pro()
     if guard:
         return guard
+    
     try:
-        if not cache.enabled:
-            return jsonify({'success': False, 'error': 'Cache disabled'}), 500
-        user_key = f"jobs:by_user:{current_user.id}"
-        job_ids = []
-        try:
-            job_ids = cache.redis_client.lrange(user_key, 0, 99) or []
-        except Exception:
-            pass
-
-        # Deduplicate while preserving order
-        seen = set()
-        unique_ids = []
-        for jid in job_ids:
-            if jid not in seen:
-                seen.add(jid)
-                unique_ids.append(jid)
-
+        # Get jobs from database
+        jobs = AnalysisJob.query.filter_by(user_id=current_user.id)\
+            .order_by(AnalysisJob.created_at.desc())\
+            .limit(20).all()
+        
+        # Convert to status format expected by dashboard
         statuses = []
-        for jid in unique_ids:
-            st = cache.get('preload_status', jid)
-            if st:
-                st['job_id'] = jid
-                statuses.append(st)
+        for job in jobs:
+            # Determine job type from comment count or metadata
+            is_pro = job.comment_count_requested > 2500
+            job_type = 'preload' if is_pro else 'analysis'
+            
+            status = {
+                'job_id': job.job_id,
+                'status': job.status,
+                'progress': job.progress or 0,
+                'video_id': job.video_id,
+                'job_type': job_type,
+                'channel_id': None,  # Could be extracted from video
+                'video_title': job.video_title,
+                'comment_count': job.comment_count_requested,
+                'created_at': job.created_at.isoformat() if job.created_at else None
+            }
+            statuses.append(status)
+        
         return jsonify({'success': True, 'jobs': statuses})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500

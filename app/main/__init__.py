@@ -6,7 +6,8 @@ from flask import Blueprint
 bp = Blueprint('main', __name__)
 
 # Import unified routes to register them
-from app.main import unified_routes
+from app.main import routes
+from app.main import analysis_queue_routes
 from app.main import dashboard_routes  # noqa: F401
 from app.main import batch_routes  # noqa: F401
 

@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+{% block title %}Analysis Results - {{ job.video_title }} - VibeCheckAI{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col-lg-12">
+      <!-- Header Card -->
+      <div class="vibe-card mb-4">
+        <div class="card-header-vibe">
+          <h3 class="mb-0">
+            <span class="emoji-icon">📊</span> Analysis Results
+          </h3>
+        </div>
+        <div class="card-body">
+          <h4>{{ job.video_title }}</h4>
+          <p class="text-muted">
+            Channel: {{ job.channel_name }}<br>
+            Analyzed: {{ job.completed_at.strftime('%B %d, %Y at %I:%M %p') if job.completed_at else 'Unknown' }}<br>
+            Processing Time: {{ "%.1f"|format(job.processing_time_seconds) }} seconds
+          </p>
+          <a href="{{ job.video_url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+            <i class="bi bi-youtube"></i> Watch on YouTube
+          </a>
+        </div>
+      </div>
+
+      <!-- Sentiment Overview Card -->
+      <div class="vibe-card mb-4">
+        <div class="card-header-vibe">
+          <h4 class="mb-0">
+            <span class="emoji-icon">💭</span> Sentiment Analysis Overview
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4">
+              <div class="text-center">
+                <h5>Overall Sentiment</h5>
+                <div class="sentiment-display {{ job.results.sentiment_analysis.overall_sentiment }}">
+                  {% if job.results.sentiment_analysis.overall_sentiment == 'positive' %}
+                    <span class="emoji-large">😊</span>
+                    <p class="sentiment-label">Positive</p>
+                  {% elif job.results.sentiment_analysis.overall_sentiment == 'negative' %}
+                    <span class="emoji-large">😞</span>
+                    <p class="sentiment-label">Negative</p>
+                  {% else %}
+                    <span class="emoji-large">😐</span>
+                    <p class="sentiment-label">Neutral</p>
+                  {% endif %}
+                </div>
+                <p class="sentiment-score">Score: {{ "%.2f"|format(job.results.sentiment_analysis.sentiment_score) }}</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center">
+                <h5>Comments Analyzed</h5>
+                <p class="stat-number">{{ job.comment_count_processed }}</p>
+                <p class="text-muted">out of {{ job.comment_count_requested }} requested</p>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="text-center">
+                <h5>Average Confidence</h5>
+                <p class="stat-number">{{ "%.1f"|format(job.results.sentiment_analysis.average_confidence * 100) }}%</p>
+                <p class="text-muted">Model confidence in predictions</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sentiment Distribution Chart -->
+          <div class="mt-4">
+            <h5>Sentiment Distribution</h5>
+            <div class="sentiment-bars">
+              {% set total = job.results.sentiment_analysis.distribution.positive + job.results.sentiment_analysis.distribution.neutral + job.results.sentiment_analysis.distribution.negative %}
+              <div class="sentiment-bar-row">
+                <span class="sentiment-bar-label">Positive</span>
+                <div class="sentiment-bar-container">
+                  <div class="sentiment-bar positive" style="width: {{ job.results.sentiment_analysis.percentages.positive }}%">
+                    {{ "%.1f"|format(job.results.sentiment_analysis.percentages.positive) }}%
+                  </div>
+                </div>
+                <span class="sentiment-count">{{ job.results.sentiment_analysis.distribution.positive }}</span>
+              </div>
+              <div class="sentiment-bar-row">
+                <span class="sentiment-bar-label">Neutral</span>
+                <div class="sentiment-bar-container">
+                  <div class="sentiment-bar neutral" style="width: {{ job.results.sentiment_analysis.percentages.neutral }}%">
+                    {{ "%.1f"|format(job.results.sentiment_analysis.percentages.neutral) }}%
+                  </div>
+                </div>
+                <span class="sentiment-count">{{ job.results.sentiment_analysis.distribution.neutral }}</span>
+              </div>
+              <div class="sentiment-bar-row">
+                <span class="sentiment-bar-label">Negative</span>
+                <div class="sentiment-bar-container">
+                  <div class="sentiment-bar negative" style="width: {{ job.results.sentiment_analysis.percentages.negative }}%">
+                    {{ "%.1f"|format(job.results.sentiment_analysis.percentages.negative) }}%
+                  </div>
+                </div>
+                <span class="sentiment-count">{{ job.results.sentiment_analysis.distribution.negative }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sample Comments Card -->
+      {% if job.results.sentiment_analysis.individual_results %}
+      <div class="vibe-card mb-4">
+        <div class="card-header-vibe">
+          <h4 class="mb-0">
+            <span class="emoji-icon">💬</span> Sample Analyzed Comments
+          </h4>
+        </div>
+        <div class="card-body">
+          <div class="comment-samples">
+            {% for comment in job.results.sentiment_analysis.individual_results[:10] %}
+            <div class="comment-item">
+              <div class="comment-header">
+                <span class="comment-author">{{ comment.author|default('Anonymous') }}</span>
+                <span class="sentiment-tag {{ comment.predicted_sentiment }}">
+                  {{ comment.predicted_sentiment|capitalize }}
+                </span>
+                <span class="confidence-tag">
+                  {{ "%.0f"|format(comment.confidence * 100) }}% confident
+                </span>
+              </div>
+              <div class="comment-text">
+                {{ comment.text[:200] }}{% if comment.text|length > 200 %}...{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% if job.results.sentiment_analysis.individual_results|length > 10 %}
+          <p class="text-center mt-3 text-muted">
+            Showing 10 of {{ job.results.sentiment_analysis.individual_results|length }} analyzed comments
+          </p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Actions -->
+      <div class="text-center mb-4">
+        <a href="{{ url_for('auth.profile') }}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left"></i> Back to Profile
+        </a>
+        <a href="{{ url_for('main.index') }}" class="btn btn-primary ms-2">
+          <i class="bi bi-plus-circle"></i> Analyze Another Video
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.sentiment-display {
+  padding: 20px;
+  border-radius: 10px;
+  margin: 10px 0;
+}
+
+.sentiment-display.positive {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.sentiment-display.negative {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  color: white;
+}
+
+.sentiment-display.neutral {
+  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+  color: #333;
+}
+
+.emoji-large {
+  font-size: 3em;
+  display: block;
+  margin: 10px 0;
+}
+
+.sentiment-label {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0;
+}
+
+.sentiment-score {
+  font-size: 1.1em;
+  margin-top: 10px;
+}
+
+.stat-number {
+  font-size: 2.5em;
+  font-weight: bold;
+  color: #667eea;
+  margin: 10px 0;
+}
+
+.sentiment-bars {
+  margin-top: 20px;
+}
+
+.sentiment-bar-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.sentiment-bar-label {
+  width: 80px;
+  font-weight: 500;
+}
+
+.sentiment-bar-container {
+  flex: 1;
+  height: 30px;
+  background-color: #f0f0f0;
+  border-radius: 15px;
+  overflow: hidden;
+  margin: 0 15px;
+}
+
+.sentiment-bar {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9em;
+  transition: width 0.5s ease;
+}
+
+.sentiment-bar.positive {
+  background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.sentiment-bar.neutral {
+  background: linear-gradient(90deg, #6c757d, #868e96);
+}
+
+.sentiment-bar.negative {
+  background: linear-gradient(90deg, #dc3545, #f86c6b);
+}
+
+.sentiment-count {
+  width: 50px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.comment-samples {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.comment-item {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 15px;
+  transition: box-shadow 0.3s;
+}
+
+.comment-item:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.comment-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 10px;
+}
+
+.comment-author {
+  font-weight: bold;
+  color: #333;
+}
+
+.sentiment-tag {
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
+.sentiment-tag.positive {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.sentiment-tag.neutral {
+  background-color: #e2e3e5;
+  color: #383d41;
+}
+
+.sentiment-tag.negative {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.confidence-tag {
+  font-size: 0.85em;
+  color: #6c757d;
+  margin-left: auto;
+}
+
+.comment-text {
+  color: #555;
+  line-height: 1.5;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    command: gunicorn --bind 0.0.0.0:5000 --timeout 120 --workers 1 --threads 1 run:app
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=sqlite:///app.db
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    command: python analysis_worker.py
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=sqlite:///app.db
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - web
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
