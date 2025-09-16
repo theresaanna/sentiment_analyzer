@@ -24,9 +24,10 @@ nixPkgs = [
 # Create a virtualenv and install into it to avoid PATH/packaging issues
 cmds = [
     "python3 -V",
-    "python3 -m pip --version || true",
-    "python3 -m pip install --upgrade pip setuptools wheel virtualenv",
-    "python3 -m virtualenv /opt/venv",
+    "which pip || true; pip --version || true",
+    "virtualenv --version",
+    "virtualenv -p python3 /opt/venv",
+    "/opt/venv/bin/python -V",
     "/opt/venv/bin/pip --version",
     "/opt/venv/bin/pip install --upgrade pip setuptools wheel",
     "/opt/venv/bin/pip install -r requirements.txt",
