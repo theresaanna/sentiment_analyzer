@@ -6,8 +6,9 @@ nixPkgs = ["python311", "gcc", "postgresql", "redis"]
 
 [phases.install]
 cmds = [
-    "pip install --upgrade pip",
-    "pip install -r requirements.txt",
+    "python3 -m ensurepip --upgrade || true",
+    "python3 -m pip install --upgrade pip setuptools wheel",
+    "python3 -m pip install -r requirements.txt",
     "echo '📦 Dependencies installed successfully'"
 ]
 
@@ -15,7 +16,7 @@ cmds = [
 dependsOn = ["install"]
 cmds = [
     # Use the Railway test runner script which respects RAILWAY_RUN_TESTS variable
-    "python scripts/run_tests_railway.py"
+    "python3 scripts/run_tests_railway.py"
 ]
 
 [phases.build]
