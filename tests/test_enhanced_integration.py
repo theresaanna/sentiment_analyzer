@@ -12,7 +12,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app.services.enhanced_youtube_service import EnhancedYouTubeService
-from app.science.sentiment_analyzer import SentimentAnalyzer
+from app.services.sentiment_api import SentimentAPIClient
 from app.main.forms import EnhancedYouTubeURLForm
 import logging
 
@@ -66,9 +66,10 @@ def test_batch_sentiment_analysis():
     print("="*60)
     
     try:
-        # Initialize analyzer with batch processing
-        analyzer = SentimentAnalyzer(batch_size=10)
-        print("✓ Sentiment analyzer initialized with batch processing")
+        # Initialize sentiment API client
+        client = SentimentAPIClient(base_url="https://test.api.com")
+        client.mock_mode = True  # Use mock mode for testing
+        print("✓ Sentiment API client initialized with mock mode")
         
         # Create test texts
         test_texts = [
@@ -92,19 +93,24 @@ def test_batch_sentiment_analysis():
         print(f"\nAnalyzing {len(test_texts)} test comments...")
         
         # Test batch analysis
-        results = analyzer.analyze_batch(test_texts)
+        results = client.analyze_batch(test_texts)
         
         print(f"✓ Batch analysis completed")
         print(f"  Total analyzed: {results['total_analyzed']}")
-        print(f"  Positive: {results['sentiment_counts']['positive']}")
-        print(f"  Neutral: {results['sentiment_counts']['neutral']}")
-        print(f"  Negative: {results['sentiment_counts']['negative']}")
-        print(f"  Average confidence: {results['average_confidence']:.2f}")
         
-        # Check if batch processing was used for large dataset
-        if 'batch_processing' in results:
-            print(f"  Batch processing: {results['batch_processing']}")
-            print(f"  Batch size: {results.get('batch_size', 'N/A')}")
+        # Count sentiments from results
+        sentiment_counts = {'positive': 0, 'neutral': 0, 'negative': 0}
+        for result in results['results']:
+            sentiment = result.get('sentiment', 'neutral')
+            sentiment_counts[sentiment] += 1
+            
+        print(f"  Positive: {sentiment_counts['positive']}")
+        print(f"  Neutral: {sentiment_counts['neutral']}")
+        print(f"  Negative: {sentiment_counts['negative']}")
+        
+        if 'statistics' in results:
+            avg_conf = results['statistics'].get('average_confidence', 0.5)
+            print(f"  Average confidence: {avg_conf:.2f}")
         
     except Exception as e:
         print(f"✗ Error testing batch sentiment analysis: {e}")
@@ -156,7 +162,8 @@ def test_integration():
     try:
         # Initialize services
         youtube_service = EnhancedYouTubeService()
-        sentiment_analyzer = SentimentAnalyzer(batch_size=32)
+        sentiment_client = SentimentAPIClient(base_url="https://test.api.com")
+        sentiment_client.mock_mode = True  # Use mock mode for testing
         
         print("✓ Services initialized")
         
@@ -180,11 +187,21 @@ def test_integration():
         
         # Perform sentiment analysis
         print(f"\nAnalyzing sentiment for {len(comment_texts)} comments...")
-        sentiment_results = sentiment_analyzer.analyze_batch(comment_texts)
+        sentiment_results = sentiment_client.analyze_batch(comment_texts)
         
         print(f"✓ Sentiment analysis completed")
-        print(f"  Overall sentiment: {sentiment_results['overall_sentiment']}")
-        print(f"  Sentiment score: {sentiment_results['sentiment_score']:.2f}")
+        print(f"  Total analyzed: {sentiment_results['total_analyzed']}")
+        
+        # Calculate overall sentiment from results
+        sentiment_counts = {'positive': 0, 'neutral': 0, 'negative': 0}
+        for result in sentiment_results['results']:
+            sentiment = result.get('sentiment', 'neutral')
+            sentiment_counts[sentiment] += 1
+        
+        # Determine overall sentiment
+        max_sentiment = max(sentiment_counts, key=sentiment_counts.get)
+        print(f"  Overall sentiment: {max_sentiment}")
+        print(f"  Distribution: Positive={sentiment_counts['positive']}, Neutral={sentiment_counts['neutral']}, Negative={sentiment_counts['negative']}")
         
         # Verify the integration worked
         assert len(comments) > 0, "No comments fetched"
