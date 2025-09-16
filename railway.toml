@@ -1,0 +1,23 @@
+# Railway Multi-Service Configuration
+# This file ensures both web and worker services deploy automatically from GitHub
+
+[build]
+builder = "NIXPACKS"
+
+[build.nixpacksPlan]
+providers = ["python"]
+
+[build.nixpacksPlan.phases.setup]
+nixPkgs = ["python310", "gcc", "postgresql", "redis"]
+
+[build.nixpacksPlan.phases.install]
+cmds = [
+    "pip install --upgrade pip",
+    "pip install -r requirements.txt",
+    "echo 'Dependencies installed for all services'"
+]
+
+# Service-specific configurations will be handled by Railway service settings
+# Each service should have its own start command configured in Railway dashboard:
+# - Web service: the gunicorn command from railway.json
+# - Worker service: python analysis_worker.py
