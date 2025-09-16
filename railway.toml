@@ -17,7 +17,13 @@ cmds = [
     "echo 'Dependencies installed for all services'"
 ]
 
+# Deploy configuration
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
 # Service-specific configurations will be handled by Railway service settings
 # Each service should have its own start command configured in Railway dashboard:
 # - Web service: the gunicorn command from railway.json
 # - Worker service: python analysis_worker.py
+# IMPORTANT: Worker service must have healthcheck DISABLED in Railway dashboard
