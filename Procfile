@@ -1,3 +1,2 @@
-release: flask db upgrade
-web: python start.py
+web: python railway_start.py
 worker: python analysis_worker.py

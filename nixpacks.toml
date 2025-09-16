@@ -26,8 +26,7 @@ cmds = [
     "echo '✅ Build complete!'"
 ]
 
-[start]
-cmd = "python scripts/railway_startup.py && python start.py"
+# Start command is defined in Procfile
 
 [variables]
 RAILWAY_RUN_TESTS = "true"
