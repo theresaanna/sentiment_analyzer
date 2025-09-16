@@ -2,21 +2,36 @@
 # This configuration runs tests during the build phase
 
 [phases.setup]
-nixPkgs = ["python311", "gcc", "postgresql", "redis"]
+# Include Python and build tools, plus pip/virtualenv from Nix to guarantee availability
+nixPkgs = [
+  "python311",
+  "gcc",
+  "postgresql",
+  "redis",
+  "python311Packages.pip",
+  "python311Packages.setuptools",
+  "python311Packages.wheel",
+  "python311Packages.virtualenv"
+]
 
 [phases.install]
+# Create and use a dedicated venv; rely on Nix-provided pip/virtualenv
 cmds = [
-    "python3 -m ensurepip --upgrade || true",
-    "python3 -m pip install --upgrade pip setuptools wheel",
-    "python3 -m pip install -r requirements.txt",
+    "python3 -V",
+    "python3 -m pip --version || true",
+    "python3 -m pip install --upgrade pip setuptools wheel virtualenv",
+    "python3 -m virtualenv /opt/venv",
+    "/opt/venv/bin/pip --version",
+    "/opt/venv/bin/pip install --upgrade pip setuptools wheel",
+    "/opt/venv/bin/pip install -r requirements.txt",
     "echo '📦 Dependencies installed successfully'"
 ]
 
 [phases.test]
 dependsOn = ["install"]
 cmds = [
-    # Use the Railway test runner script which respects RAILWAY_RUN_TESTS variable
-    "python3 scripts/run_tests_railway.py"
+    # Run tests with the venv Python so dependencies resolve correctly
+    "/opt/venv/bin/python scripts/run_tests_railway.py"
 ]
 
 [phases.build]
@@ -28,6 +43,10 @@ cmds = [
 ]
 
 # Start command is defined in Procfile
+
+[start]
+# Explicitly use venv Python for runtime
+cmd = "/opt/venv/bin/python railway_start.py"
 
 [variables]
 RAILWAY_RUN_TESTS = "true"
