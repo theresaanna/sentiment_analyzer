@@ -9,6 +9,8 @@ A Flask web application that analyzes the sentiment of YouTube video comments us
 
 **GitHub Repository:** https://github.com/theresaanna/sentiment_analyzer
 
+> **Note:** The sentiment analysis mechanisms are powered by a separate microservice that runs on Modal cloud GPUs. See the [sentiment_ml_service](https://github.com/theresaanna/sentiment_ml_service) repository for the machine learning implementation details.
+
 ## Features
 
 - 📹 Extract video ID from various YouTube URL formats

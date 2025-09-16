@@ -2,8 +2,8 @@
 Forms for the sentiment analyzer application.
 """
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, IntegerField, SelectField, BooleanField
-from wtforms.validators import DataRequired, URL, ValidationError, Optional, NumberRange
+from wtforms import StringField, SubmitField, IntegerField, SelectField, BooleanField, TextAreaField
+from wtforms.validators import DataRequired, URL, ValidationError, Optional, NumberRange, Email, Length
 from app.utils.youtube import extract_video_id
 
 
@@ -104,3 +104,49 @@ class EnhancedYouTubeURLForm(FlaskForm):
         video_id = extract_video_id(field.data)
         if not video_id:
             raise ValidationError('Could not extract video ID from the provided URL.')
+
+
+class ContactForm(FlaskForm):
+    """Form for contact page."""
+    name = StringField(
+        'Name',
+        validators=[
+            DataRequired(message='Please enter your name'),
+            Length(min=2, max=100, message='Name must be between 2 and 100 characters')
+        ],
+        render_kw={
+            'placeholder': 'Your Name',
+            'class': 'form-control'
+        }
+    )
+    
+    email = StringField(
+        'Email',
+        validators=[
+            DataRequired(message='Please enter your email'),
+            Email(message='Please enter a valid email address')
+        ],
+        render_kw={
+            'placeholder': 'your.email@example.com',
+            'class': 'form-control',
+            'type': 'email'
+        }
+    )
+    
+    message = TextAreaField(
+        'Message',
+        validators=[
+            DataRequired(message='Please enter your message'),
+            Length(min=10, max=5000, message='Message must be between 10 and 5000 characters')
+        ],
+        render_kw={
+            'placeholder': 'Your message here...',
+            'class': 'form-control',
+            'rows': '8'
+        }
+    )
+    
+    submit = SubmitField(
+        'Send Message',
+        render_kw={'class': 'btn btn-primary btn-lg'}
+    )
