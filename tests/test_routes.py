@@ -125,52 +125,8 @@ class TestBatchRoutes:
         assert response.status_code in [200, 201, 302]
 
 
-class TestUnifiedRoutes:
-    """Test unified sentiment analysis routes."""
-    
-    @patch('app.services.sentiment_api.get_sentiment_client')
-    def test_unified_analyze(self, mock_get_client, authenticated_client):
-        """Test unified sentiment analysis."""
-        mock_client = MagicMock()
-        mock_client.analyze_text.return_value = {
-            'sentiment': 'positive',
-            'confidence': 0.9,
-            'success': True
-        }
-        mock_get_client.return_value = mock_client
-        
-        response = authenticated_client.post('/api/unified/analyze',
-            data=json.dumps({'text': 'This is great!'}),
-            content_type='application/json'
-        )
-        
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert data['sentiment'] == 'positive'
-    
-    @patch('app.services.sentiment_api.get_sentiment_client')
-    def test_unified_batch(self, mock_get_client, authenticated_client):
-        """Test unified batch analysis."""
-        mock_client = MagicMock()
-        mock_client.analyze_batch.return_value = {
-            'total_analyzed': 3,
-            'results': [
-                {'predicted_sentiment': 'positive'},
-                {'predicted_sentiment': 'negative'},
-                {'predicted_sentiment': 'neutral'}
-            ],
-            'statistics': {}
-        }
-        mock_get_client.return_value = mock_client
-        
-        response = authenticated_client.post('/api/unified/batch',
-            data=json.dumps({'texts': ['text1', 'text2', 'text3']}),
-            content_type='application/json'
-        )
-        
-        assert response.status_code == 200
-        data = json.loads(response.data)
-        assert data['total'] == 3
+# TestUnifiedRoutes class removed - unified routes are not in use
+# The app uses external Modal sentiment API instead
 
 
 class TestAPIEndpoints:

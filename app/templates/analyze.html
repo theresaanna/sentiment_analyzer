@@ -476,6 +476,122 @@
         text-decoration: underline;
     }
     
+    /* Unified Slider Styles */
+    .unified-slider-section {
+        padding: 1rem;
+    }
+    
+    .analysis-header {
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+    
+    .analysis-header h6 {
+        font-size: 1.1rem;
+        color: #4a5568;
+        margin-bottom: 0.5rem;
+    }
+    
+    .slider-range-indicators {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+        padding: 0 10px;
+        gap: 10px;
+    }
+    
+    .range-indicator {
+        flex: 1;
+        padding: 8px 12px;
+        background: #f7fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .range-indicator:hover {
+        background: #edf2f7;
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .range-indicator.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    
+    .range-indicator.queue-active {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+        color: white;
+        border-color: #f59e0b;
+    }
+    
+    .range-indicator.pro-active {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-color: #059669;
+    }
+    
+    .range-indicator .range-label {
+        display: block;
+        font-size: 0.9rem;
+        margin-bottom: 2px;
+    }
+    
+    .range-indicator .range-limit {
+        display: block;
+        font-size: 0.75rem;
+        opacity: 0.8;
+    }
+    
+    .range-indicator.disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background: #f1f5f9;
+    }
+    
+    .range-indicator.disabled:hover {
+        transform: none;
+        background: #f1f5f9;
+        box-shadow: none;
+    }
+    
+    .slider-container {
+        margin-top: 0;
+    }
+    
+    .coverage-slider {
+        transition: background 0.3s ease;
+    }
+    
+    .coverage-slider.queue-mode {
+        background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+    }
+    
+    .coverage-slider.pro-mode {
+        background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+    }
+    
+    #analysisActionButton {
+        transition: all 0.3s ease;
+    }
+    
+    #analysisActionButton.queue-mode {
+        background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    }
+    
+    #analysisActionButton.pro-mode {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+    
     .stat-icon {
         font-size: 1.2rem;
         margin-right: 10px;
@@ -492,6 +608,7 @@
         line-height: 1;
         margin-bottom: 2px;
         color: #2d3748;
+        display: block;
     }
     
     .stat-label {
@@ -651,8 +768,7 @@
         font-size: 1.1rem;
         font-weight: 700;
         text-align: center;
-        width: 100%;
-        max-width: 120px;
+        max-width: 140px;
         padding: 2px 4px;
         transition: all 0.2s;
     }
@@ -1430,168 +1546,96 @@
                                 </div>
                             </div>
                             <hr class="my-3">
-                            {% if not current_user.is_authenticated %}
-                                <!-- Free Users (Not Logged In) -->
-                                <div class="coverage-free-user">
-                                    <div class="slider-container">
-                                        <label class="slider-label">
-                                            Comment Count <span style="color: #10b981; font-weight: 600;">(Free: 5-2,500)</span>
-                                        </label>
-                                        <input type="range" 
-                                               class="coverage-slider" 
-                                               id="commentSliderFree" 
-                                               min="5" 
-                                               max="2500" 
-                                               step="5" 
-                                               value="1000">
-                                        <div class="slider-values">
-                                            <span>5</span>
-                                            <span class="current-value" id="commentDisplayFree">1,000</span>
-                                            <span>2,500</span>
-                                        </div>
+                            <!-- Unified Adaptive Slider -->
+                            <div class="unified-slider-section">
+                                <!-- Dynamic Analysis Header -->
+                                <div class="analysis-header mb-3" id="analysisHeader">
+                                    <h6 id="analysisTitle">
+                                        <i class="fas fa-bolt" id="analysisTitleIcon"></i>
+                                        <span id="analysisTitleText">Instant Analysis</span>
+                                    </h6>
+                                    <p class="small text-muted" id="analysisDescription">
+                                        Analyze up to 2,500 comments instantly
+                                    </p>
+                                </div>
+                                
+                                <!-- Slider Range Indicators (moved above slider) -->
+                                <div class="slider-range-indicators" id="sliderRangeIndicators">
+                                    <!-- Will be populated dynamically -->
+                                </div>
+                                
+                                <!-- Unified Slider Container -->
+                                <div class="slider-container">
+                                    <input type="range" 
+                                           class="coverage-slider" 
+                                           id="unifiedSlider" 
+                                           min="5" 
+                                           max="2500" 
+                                           step="5" 
+                                           value="1000">
+                                    <div class="slider-values">
+                                        <span id="sliderMin">5</span>
+                                        <span class="current-value" id="sliderCurrent">1,000</span>
+                                        <span id="sliderMax">2,500</span>
                                     </div>
-                                    <div class="coverage-stats">
-                                        <div class="stat-badge">
-                                            <span class="stat-label">Comments</span>
-                                            <input type="number" 
-                                                   class="stat-value-input" 
-                                                   id="commentCountFree" 
-                                                   value="1000"
-                                                   min="5"
-                                                   max="2500">
-                                        </div>
-                                        <div class="stat-badge">
-                                            <span class="stat-label">Est. Time</span>
-                                            <span class="stat-value" id="timeEstimateFree">~20s</span>
-                                        </div>
+                                </div>
+                                
+                                <!-- Coverage Stats -->
+                                <div class="coverage-stats mt-3">
+                                    <div class="stat-badge" id="modeBadge" style="display: none;">
+                                        <span class="stat-label">Mode</span>
+                                        <span class="stat-value" id="analysisMode">Instant</span>
                                     </div>
+                                    <div class="stat-badge">
+                                        <span class="stat-label">Comments</span>
+                                        <input type="number" 
+                                               class="stat-value-input" 
+                                               id="commentCountInput" 
+                                               value="1000"
+                                               min="5"
+                                               max="2500">
+                                    </div>
+                                    <div class="stat-badge">
+                                        <span class="stat-label">Coverage</span>
+                                        <span class="stat-value" id="coveragePercent">~20%</span>
+                                    </div>
+                                    <div class="stat-badge">
+                                        <span class="stat-label">Est. Time</span>
+                                        <span class="stat-value" id="timeEstimate">~20s</span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Dynamic Action Button -->
+                                <button class="vibe-button mt-4 w-100 pulse-animation" id="analysisActionButton">
+                                    <span class="button-icon" id="buttonIcon">🧠</span>
+                                    <span class="button-text" id="buttonText">Start Analysis</span>
+                                </button>
+                                
+                                <!-- User-specific messaging -->
+                                {% if not current_user.is_authenticated %}
                                     <div class="pro-features-teaser mt-3">
                                         <p class="mb-2"><i class="fas fa-lock"></i> <strong>Want to analyze more comments?</strong></p>
-                                        <p class="small mb-2">Sign in to queue analysis jobs up to 10,000 comments!</p>
+                                        <p class="small mb-2">Sign in to analyze up to 10,000 comments!</p>
                                         <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Sign In</a>
                                         <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-primary ml-2">Create Account</a>
                                     </div>
-                                </div>
-                            {% elif current_user.is_authenticated %}
-                                <!-- Logged In Users (Both Free and Pro) -->
-                                <div class="coverage-logged-in">
-                                    <div class="analysis-options">
-                                        <div class="option-card mb-3">
-                                            <h6><i class="fas fa-bolt"></i> Instant Analysis</h6>
-                                            <p class="small">Analyze up to 2,500 comments instantly</p>
-                                            <div class="slider-container">
-                                                <input type="range" 
-                                                       class="coverage-slider" 
-                                                       id="commentSliderInstant" 
-                                                       min="5" 
-                                                       max="2500" 
-                                                       step="5" 
-                                                       value="1000">
-                                                <div class="slider-values">
-                                                    <span>5</span>
-                                                    <span class="current-value" id="commentDisplayInstant">1,000</span>
-                                                    <span>2,500</span>
-                                                </div>
-                                            </div>
-                                            <button class="vibe-button mt-3 w-100" id="instantAnalysisBtn">
-                                                <span class="button-icon">🧠</span>
-                                                <span class="button-text">Analyze Instantly</span>
-                                            </button>
-                                        </div>
-                                        
-                                        <div class="option-card">
-                                            <h6><i class="fas fa-clock"></i> Queue Large Analysis</h6>
-                                            <p class="small">
-                                                Queue up to 10,000 comments for background processing
-                                                {% if current_user.is_subscribed %}
-                                                    <span class="badge badge-success ml-1">Pro Feature</span>
-                                                {% endif %}
-                                            </p>
-                                            <div class="slider-container">
-                                                <input type="range" 
-                                                       class="coverage-slider" 
-                                                       id="commentSliderQueue" 
-                                                       min="2501" 
-                                                       max="10000" 
-                                                       step="100" 
-                                                       value="5000"
-                                                       {% if not current_user.is_subscribed %}disabled{% endif %}>
-                                                <div class="slider-values">
-                                                    <span>2,501</span>
-                                                    <span class="current-value" id="commentDisplayQueue">5,000</span>
-                                                    <span>10,000</span>
-                                                </div>
-                                            </div>
-                                            <button class="vibe-button mt-3 w-100" id="queueAnalysisBtn" {% if not current_user.is_subscribed %}disabled{% endif %}>
-                                                <span class="button-icon">⏰</span>
-                                                <span class="button-text">Queue Analysis</span>
-                                            </button>
-                                        </div>
+                                {% elif current_user.is_authenticated and not current_user.is_subscribed %}
+                                    <div class="pro-features-teaser mt-3" id="proTeaser" style="display: none;">
+                                        <p class="mb-2"><i class="fas fa-crown"></i> <strong>Unlock Pro Features</strong></p>
+                                        <p class="small mb-2">Queue up to 100,000 comments or analyze entire videos!</p>
+                                        <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-warning">Upgrade to Pro</a>
                                     </div>
-                                    
-                                    <div class="coverage-stats mt-3">
-                                        <div class="stat-badge">
-                                            <span class="stat-label">Mode</span>
-                                            <span class="stat-value" id="analysisMode">Instant</span>
-                                        </div>
-                                        <div class="stat-badge">
-                                            <span class="stat-label">Comments</span>
-                                            <input type="number" 
-                                                   class="stat-value-input" 
-                                                   id="commentCountLoggedIn" 
-                                                   value="1000"
-                                                   min="5"
-                                                   max="10000">
-                                        </div>
-                                        <div class="stat-badge">
-                                            <span class="stat-label">Est. Time</span>
-                                            <span class="stat-value" id="timeEstimateLoggedIn">~20s</span>
-                                        </div>
-                                    </div>
-                                    
-                                    {% if current_user.is_subscribed %}
+                                {% elif current_user.is_subscribed %}
                                     <div class="pro-badge-display mt-3 text-center">
                                         <span class="badge badge-success"><i class="fas fa-star"></i> Pro Account Active</span>
+                                        <small class="d-block mt-1 text-muted">Analyze up to 100,000 comments or entire videos</small>
                                     </div>
-                                    {% endif %}
-                                </div>
-                                <!-- This else block intentionally left empty -->
-                            {% endif %}
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                     
-                    {% if not current_user.is_authenticated %}
-                        <!-- Free User CTA -->
-                        <button id="startSentimentAnalysisMain" class="vibe-button free-analysis pulse-animation">
-                            <span class="button-icon">🧠</span>
-                            <span class="button-text">Start Free Analysis</span>
-                        </button>
-                        <div class="free-analysis-info">
-                            <strong>✨ Try VibeCheckAI Free!</strong>
-                            Your free analysis will include:
-                            <ul class="mb-0 mt-2" style="padding-left: 20px;">
-                                <li>Analyze <strong>5 to 2,500</strong> comments instantly</li>
-                                <li>Full sentiment breakdown & charts</li>
-                                <li>AI-powered summary & insights</li>
-                                <li>Key discussion themes analysis</li>
-                            </ul>
-                            <small>
-                                <a href="{{ url_for('auth.login') }}" style="color: #5a67d8; text-decoration: underline;">
-                                    Sign in</a> to queue analyses up to 10,000 comments
-                            </small>
-                        </div>
-                    {% else %}
-                        <!-- Logged In Users - buttons are in the option cards above -->
-                        <div class="text-center text-muted">
-                            <p class="mb-0">
-                                {% if current_user.is_subscribed %}
-                                    <i class="fas fa-star text-warning"></i> Pro: Choose instant or queued analysis above
-                                {% else %}
-                                    Choose instant or queued analysis above
-                                {% endif %}
-                            </p>
-                        </div>
-                    {% endif %}
+                    <!-- Additional info section (removed duplicate buttons) -->
                 </div>
             </div>
         </div>
@@ -1972,118 +2016,310 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load user's previous feedback first
     await loadUserFeedback();
     
-    const startButton = document.getElementById('startSentimentAnalysis');
-    const startButtonMain = document.getElementById('startSentimentAnalysisMain');
-    
-    // Check if comments are already loaded
+    // Get comment statistics
     const fetchedComments = {{ comment_stats.fetched_comments|default(0) }};
-    // Use total_available if present, otherwise use the video statistics comment count
-    // Debug: Log values to understand the multiplication issue
     const totalAvailable = {{ comment_stats.total_available|default(0) }};
     const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0)|default(0) }};
-    const fetchedCommentsCount = {{ comment_stats.total_comments|default(0) }};  // This is the fetched count
+    const fetchedCommentsCount = {{ comment_stats.total_comments|default(0) }};
     
     console.log('Debug - totalAvailable:', totalAvailable);
     console.log('Debug - videoStatsComments:', videoStatsComments);
     console.log('Debug - fetchedCommentsCount:', fetchedCommentsCount);
     
     // Use the correct total - prefer total_available, then video stats, NOT fetched count
-    const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
+    const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount || 5000;
     console.log('Debug - totalAvailableComments used:', totalAvailableComments);
     
-    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson|default('false') }};
-    let isModified = false; // Track if user has modified the slider
+    // Use global isAuthenticated and isProUser variables
+    console.log('User status - isAuthenticated:', isAuthenticated, 'isProUser:', isProUser);
     
-    // If comments are already loaded, update UI
-    if (fetchedComments > 0) {
-        const loadedPercentage = Math.round((fetchedComments / totalAvailableComments) * 100);
-        
-        // Update button text to reflect loaded state
-        if (startButtonMain) {
-            startButtonMain.innerHTML = '<span class="button-icon">📊</span><span class="button-text">Load Analysis Results</span>';
-        }
-        
-        // For logged-in users, update the interface to show preloaded comments
-        const loggedInInput = document.getElementById('commentCountLoggedIn');
-        const instantSlider = document.getElementById('commentSliderInstant');
-        const instantDisplay = document.getElementById('commentDisplayInstant');
-        
-        if (loggedInInput && fetchedComments <= 2500) {
-            // Update instant analysis slider for preloaded comments
-            loggedInInput.value = fetchedComments;
-            if (instantSlider) {
-                instantSlider.value = fetchedComments;
-            }
-            if (instantDisplay) {
-                instantDisplay.textContent = fetchedComments.toLocaleString();
-            }
-        }
-    }
-    
+    // Legacy button support for sentiment analysis section
+    const startButton = document.getElementById('startSentimentAnalysis');
     if (startButton) {
         startButton.addEventListener('click', startSentimentAnalysis);
     }
-    // For free users (not logged in), keep the main button handler
-    const isUserAuthenticated = {{ current_user.is_authenticated|tojson|default('false') }};
-    if (startButtonMain && !isUserAuthenticated) {
-        startButtonMain.addEventListener('click', startSentimentAnalysis);
-    }
     
-    // Note: Old updateCoverageUI function removed - now using specific UI update functions
+    // ============= UNIFIED SLIDER HANDLER =============
     
-    // Note: Old percentage slider code removed - all users now use the new interface
+    // Unified slider elements
+    const unifiedSlider = document.getElementById('unifiedSlider');
+    const sliderCurrent = document.getElementById('sliderCurrent');
+    const sliderMin = document.getElementById('sliderMin');
+    const sliderMax = document.getElementById('sliderMax');
+    const commentCountInput = document.getElementById('commentCountInput');
+    const coveragePercent = document.getElementById('coveragePercent');
+    const timeEstimate = document.getElementById('timeEstimate');
+    const analysisMode = document.getElementById('analysisMode');
+    const modeBadge = document.getElementById('modeBadge');
+    const analysisTitleIcon = document.getElementById('analysisTitleIcon');
+    const analysisTitleText = document.getElementById('analysisTitleText');
+    const analysisDescription = document.getElementById('analysisDescription');
+    const analysisActionButton = document.getElementById('analysisActionButton');
+    const buttonIcon = document.getElementById('buttonIcon');
+    const buttonText = document.getElementById('buttonText');
+    const sliderRangeIndicators = document.getElementById('sliderRangeIndicators');
+    const proTeaser = document.getElementById('proTeaser');
     
-    // ============= NEW HANDLERS FOR FREE AND LOGGED-IN USER SLIDERS =============
-    
-    // Global mode variable for logged-in users
-    let currentMode = 'instant'; // 'instant' or 'queue'
-    let instantValue = 1000;
-    let queueValue = 5000;
-    
-    // Free User Slider and Input Handlers
-    const freeSlider = document.getElementById('commentSliderFree');
-    const freeInput = document.getElementById('commentCountFree');
-    const freeDisplay = document.getElementById('commentDisplayFree');
-    const freeTimeEstimate = document.getElementById('timeEstimateFree');
-    
-    function updateFreeUI(value) {
-        value = Math.min(2500, Math.max(5, parseInt(value) || 5));
+    // Configure slider based on user status
+    function configureSliderForUser() {
+        let maxValue = 2500; // Default for logged out users
+        let step = 5;
         
-        // Update all related elements
-        if (freeSlider) freeSlider.value = value;
-        if (freeInput) freeInput.value = value;
-        if (freeDisplay) freeDisplay.textContent = value.toLocaleString();
-        
-        // Update time estimate
-        if (freeTimeEstimate) {
-            const estimatedTime = Math.max(1, Math.round((value / 100) * 2 * 10) / 10);
-            if (estimatedTime >= 60) {
-                const minutes = estimatedTime / 60;
-                freeTimeEstimate.textContent = minutes < 2 ? 
-                    `~${minutes.toFixed(1)} minute` : 
-                    `~${minutes.toFixed(1)} minutes`;
-            } else {
-                freeTimeEstimate.textContent = `~${estimatedTime}s`;
+        if (isProUser) {
+            // Pro users can analyze up to 100k or all (if less than 100k)
+            maxValue = Math.min(100000, totalAvailableComments);
+            step = totalAvailableComments > 10000 ? 1000 : 100;
+            
+            // Add range indicators for Pro users
+            if (sliderRangeIndicators) {
+                // Only show "All Comments" if total is <= 100k
+                const showAllComments = totalAvailableComments <= 100000 && totalAvailableComments > 10000;
+                sliderRangeIndicators.innerHTML = `
+                    <div class="range-indicator instant" data-range="instant">
+                        <span class="range-label">Instant</span>
+                        <span class="range-limit">(≤2.5k)</span>
+                    </div>
+                    <div class="range-indicator queue" data-range="queue">
+                        <span class="range-label">Queue</span>
+                        <span class="range-limit">(≤10k)</span>
+                    </div>
+                    <div class="range-indicator pro-queue" data-range="pro-queue">
+                        <span class="range-label">Pro Queue</span>
+                        <span class="range-limit">(≤100k)</span>
+                    </div>
+                    ${showAllComments ? `<div class="range-indicator all" data-range="all">
+                        <span class="range-label">All Comments</span>
+                        <span class="range-limit">(${totalAvailableComments.toLocaleString()})</span>
+                    </div>` : ''}
+                `;
             }
+        } else if (isAuthenticated) {
+            // Logged in but not Pro - can queue up to 10k
+            maxValue = Math.min(10000, totalAvailableComments);
+            step = 50;
+            
+            // Add range indicators for regular users (with Pro options disabled)
+            if (sliderRangeIndicators) {
+                sliderRangeIndicators.innerHTML = `
+                    <div class="range-indicator instant" data-range="instant">
+                        <span class="range-label">Instant</span>
+                        <span class="range-limit">(≤2.5k)</span>
+                    </div>
+                    <div class="range-indicator queue" data-range="queue">
+                        <span class="range-label">Queue</span>
+                        <span class="range-limit">(≤10k)</span>
+                    </div>
+                    <div class="range-indicator disabled" data-range="pro-queue" title="Pro feature">
+                        <span class="range-label">Pro Queue 👑</span>
+                        <span class="range-limit">(≤100k)</span>
+                    </div>
+                `;
+            }
+        } else {
+            // Not logged in - show all options with disabled state
+            if (sliderRangeIndicators) {
+                sliderRangeIndicators.innerHTML = `
+                    <div class="range-indicator instant active" data-range="instant">
+                        <span class="range-label">Free Analysis</span>
+                        <span class="range-limit">(≤2.5k)</span>
+                    </div>
+                    <div class="range-indicator disabled" data-range="queue" title="Sign in required">
+                        <span class="range-label">Queue 🔒</span>
+                        <span class="range-limit">(≤10k)</span>
+                    </div>
+                    <div class="range-indicator disabled" data-range="pro-queue" title="Pro subscription required">
+                        <span class="range-label">Pro Queue 👑</span>
+                        <span class="range-limit">(≤100k)</span>
+                    </div>
+                `;
+            }
+        }
+        
+        // Update slider attributes
+        if (unifiedSlider) {
+            unifiedSlider.max = maxValue;
+            unifiedSlider.step = step;
+            if (commentCountInput) {
+                commentCountInput.max = maxValue;
+            }
+        }
+        
+        // Update max display
+        if (sliderMax) {
+            sliderMax.textContent = maxValue >= 100000 ? 
+                (maxValue === totalAvailableComments ? 'All' : '100k') : 
+                maxValue.toLocaleString();
         }
     }
     
-    if (freeSlider) {
-        freeSlider.addEventListener('input', function() {
-            updateFreeUI(this.value);
+    // Update UI based on selected value
+    function updateUnifiedUI(value) {
+        value = parseInt(value) || 5;
+        
+        // Determine analysis mode based on value and user status
+        let newMode = 'instant';
+        let icon = 'fas fa-bolt';
+        let title = 'Instant Analysis';
+        let description = 'Analyze up to 2,500 comments instantly';
+        let buttonIconEmoji = '🧠';
+        let buttonTextStr = 'Start Analysis';
+        
+        if (!isAuthenticated) {
+            // Logged out users - always instant, capped at 2500
+            value = Math.min(2500, value);
+            buttonTextStr = 'Start Free Analysis';
+        } else if (value <= 2500) {
+            // Instant analysis range
+            newMode = 'instant';
+            buttonTextStr = 'Analyze Instantly';
+        } else if (value <= 10000) {
+            // Queue analysis range
+            newMode = 'queue';
+            icon = 'fas fa-clock';
+            title = 'Queue Analysis';
+            description = 'Queue analysis for background processing';
+            buttonIconEmoji = '⏰';
+            buttonTextStr = 'Queue Analysis';
+            
+            // Show pro teaser for non-pro users when in queue range
+            if (!isProUser && proTeaser) {
+                proTeaser.style.display = 'block';
+            }
+        } else if (isProUser && value <= 100000) {
+            // Check if this should be "all" mode for videos with <= 100k comments
+            if (value === totalAvailableComments && totalAvailableComments <= 100000 && totalAvailableComments > 10000) {
+                // This is "All Comments" mode
+                newMode = 'all';
+                icon = 'fas fa-infinity';
+                title = 'Complete Analysis';
+                description = `Analyze all ${totalAvailableComments.toLocaleString()} comments`;
+                buttonIconEmoji = '✨';
+                buttonTextStr = 'Analyze All Comments';
+            } else {
+                // Regular pro queue range
+                newMode = 'pro-queue';
+                icon = 'fas fa-crown';
+                title = 'Pro Queue Analysis';
+                description = 'Queue large-scale analysis (Pro feature)';
+                buttonIconEmoji = '👑';
+                buttonTextStr = 'Queue Pro Analysis';
+            }
+        }
+        
+        // Update current mode
+        currentAnalysisMode = newMode;
+        
+        // Update slider and input values
+        if (unifiedSlider) unifiedSlider.value = value;
+        if (commentCountInput) commentCountInput.value = value;
+        if (sliderCurrent) sliderCurrent.textContent = value.toLocaleString();
+        
+        // Update coverage percentage
+        if (coveragePercent) {
+            const percentage = Math.min(100, Math.round((value / totalAvailableComments) * 100));
+            coveragePercent.textContent = `~${percentage}%`;
+        }
+        
+        // Update time estimate
+        if (timeEstimate) {
+            if (newMode === 'instant') {
+                const estimatedTime = Math.max(1, Math.round((value / 100) * 2));
+                if (estimatedTime >= 60) {
+                    const minutes = Math.round(estimatedTime / 60);
+                    timeEstimate.textContent = `~${minutes} min${minutes > 1 ? 's' : ''}`;
+                } else {
+                    timeEstimate.textContent = `~${estimatedTime}s`;
+                }
+            } else {
+                timeEstimate.textContent = 'Queued';
+            }
+        }
+        
+        // Update header
+        if (analysisTitleIcon) analysisTitleIcon.className = icon;
+        if (analysisTitleText) analysisTitleText.textContent = title;
+        if (analysisDescription) analysisDescription.textContent = description;
+        
+        // Update button
+        if (buttonIcon) buttonIcon.textContent = buttonIconEmoji;
+        if (buttonText) buttonText.textContent = buttonTextStr;
+        
+        // Update button styling
+        if (analysisActionButton) {
+            analysisActionButton.className = 'vibe-button mt-4 w-100 pulse-animation';
+            if (newMode === 'queue') {
+                analysisActionButton.classList.add('queue-mode');
+            } else if (newMode === 'pro-queue' || newMode === 'all') {
+                analysisActionButton.classList.add('pro-mode');
+            }
+        }
+        
+        // Update mode badge (for logged-in users)
+        if (isAuthenticated && modeBadge) {
+            modeBadge.style.display = 'block';
+            if (analysisMode) {
+                analysisMode.textContent = newMode === 'instant' ? 'Instant' : 
+                                          newMode === 'queue' ? 'Queue' : 
+                                          newMode === 'pro-queue' ? 'Pro Queue' : 'All';
+            }
+        }
+        
+        // Update range indicators
+        const indicators = document.querySelectorAll('.range-indicator');
+        indicators.forEach(indicator => {
+            indicator.classList.remove('active', 'queue-active', 'pro-active');
+            const range = indicator.dataset.range;
+            
+            if (range === newMode) {
+                // Apply appropriate active class based on mode
+                if (newMode === 'queue') {
+                    indicator.classList.add('queue-active');
+                } else if (newMode === 'pro-queue' || newMode === 'all') {
+                    indicator.classList.add('pro-active');
+                } else {
+                    indicator.classList.add('active');
+                }
+            }
+        });
+        
+        // Hide pro teaser if not in queue range
+        if (proTeaser && (newMode === 'instant' || isProUser)) {
+            proTeaser.style.display = 'none';
+        }
+    }
+    
+    // Initialize slider
+    configureSliderForUser();
+    
+    // Set initial value based on preloaded comments if available
+    let initialValue = 1000;
+    if (fetchedComments > 0 && fetchedComments <= (isProUser ? 100000 : (isAuthenticated ? 10000 : 2500))) {
+        initialValue = fetchedComments;
+    }
+    updateUnifiedUI(initialValue);
+    
+    // Slider event listener
+    if (unifiedSlider) {
+        unifiedSlider.addEventListener('input', function() {
+            updateUnifiedUI(this.value);
+        });
+        
+        unifiedSlider.addEventListener('change', function() {
+            updateUnifiedUI(this.value);
         });
     }
     
-    if (freeInput) {
-        freeInput.addEventListener('input', function() {
-            updateFreeUI(this.value);
+    // Input event listener
+    if (commentCountInput) {
+        commentCountInput.addEventListener('input', function() {
+            updateUnifiedUI(this.value);
         });
         
-        freeInput.addEventListener('blur', function() {
-            updateFreeUI(this.value);
+        commentCountInput.addEventListener('blur', function() {
+            updateUnifiedUI(this.value);
         });
         
-        freeInput.addEventListener('keypress', function(e) {
+        commentCountInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 this.blur();
@@ -2091,153 +2327,57 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
-    // Logged-In User Instant Analysis Slider
-    const instantSlider = document.getElementById('commentSliderInstant');
-    const instantDisplay = document.getElementById('commentDisplayInstant');
-    const loggedInInput = document.getElementById('commentCountLoggedIn');
-    const loggedInTimeEstimate = document.getElementById('timeEstimateLoggedIn');
-    const analysisModeEl = document.getElementById('analysisMode');
-    
-    // Queue Analysis Slider
-    const queueSlider = document.getElementById('commentSliderQueue');
-    const queueDisplay = document.getElementById('commentDisplayQueue');
-    const queueBtn = document.getElementById('queueAnalysisBtn');
-    
-    function updateLoggedInUI(value, mode) {
-        if (mode === 'instant') {
-            instantValue = Math.min(2500, Math.max(5, parseInt(value) || 5));
-            if (instantSlider) instantSlider.value = instantValue;
-            if (instantDisplay) instantDisplay.textContent = instantValue.toLocaleString();
-        } else {
-            queueValue = Math.min(10000, Math.max(2501, parseInt(value) || 2501));
-            if (queueSlider) queueSlider.value = queueValue;
-            if (queueDisplay) queueDisplay.textContent = queueValue.toLocaleString();
-        }
-        
-        // Update the main input and display based on current mode
-        const activeValue = currentMode === 'instant' ? instantValue : queueValue;
-        if (loggedInInput) loggedInInput.value = activeValue;
-        
-        // Update time estimate
-        if (loggedInTimeEstimate) {
-            if (currentMode === 'queue') {
-                loggedInTimeEstimate.textContent = 'Queued';
-            } else {
-                const estimatedTime = Math.max(1, Math.round((activeValue / 100) * 2 * 10) / 10);
-                if (estimatedTime >= 60) {
-                    const minutes = estimatedTime / 60;
-                    loggedInTimeEstimate.textContent = minutes < 2 ? 
-                        `~${minutes.toFixed(1)} minute` : 
-                        `~${minutes.toFixed(1)} minutes`;
-                } else {
-                    loggedInTimeEstimate.textContent = `~${estimatedTime}s`;
-                }
-            }
-        }
-        
-        // Update mode display
-        if (analysisModeEl) {
-            analysisModeEl.textContent = currentMode === 'instant' ? 'Instant' : 'Queue';
-        }
-    }
-    
-    if (instantSlider) {
-        instantSlider.addEventListener('input', function() {
-            currentMode = 'instant';
-            updateLoggedInUI(this.value, 'instant');
-            // Enable instant slider, disable queue slider
-            if (queueSlider) queueSlider.disabled = true;
-            this.disabled = false;
-        });
-        
-        // Click on instant area to activate it
-        instantSlider.parentElement.parentElement.addEventListener('click', function(e) {
-            if (e.target !== queueBtn && !e.target.closest('#queueAnalysisBtn')) {
-                currentMode = 'instant';
-                instantSlider.disabled = false;
-                if (queueSlider) queueSlider.disabled = true;
-                updateLoggedInUI(instantValue, 'instant');
-            }
-        });
-    }
-    
-    if (queueSlider) {
-        queueSlider.addEventListener('input', function() {
-            currentMode = 'queue';
-            updateLoggedInUI(this.value, 'queue');
-        });
-        
-        // Click on queue area to activate it
-        queueSlider.parentElement.parentElement.addEventListener('click', function(e) {
-            if (e.target !== queueBtn && !e.target.closest('#queueAnalysisBtn')) {
-                currentMode = 'queue';
-                queueSlider.disabled = false;
-                if (instantSlider) instantSlider.disabled = true;
-                updateLoggedInUI(queueValue, 'queue');
-            }
-        });
-    }
-    
-    if (loggedInInput) {
-        loggedInInput.addEventListener('input', function() {
-            const value = parseInt(this.value) || 5;
-            
-            // Determine which mode based on value
-            if (value <= 2500) {
-                currentMode = 'instant';
-                updateLoggedInUI(value, 'instant');
-            } else {
-                currentMode = 'queue';
-                updateLoggedInUI(value, 'queue');
-            }
-        });
-        
-        loggedInInput.addEventListener('blur', function() {
-            const value = parseInt(this.value) || 5;
-            if (value <= 2500) {
-                currentMode = 'instant';
-                updateLoggedInUI(value, 'instant');
-            } else {
-                currentMode = 'queue';
-                updateLoggedInUI(value, 'queue');
-            }
-        });
-    }
-    
-    // Instant Analysis Button
-    const instantBtn = document.getElementById('instantAnalysisBtn');
-    if (instantBtn) {
-        instantBtn.addEventListener('click', function(e) {
+    // Action button handler
+    if (analysisActionButton) {
+        analysisActionButton.addEventListener('click', function(e) {
             e.preventDefault();
-            currentMode = 'instant';
-            // Trigger the sentiment analysis with instant mode
             startSentimentAnalysis();
         });
     }
     
-    // Queue Analysis Button
-    if (queueBtn) {
-        queueBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Switch to queue mode
-            currentMode = 'queue';
-            if (queueSlider) queueSlider.disabled = false;
-            if (instantSlider) instantSlider.disabled = true;
-            updateLoggedInUI(queueValue, 'queue');
-            
-            // Trigger the sentiment analysis with queue mode
-            startSentimentAnalysis();
-        });
+    // Add click handlers for range indicators
+    function setupRangeIndicatorClicks() {
+        setTimeout(() => {
+            const indicators = document.querySelectorAll('.range-indicator');
+            indicators.forEach(indicator => {
+                indicator.addEventListener('click', function() {
+                    // Ignore clicks on disabled indicators
+                    if (this.classList.contains('disabled')) {
+                        return;
+                    }
+                    
+                    const range = this.dataset.range;
+                    let targetValue;
+                    
+                    switch(range) {
+                        case 'instant':
+                            targetValue = Math.min(1000, totalAvailableComments);
+                            break;
+                        case 'queue':
+                            targetValue = Math.min(5000, totalAvailableComments);
+                            break;
+                        case 'pro-queue':
+                            targetValue = Math.min(50000, totalAvailableComments);
+                            break;
+                        case 'all':
+                            targetValue = totalAvailableComments;
+                            break;
+                        default:
+                            targetValue = 1000;
+                    }
+                    
+                    // Update the slider and UI
+                    if (unifiedSlider) {
+                        unifiedSlider.value = targetValue;
+                        updateUnifiedUI(targetValue);
+                    }
+                });
+            });
+        }, 100); // Small delay to ensure indicators are rendered
     }
     
-    // Enable queue slider for Pro users by default
-    if (isProUser && queueSlider) {
-        console.log('Pro user detected - enabling queue slider');
-        // Remove the disabled attribute for Pro users
-        queueSlider.disabled = false;
-    }
+    // Setup click handlers after indicators are created
+    setupRangeIndicatorClicks();
     
 });
 
@@ -2449,6 +2589,10 @@ function updateCommentStatistics(stats) {
     }
 }
 
+// Global user authentication status
+const isAuthenticated = {{ current_user.is_authenticated|tojson|default('false') }};
+const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson|default('false') }};
+
 function startSentimentAnalysis() {
     console.log('startSentimentAnalysis called');
     
@@ -2476,12 +2620,7 @@ function startSentimentAnalysis() {
     const section = document.getElementById('sentimentAnalysisSection');
     const progressDiv = document.getElementById('analysisProgress');
     const resultsDiv = document.getElementById('analysisResults');
-    const startButton = document.getElementById('startSentimentAnalysis');
-    const startButtonMain = document.getElementById('startSentimentAnalysisMain');
-    
-    // Get the selected comment count based on user type and interface
-    const isAuthenticated = {{ current_user.is_authenticated|tojson|default('false') }};
-    const isProUser = {{ (current_user.is_authenticated and current_user.is_subscribed)|tojson|default('false') }};
+    const analysisActionButton = document.getElementById('analysisActionButton');
     
     // Use total available comments from video statistics
     const totalAvailable = {{ comment_stats.total_available|default(0) }};
@@ -2489,96 +2628,102 @@ function startSentimentAnalysis() {
     const fetchedCommentsCount = {{ comment_stats.total_comments|default(0) }};
     const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
     const fetchedComments = {{ comment_stats.fetched_comments|default(0) }};
-    const maxFreeComments = 2500; // Updated free limit to 2,500
     
-    let commentsToAnalyze;
-    let selectedPercentage;
+    // Get value from unified slider/input
+    const commentCountInput = document.getElementById('commentCountInput');
+    let commentsToAnalyze = parseInt(commentCountInput ? commentCountInput.value : 1000) || 1000;
+    let selectedPercentage = Math.round((commentsToAnalyze / totalAvailableComments) * 100);
     
-    // Determine which input to use based on user status
+    // Determine if we're in queue mode based on the current analysis mode
+    const isQueueMode = currentAnalysisMode && (currentAnalysisMode === 'queue' || 
+                                                currentAnalysisMode === 'pro-queue' || 
+                                                currentAnalysisMode === 'all');
+    
+    console.log('Analysis configuration:', {
+        mode: currentAnalysisMode,
+        commentsToAnalyze: commentsToAnalyze,
+        isQueueMode: isQueueMode,
+        isAuthenticated: isAuthenticated,  // Using global
+        isProUser: isProUser  // Using global
+    });
+    
+    // Apply appropriate limits based on user status
     if (!isAuthenticated) {
-        // Free users (not logged in) - use free slider/input
-        const freeInput = document.getElementById('commentCountFree');
-        if (freeInput) {
-            commentsToAnalyze = parseInt(freeInput.value) || 1000;
-        } else {
-            commentsToAnalyze = 1000; // Default
-        }
-        commentsToAnalyze = Math.min(commentsToAnalyze, maxFreeComments);
+        commentsToAnalyze = Math.min(commentsToAnalyze, 2500);
+        commentsToAnalyze = Math.max(commentsToAnalyze, 5);
+    } else if (!isProUser) {
+        commentsToAnalyze = Math.min(commentsToAnalyze, 10000);
         commentsToAnalyze = Math.max(commentsToAnalyze, 5);
     } else {
-        // All logged-in users (both free and pro) use the same interface
-        const loggedInInput = document.getElementById('commentCountLoggedIn');
-        const analysisModeEl = document.getElementById('analysisMode');
-        const isQueueMode = analysisModeEl && analysisModeEl.textContent === 'Queue';
-        
-        console.log('Logged-in user analysis:', JSON.stringify({
-            inputValue: loggedInInput ? loggedInInput.value : 'no input',
-            mode: isQueueMode ? 'queue' : 'instant',
-            maxFreeComments: maxFreeComments
-        }, null, 2));
-        
-        if (isQueueMode) {
-            // Queue mode - create a background job
-            commentsToAnalyze = parseInt(loggedInInput.value) || 5000;
-            commentsToAnalyze = Math.min(commentsToAnalyze, 10000);
-            commentsToAnalyze = Math.max(commentsToAnalyze, 2501);
-            
-            // Queue the analysis job
-            console.log('Queueing job for', commentsToAnalyze, 'comments');
-            
-            // Calculate estimated time
-            const estimatedMinutes = Math.round((commentsToAnalyze / 100) * 1.5 / 60);
-            const timeText = estimatedMinutes > 1 ? `${estimatedMinutes} minutes` : '1 minute';
-            
-            fetch('/api/analyze/queue', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    video_id: videoId,
-                    comment_count: commentsToAnalyze,
-                    include_replies: document.getElementById('includeRepliesToggle')?.checked ?? true
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(`Analysis queued! Estimated time: ~${timeText}`, 'success');
-                    // Redirect to the analysis status page
-                    setTimeout(() => {
-                        window.location.href = `/analysis/${data.job_id}`;
-                    }, 1500);
-                } else {
-                    showToast(`Error: ${data.error}`, 'error');
-                    // Re-enable buttons
-                    if (queueBtn) {
-                        queueBtn.disabled = false;
-                        queueBtn.innerHTML = '<span class="button-icon">⏰</span><span class="button-text">Queue Analysis</span>';
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error queueing analysis:', error);
-                showToast('Failed to queue analysis', 'error');
-                // Re-enable buttons
-                if (queueBtn) {
-                    queueBtn.disabled = false;
-                    queueBtn.innerHTML = '<span class="button-icon">⏰</span><span class="button-text">Queue Analysis</span>';
-                }
-            });
-            
-            return;
+        // Pro users can go up to 100k or all
+        if (currentAnalysisMode === 'all') {
+            commentsToAnalyze = totalAvailableComments;
         } else {
-            // Instant mode
-            commentsToAnalyze = parseInt(loggedInInput.value) || 1000;
-            commentsToAnalyze = Math.min(commentsToAnalyze, maxFreeComments);
-            commentsToAnalyze = Math.max(commentsToAnalyze, 5);
-            console.log('Instant mode - final commentsToAnalyze:', commentsToAnalyze);
+            commentsToAnalyze = Math.min(commentsToAnalyze, 100000);
         }
+        commentsToAnalyze = Math.max(commentsToAnalyze, 5);
     }
     
-    selectedPercentage = Math.round((commentsToAnalyze / totalAvailableComments) * 100);
+    if (isQueueMode && isAuthenticated) {
+        // Queue mode - create a background job
+        console.log('Queueing job for', commentsToAnalyze, 'comments');
+        
+        // Calculate estimated time
+        const estimatedMinutes = Math.round((commentsToAnalyze / 100) * 1.5 / 60);
+        const timeText = estimatedMinutes > 1 ? `${estimatedMinutes} minutes` : '1 minute';
+        
+        // Disable button with loading state
+        if (analysisActionButton) {
+            analysisActionButton.disabled = true;
+            analysisActionButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Queueing...';
+        }
+        
+        fetch('/api/analyze/queue', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                video_id: videoId,
+                comment_count: commentsToAnalyze,
+                include_replies: document.getElementById('includeRepliesToggle')?.checked ?? true
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(`Analysis queued! Estimated time: ~${timeText}`, 'success');
+                // Redirect to the analysis status page
+                setTimeout(() => {
+                    window.location.href = `/analysis/${data.job_id}`;
+                }, 1500);
+            } else {
+                showToast(`Error: ${data.error}`, 'error');
+                // Re-enable button
+                if (analysisActionButton) {
+                    analysisActionButton.disabled = false;
+                    const buttonIcon = document.getElementById('buttonIcon');
+                    const buttonText = document.getElementById('buttonText');
+                    if (buttonIcon) buttonIcon.textContent = '⏰';
+                    if (buttonText) buttonText.textContent = 'Queue Analysis';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error queueing analysis:', error);
+            showToast('Failed to queue analysis', 'error');
+            // Re-enable button
+            if (analysisActionButton) {
+                analysisActionButton.disabled = false;
+                const buttonIcon = document.getElementById('buttonIcon');
+                const buttonText = document.getElementById('buttonText');
+                if (buttonIcon) buttonIcon.textContent = '⏰';
+                if (buttonText) buttonText.textContent = 'Queue Analysis';
+            }
+        });
+        
+        return;
+    }
     
     // Check if we can use already loaded comments
     const usePreloaded = fetchedComments > 0 && 
@@ -2596,37 +2741,19 @@ function startSentimentAnalysis() {
         funFactText.textContent = funFacts[0];
     }
     
-    // Disable appropriate buttons with loading text
+    // Disable unified button with loading text
     const loadingText = usePreloaded ? 'Loading Cached Results...' : 'Analyzing...';
     
-    // Handle different button scenarios
-    if (startButton) {
-        startButton.disabled = true;
-        startButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
-    }
-    
-    // For free users, disable main button
-    if (startButtonMain && !isAuthenticated) {
-        startButtonMain.disabled = true;
-        startButtonMain.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
-    }
-    
-    // For logged-in users, disable the instant/queue buttons
-    const instantBtn = document.getElementById('instantAnalysisBtn');
-    const queueBtn = document.getElementById('queueAnalysisBtn');
-    if (instantBtn) {
-        instantBtn.disabled = true;
-        instantBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
-    }
-    if (queueBtn) {
-        queueBtn.disabled = true;
+    if (analysisActionButton) {
+        analysisActionButton.disabled = true;
+        analysisActionButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
     }
     
     // Scroll to sentiment analysis section
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     
-    // If we have preloaded comments and button says "Load Analysis Results", check for cached results first
-    if (usePreloaded && startButtonMain && startButtonMain.textContent.includes('Load Analysis')) {
+    // If we have preloaded comments, check for cached results first
+    if (usePreloaded && analysisActionButton) {
         // Generate the expected analysis ID for cached results
         const expectedAnalysisId = `sentiment_${videoId}_${selectedPercentage}pct_${commentsToAnalyze}`;
         
@@ -2776,6 +2903,9 @@ function checkAnalysisStatus() {
             console.error('Status check error:', error);
         });
 }
+
+// Global analysis mode tracking
+let currentAnalysisMode = 'instant'; // 'instant', 'queue', 'pro-queue', 'all'
 
 // Fun loading messages
 const loadingMessages = {
@@ -3026,23 +3156,32 @@ function displayResults(results) {
         startButton.disabled = false;
     }
     
-    // Re-enable main button for free users
-    const isAuthenticated = {{ current_user.is_authenticated|tojson|default('false') }};
-    if (startButtonMain && !isAuthenticated) {
-        startButtonMain.innerHTML = '<i class="fas fa-sync"></i> Re-analyze';
-        startButtonMain.disabled = false;
-    }
+    // Re-enable unified action button and restore appropriate text
+    const analysisActionButton = document.getElementById('analysisActionButton');
+    const buttonIcon = document.getElementById('buttonIcon');
+    const buttonText = document.getElementById('buttonText');
+    const commentCountInput = document.getElementById('commentCountInput');
     
-    // Re-enable instant/queue buttons for logged-in users
-    const instantBtn = document.getElementById('instantAnalysisBtn');
-    const queueBtn = document.getElementById('queueAnalysisBtn');
-    if (instantBtn) {
-        instantBtn.innerHTML = '<span class="button-icon">🧠</span><span class="button-text">Analyze Again</span>';
-        instantBtn.disabled = false;
-    }
-    if (queueBtn) {
-        queueBtn.innerHTML = '<span class="button-icon">⏰</span><span class="button-text">Queue Analysis</span>';
-        queueBtn.disabled = false;
+    if (analysisActionButton) {
+        analysisActionButton.disabled = false;
+        
+        // Get current slider value to determine proper button text
+        const currentValue = parseInt(commentCountInput ? commentCountInput.value : 1000) || 1000;
+        
+        // Update button based on current mode/value
+        if (!isAuthenticated) {
+            if (buttonIcon) buttonIcon.textContent = '🧠';
+            if (buttonText) buttonText.textContent = 'Analyze Again';
+        } else if (currentValue <= 2500) {
+            if (buttonIcon) buttonIcon.textContent = '🧠';
+            if (buttonText) buttonText.textContent = 'Analyze Again';
+        } else if (currentValue <= 10000) {
+            if (buttonIcon) buttonIcon.textContent = '⏰';
+            if (buttonText) buttonText.textContent = 'Queue Again';
+        } else {
+            if (buttonIcon) buttonIcon.textContent = '👑';
+            if (buttonText) buttonText.textContent = 'Queue Pro Analysis Again';
+        }
     }
     
     // Get sentiment data

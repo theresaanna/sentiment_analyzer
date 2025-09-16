@@ -37,14 +37,22 @@ class SummaryEnhancer:
             'hasn', 'haven', 'hadn', 'u', 'ur', 'r', 'n', 'b', 'c', 'already'
         }
         
-        # Generic video-related terms to exclude
+        # Generic video-related and content terms to exclude
         self.video_terms = {
             'video', 'videos', 'youtube', 'channel', 'subscribe', 'subscriber',
             'like', 'comment', 'comments', 'share', 'watch', 'watching', 'watched',
             'view', 'views', 'viewer', 'viewers', 'upload', 'uploaded', 'content',
             'creator', 'creators', 'youtuber', 'thumbnail', 'description', 'playlist',
             'notification', 'bell', 'click', 'link', 'minute', 'minutes', 'second',
-            'seconds', 'hour', 'hours', 'time', 'part', 'episode', 'series'
+            'seconds', 'hour', 'hours', 'time', 'part', 'episode', 'series',
+            # Generic content descriptors
+            'song', 'songs', 'music', 'track', 'tracks', 'album', 'artist', 'band',
+            'movie', 'movies', 'film', 'films', 'cinema', 'scene', 'scenes',
+            'show', 'shows', 'tv', 'television', 'season', 'episodes',
+            'clip', 'clips', 'footage', 'trailer', 'teaser', 'preview',
+            'performance', 'concert', 'live', 'studio', 'official', 'unofficial',
+            'version', 'remix', 'cover', 'original', 'remaster', 'edit',
+            'reaction', 'review', 'analysis', 'breakdown', 'explained', 'tutorial'
         }
         
         # Sentiment-specific meaningful words to look for
@@ -69,16 +77,16 @@ class SummaryEnhancer:
             'complicated', 'trash', 'garbage', 'cringe', 'pathetic', 'lame'
         }
         
-        # Topic-specific terms that reveal content themes
+        # Topic-specific terms that reveal content themes (excluding generic content terms)
         self.topic_indicators = {
-            'tutorial': ['learn', 'teach', 'explain', 'guide', 'howto', 'steps', 'process'],
+            'tutorial': ['learn', 'teach', 'guide', 'howto', 'steps', 'process', 'method'],
             'entertainment': ['funny', 'hilarious', 'laugh', 'comedy', 'entertaining', 'fun'],
-            'music': ['song', 'music', 'beat', 'rhythm', 'melody', 'voice', 'sound'],
+            'audio_quality': ['beat', 'rhythm', 'melody', 'voice', 'sound', 'audio', 'vocals'],
             'gaming': ['game', 'play', 'player', 'level', 'score', 'win', 'lose'],
             'tech': ['software', 'hardware', 'computer', 'phone', 'app', 'program', 'code'],
             'cooking': ['recipe', 'food', 'cook', 'ingredient', 'delicious', 'taste'],
             'fitness': ['workout', 'exercise', 'fitness', 'gym', 'muscle', 'health'],
-            'education': ['learn', 'study', 'understand', 'knowledge', 'information', 'explain']
+            'education': ['learn', 'study', 'understand', 'knowledge', 'information']
         }
     
     def extract_meaningful_keywords(self, comments: List[str], max_keywords: int = 10) -> List[Tuple[str, int]]:

@@ -71,19 +71,11 @@ def process_video_batch(video_ids, max_comments, batch_size, use_dynamic, batch_
         # Initialize services
         from app.services.enhanced_youtube_service import EnhancedYouTubeService
         youtube_service = EnhancedYouTubeService()
-        from app.ml.unified_sentiment_analyzer import get_unified_analyzer
-        analyzer = get_unified_analyzer()
+        from app.services.sentiment_api import get_sentiment_client
+        sentiment_client = get_sentiment_client()
         
-        # Configure batch processing
-        from app.ml.batch_processor import BatchInferenceOptimizer, BatchConfig
-        config = BatchConfig(
-            optimal_batch_size=batch_size,
-            enable_dynamic_batching=use_dynamic,
-            max_batch_size=128,
-            enable_gpu_optimization=True
-        )
-        
-        optimizer = BatchInferenceOptimizer(analyzer, config)
+        # Note: BatchInferenceOptimizer is deprecated - using external API
+        # The external sentiment API handles its own batch optimization
         
         # Collect all comments
         all_comments = []
@@ -115,23 +107,18 @@ def process_video_batch(video_ids, max_comments, batch_size, use_dynamic, batch_
             'message': f'Analyzing {len(all_comments)} comments in optimized batches'
         }, ttl_hours=1)
         
-        # Perform batch analysis
-        def progress_callback(current, total, progress):
-            cache.set('batch_status', batch_id, {
-                'status': 'analyzing',
-                'progress': progress * 100,
-                'message': f'Processing batch {current}/{total}'
-            }, ttl_hours=1)
-        
-        results = optimizer.batch_predict(all_comments, progress_callback)
+        # Perform batch analysis using external API
+        batch_result = sentiment_client.analyze_batch(all_comments)
+        results = batch_result.get('results', [])
         
         # Aggregate results by video
         video_results = {}
         for idx, result in enumerate(results):
-            video_id = video_mapping[idx]
-            if video_id not in video_results:
-                video_results[video_id] = []
-            video_results[video_id].append(result)
+            video_id = video_mapping.get(idx)
+            if video_id:
+                if video_id not in video_results:
+                    video_results[video_id] = []
+                video_results[video_id].append(result)
         
         # Calculate statistics for each video
         final_results = {}
@@ -140,14 +127,14 @@ def process_video_batch(video_ids, max_comments, batch_size, use_dynamic, batch_
             total_confidence = 0
             
             for comment in video_comments:
-                sentiment_counts[comment['sentiment']] += 1
-                total_confidence += comment.get('confidence', 0)
+                sentiment = comment.get('predicted_sentiment', comment.get('sentiment', 'neutral'))
+                sentiment_counts[sentiment] += 1
+                total_confidence += comment.get('confidence', 0.5)
             
             final_results[video_id] = {
                 'total_comments': len(video_comments),
                 'sentiment_distribution': sentiment_counts,
-                'average_confidence': total_confidence / len(video_comments) if video_comments else 0,
-                'processing_stats': optimizer.processor.get_stats()
+                'average_confidence': total_confidence / len(video_comments) if video_comments else 0
             }
         
         # Store results
