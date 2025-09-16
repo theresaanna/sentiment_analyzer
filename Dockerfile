@@ -25,7 +25,7 @@ COPY . .
 RUN chmod +x railway_build.sh || true
 RUN chmod +x scripts/deploy_production_db.py || true
 RUN chmod +x scripts/run_tests_railway.py || true
-RUN chmod +x start_web.sh || true
+RUN chmod +x railway_start.py || true
 
 # Run unit tests during build; fail the build if tests fail
 # This uses the project-provided test runner which skips integration tests by default
@@ -37,5 +37,5 @@ RUN RAILWAY_RUN_TESTS=true python scripts/run_tests_railway.py
 # Railway will use PORT environment variable
 EXPOSE 8000
 
-# Use startup script to handle PORT variable properly
-CMD ["./start_web.sh"]
+# Use Python startup script to handle PORT variable properly
+CMD ["python", "railway_start.py"]
