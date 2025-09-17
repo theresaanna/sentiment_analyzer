@@ -1,0 +1,1699 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - VibeCheckAI{% endblock %}
+{% block extra_css %}
+<style>
+  /* Unified dashboard styling */
+  .user-dashboard-page {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    min-height: 100vh;
+    padding: 2rem 0;
+  }
+  
+  .dashboard-card {
+    transition: transform 0.2s;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  }
+  
+  .card-header-unified {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: between;
+    align-items: center;
+  }
+  
+  .card-header-unified h3 {
+    margin: 0;
+    font-weight: 600;
+  }
+  
+  .user-info-section {
+    padding: 2rem;
+  }
+  
+  .user-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: white;
+    margin-right: 1.5rem;
+  }
+  
+  .user-details h4 {
+    margin: 0 0 0.5rem 0;
+    color: #333;
+    font-weight: 600;
+  }
+  
+  .user-details p {
+    margin: 0;
+    color: #666;
+    font-size: 0.95rem;
+  }
+  
+  .membership-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  
+  .membership-badge.free {
+    background: #e9ecef;
+    color: #495057;
+  }
+  
+  .membership-badge.pro {
+    background: linear-gradient(45deg, #ffd700, #ff8a00);
+    color: white;
+  }
+  
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  
+  .stats-card {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    text-align: center;
+  }
+  
+  .stats-card:hover {
+    background: #e9ecef;
+    transform: translateY(-2px);
+  }
+  
+  .stats-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #667eea;
+    margin-bottom: 0.5rem;
+  }
+  
+  .stats-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin: 0;
+  }
+  
+  /* Queue section */
+  .queue-section {
+    padding: 0 2rem 2rem 2rem;
+  }
+  
+  .queue-tabs {
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 1.5rem;
+  }
+  
+  .queue-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 1rem 1.5rem;
+    border-radius: 0;
+    position: relative;
+  }
+  
+  .queue-tabs .nav-link.active {
+    color: #667eea;
+    background: none;
+    border-bottom: 3px solid #667eea;
+  }
+  
+  .queue-content {
+    min-height: 300px;
+  }
+  
+  .job-item {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid #667eea;
+    transition: all 0.3s ease;
+  }
+  
+  .job-item:hover {
+    background: #e9ecef;
+    transform: translateX(4px);
+  }
+  
+  .job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+  
+  .job-title {
+    font-weight: 600;
+    color: #333;
+  }
+  
+  .job-status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  
+  .job-status.queued { background: #fff3cd; color: #856404; }
+  .job-status.processing { background: #cce5ff; color: #004085; }
+  .job-status.completed { background: #d4edda; color: #155724; }
+  .job-status.failed { background: #f8d7da; color: #721c24; }
+  
+  .job-meta {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+  }
+  
+  .job-progress {
+    background: #e9ecef;
+    border-radius: 10px;
+    height: 8px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+  
+  .job-progress-bar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+  
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+  }
+  
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+  
+  .empty-state h5 {
+    margin-bottom: 0.5rem;
+    color: #495057;
+  }
+  
+  .empty-state p {
+    margin: 0;
+  }
+  
+  /* Pro content section */
+  .pro-content {
+    padding: 2rem;
+  }
+  
+  /* Channel management styles */
+  .channel-tabs-container {
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 20px;
+  }
+  
+  .channel-tabs {
+    border: none;
+    gap: 8px;
+  }
+  
+  .channel-tabs .nav-link {
+    border: 2px solid transparent;
+    border-radius: 12px 12px 0 0;
+    padding: 10px 20px;
+    color: #6c757d;
+    background: #f8f9fa;
+    margin-bottom: -2px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .channel-tabs .nav-link:hover {
+    background: #e9ecef;
+    color: #495057;
+  }
+  
+  .channel-tabs .nav-link.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+  }
+  
+  .channel-tabs .nav-link .remove-channel {
+    margin-left: 8px;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+  }
+  
+  .channel-tabs .nav-link:hover .remove-channel {
+    opacity: 1;
+  }
+  
+  .add-channel-tab {
+    background: transparent !important;
+    border: 2px dashed #dee2e6 !important;
+    color: #6c757d !important;
+  }
+  
+  .add-channel-tab:hover {
+    border-color: #667eea !important;
+    color: #667eea !important;
+    background: rgba(102, 126, 234, 0.05) !important;
+  }
+  
+  /* Channel info card */
+  .channel-info-card {
+    background: linear-gradient(135deg, #f5f7fa 0%, #f8f9ff 100%);
+    border: 2px solid #e0e7ff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    display: none;
+  }
+  
+  .channel-info-card.active {
+    display: block;
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  .channel-title-display {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #1a202c;
+    font-family: 'Space Grotesk', 'Inter', sans-serif;
+    letter-spacing: -0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .channel-title-display i {
+    font-size: 1.4rem;
+    color: #667eea;
+    opacity: 0.9;
+  }
+  
+  /* Video list styles */
+  .video-list-container {
+    position: relative;
+    min-height: 200px;
+  }
+  
+  .video-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 0.5rem;
+    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .video-item {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: relative;
+  }
+  
+  .video-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-color: #667eea;
+    background: linear-gradient(135deg, #ffffff 0%, #f7faff 100%);
+  }
+  
+  .video-title {
+    font-weight: 600;
+    margin: 0;
+    font-size: 1.05rem;
+  }
+  
+  .video-title a {
+    color: #4a5568;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    cursor: pointer;
+    padding: 4px 0;
+    border-radius: 4px;
+  }
+  
+  .video-title a:hover {
+    color: #667eea;
+    text-decoration: underline;
+    text-decoration-color: #667eea;
+    text-underline-offset: 3px;
+  }
+  
+  .video-meta {
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 4px;
+  }
+  
+  .video-meta code {
+    background: #f1f3f5;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+  }
+  
+  /* Button styles */
+  .vibe-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  
+  .vibe-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+  }
+  
+  .vibe-button.small {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+  }
+  
+  .vibe-button.preloaded {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    opacity: 0.8;
+    cursor: default;
+    pointer-events: none;
+  }
+  
+  .vibe-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  
+  /* Input group styles */
+  .input-group {
+    display: flex;
+    align-items: stretch;
+    position: relative;
+  }
+  
+  .input-group .form-control {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-right: none;
+  }
+  
+  .input-group .vibe-button {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    border-top-right-radius: 8px !important;
+    border-bottom-right-radius: 8px !important;
+    margin: 0;
+    flex-shrink: 0;
+  }
+  
+  .input-group-text {
+    background: white;
+    border-right: none;
+    border-top-left-radius: 0.5rem;
+    border-bottom-left-radius: 0.5rem;
+  }
+  
+  /* Loading overlay */
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 12px;
+    animation: fadeIn 0.3s ease-in;
+  }
+  
+  .loading-overlay.hiding {
+    animation: fadeOut 0.3s ease-out;
+  }
+  
+  /* Toast animations */
+  @keyframes slideInRight {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideOutRight {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+  
+  /* Toast container */
+  .toast-container {
+    z-index: 1100;
+  }
+  
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+  
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  
+  .feature-text h6 {
+    margin: 0 0 0.25rem 0;
+    color: #333;
+    font-weight: 600;
+  }
+  
+  .feature-text p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: #6c757d;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .user-info-section {
+      padding: 1.5rem;
+    }
+    
+    .user-avatar {
+      width: 60px;
+      height: 60px;
+      font-size: 1.5rem;
+      margin-right: 1rem;
+    }
+    
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+    
+    .stats-card {
+      padding: 1rem;
+    }
+    
+    .stats-value {
+      font-size: 1.5rem;
+    }
+    
+    .queue-section {
+      padding: 0 1.5rem 1.5rem 1.5rem;
+    }
+    
+    .pro-content {
+      padding: 1.5rem;
+    }
+    
+    .channel-tabs .nav-link {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+    }
+    
+    .channel-title-display {
+      font-size: 1.2rem;
+    }
+    
+    .video-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    
+    .vibe-button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+  
+  /* Animation utilities */
+  .fade-in {
+    animation: fadeIn 0.5s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .pulse {
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="user-dashboard-page">
+  <div class="container">
+    <!-- User Info & Stats Card -->
+    <div class="dashboard-card fade-in">
+      <div class="card-header-unified">
+        <h3>
+          <span class="emoji-icon">👋</span> Welcome, {{ current_user.name }}
+          {% if current_user.is_subscribed %}
+            <span class="badge ms-2" style="background: rgba(255,255,255,0.2); padding: 0.25rem 0.75rem; border-radius: 15px;">PRO</span>
+          {% endif %}
+        </h3>
+        <div>
+          <a href="{{ url_for('auth.logout') }}" class="btn btn-light btn-sm">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
+        </div>
+      </div>
+      
+      <div class="user-info-section">
+        <div class="d-flex align-items-center mb-4">
+          <div class="user-avatar">
+            {{ current_user.name[0].upper() }}
+          </div>
+          <div class="user-details">
+            <h4>{{ current_user.name }}</h4>
+            <p>{{ current_user.email }}</p>
+            <div class="membership-badge {% if current_user.is_subscribed %}pro{% else %}free{% endif %}">
+              {% if current_user.is_subscribed %}
+                <i class="fas fa-star me-2"></i> Pro Member
+              {% else %}
+                <i class="fas fa-user me-2"></i> Free Plan
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        
+        <!-- User Stats -->
+        <div class="stats-grid" id="userStats">
+          <div class="stats-card">
+            <div class="stats-value" id="totalAnalyses">-</div>
+            <p class="stats-label">Total Analyses</p>
+          </div>
+          <div class="stats-card">
+            <div class="stats-value" id="commentsAnalyzed">-</div>
+            <p class="stats-label">Comments Analyzed</p>
+          </div>
+          {% if current_user.is_subscribed %}
+          <div class="stats-card">
+            <div class="stats-value" id="channelsTracked">-</div>
+            <p class="stats-label">Channels Tracked</p>
+          </div>
+          <div class="stats-card">
+            <div class="stats-value" id="preloadedVideos">-</div>
+            <p class="stats-label">Videos Preloaded</p>
+          </div>
+          {% else %}
+          <div class="stats-card">
+            <div class="stats-value" id="activeJobs">-</div>
+            <p class="stats-label">Active Jobs</p>
+          </div>
+          <div class="stats-card">
+            <div class="stats-value" id="completedJobs">-</div>
+            <p class="stats-label">Completed Jobs</p>
+          </div>
+          {% endif %}
+        </div>
+        
+        {% if not current_user.is_subscribed %}
+        <!-- Upgrade CTA for free users -->
+        <div class="mt-4 p-3 bg-light border-start border-5 border-warning rounded">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-1">Unlock Pro Features</h6>
+              <small class="text-muted">Advanced analytics, channel tracking, priority processing & more</small>
+            </div>
+            <a href="{{ url_for('auth.subscribe') }}" class="btn btn-warning btn-sm">
+              <i class="fas fa-star"></i> Upgrade
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    
+    <!-- Processing Queue Card -->
+    <div class="dashboard-card fade-in">
+      <div class="card-header-unified">
+        <h3>
+          <span class="emoji-icon">⚡</span> Processing Queue
+        </h3>
+        <div id="queueControls">
+          <button class="btn btn-light btn-sm" onclick="refreshQueue()" id="refreshBtn">
+            <i class="fas fa-sync"></i> Refresh
+          </button>
+        </div>
+      </div>
+      
+      <div class="queue-section">
+        <!-- Queue Tabs -->
+        <ul class="nav nav-tabs queue-tabs" id="queueTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active" type="button" role="tab">
+              <i class="fas fa-play me-2"></i>Active (<span id="activeCount">0</span>)
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="completed-tab" data-bs-toggle="tab" data-bs-target="#completed" type="button" role="tab">
+              <i class="fas fa-check me-2"></i>Completed (<span id="completedCount">0</span>)
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history" type="button" role="tab">
+              <i class="fas fa-history me-2"></i>History
+            </button>
+          </li>
+        </ul>
+        
+        <!-- Queue Content -->
+        <div class="tab-content queue-content" id="queueTabContent">
+          <div class="tab-pane fade show active" id="active" role="tabpanel">
+            <div id="activeJobs">
+              <div class="empty-state">
+                <i class="fas fa-clock"></i>
+                <h5>No Active Jobs</h5>
+                <p>Your processing queue is empty</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tab-pane fade" id="completed" role="tabpanel">
+            <div id="completedJobs">
+              <div class="empty-state">
+                <i class="fas fa-check-circle"></i>
+                <h5>No Completed Jobs</h5>
+                <p>Completed jobs will appear here</p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="tab-pane fade" id="history" role="tabpanel">
+            <div id="historyJobs">
+              <div class="empty-state">
+                <i class="fas fa-history"></i>
+                <h5>No Job History</h5>
+                <p>Your job history will appear here</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    {% if current_user.is_subscribed %}
+    <!-- Channel Management Card (Pro Only) -->
+    <div class="dashboard-card fade-in">
+      <div class="card-header-unified">
+        <h3>
+          <span class="emoji-icon">📺</span> Channel Management
+        </h3>
+        <div>
+          <button class="btn btn-light btn-sm" onclick="refreshChannels()" id="refreshChannelsBtn">
+            <i class="fas fa-sync"></i> Refresh
+          </button>
+        </div>
+      </div>
+      
+      <div class="pro-content">
+        <!-- Channel Tabs -->
+        <div class="channel-tabs-container mb-4">
+          <ul class="nav nav-tabs channel-tabs" id="channelTabs" role="tablist">
+            <!-- Tabs will be dynamically added here -->
+            <li class="nav-item" role="presentation">
+              <button class="nav-link add-channel-tab" id="addChannelTab" type="button">
+                <i class="fas fa-plus-circle"></i> Add Channel
+              </button>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- Channel Input Section (shown conditionally) -->
+        <div class="mb-4" id="channelInputSection">
+          <label for="channelInput" class="form-label fw-semibold">
+            <i class="fas fa-tv me-2"></i>Channel URL or @handle
+          </label>
+          <div class="input-group">
+            <span class="input-group-text">
+              <i class="fab fa-youtube text-danger"></i>
+            </span>
+            <input type="text" id="channelInput" class="form-control form-control-lg" 
+                   placeholder="https://www.youtube.com/@yourhandle or @yourhandle">
+            <button id="loadChannelBtn" class="vibe-button" type="button">
+              <span class="button-icon">🔍</span>
+              <span class="button-text">Load Videos</span>
+            </button>
+          </div>
+          <div class="form-text mt-2">
+            <i class="fas fa-info-circle"></i> We'll list your recent uploads and enable preloading for instant analysis.
+          </div>
+        </div>
+
+        <!-- Channel Info Card -->
+        <div id="channelInfo" class="channel-info-card">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <span class="channel-title-display">
+                <i class="fas fa-user-circle me-2"></i>
+                <span id="channelTitle"></span>
+              </span>
+              <span class="badge ms-2" id="videoCount" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></span>
+            </div>
+            <button id="preloadAllBtn" class="vibe-button small pulse-animation">
+              <span class="button-icon">⚡</span>
+              <span class="button-text">Preload Last 10</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Video List Section -->
+        <div class="mt-4">
+          <h5 class="mb-3">
+            <i class="fas fa-video me-2"></i>Your Videos
+          </h5>
+          <div class="video-list-container">
+            <div class="video-list" id="videoList">
+              <!-- Initial empty state -->
+              <div class="no-items-message">
+                <i class="fas fa-film"></i>
+                <p>Add a channel to view and preload videos</p>
+              </div>
+            </div>
+            <div id="videoLoadingOverlay" class="loading-overlay" style="display: none;">
+              <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status">
+                  <span class="visually-hidden">Loading videos...</span>
+                </div>
+                <p class="text-muted">Loading videos...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div aria-live="polite" aria-atomic="true" class="position-relative">
+  <div id="toastContainer" class="toast-container position-fixed top-0 end-0 p-3"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let refreshInterval;
+let isRefreshing = false;
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+  loadUserStats();
+  loadJobQueue();
+  
+  // Auto-refresh every 5 seconds for active jobs
+  refreshInterval = setInterval(() => {
+    if (!isRefreshing && document.visibilityState === 'visible') {
+      loadJobQueue(true); // Silent refresh
+    }
+  }, 5000);
+  
+  // Stop refresh when page is hidden
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+      clearInterval(refreshInterval);
+    } else {
+      refreshInterval = setInterval(() => {
+        if (!isRefreshing) {
+          loadJobQueue(true);
+        }
+      }, 5000);
+    }
+  });
+});
+
+// Load user statistics
+async function loadUserStats() {
+  try {
+    const response = await fetch('/api/user/stats');
+    const data = await response.json();
+    
+    if (data.success) {
+      const stats = data.stats;
+      document.getElementById('totalAnalyses').textContent = stats.total_analyses || 0;
+      document.getElementById('commentsAnalyzed').textContent = (stats.comments_analyzed || 0).toLocaleString();
+      
+      {% if current_user.is_subscribed %}
+      document.getElementById('channelsTracked').textContent = stats.channels_tracked || 0;
+      document.getElementById('preloadedVideos').textContent = stats.preloaded_videos || 0;
+      {% else %}
+      document.getElementById('activeJobs').textContent = stats.active_jobs || 0;
+      document.getElementById('completedJobs').textContent = stats.completed_jobs || 0;
+      {% endif %}
+    }
+  } catch (error) {
+    console.error('Error loading user stats:', error);
+  }
+}
+
+// Load job queue
+async function loadJobQueue(silent = false) {
+  if (isRefreshing) return;
+  
+  try {
+    isRefreshing = true;
+    
+    if (!silent) {
+      const refreshBtn = document.getElementById('refreshBtn');
+      refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+      refreshBtn.disabled = true;
+    }
+    
+    {% if current_user.is_subscribed %}
+    // Pro users: use existing dashboard API
+    const response = await fetch('/api/jobs/status');
+    {% else %}
+    // Free users: use analysis jobs API  
+    const response = await fetch('/api/user/analysis-jobs?limit=20');
+    {% endif %}
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      {% if current_user.is_subscribed %}
+      renderProJobs(data.jobs || []);
+      {% else %}
+      renderFreeJobs(data.jobs || []);
+      {% endif %}
+    }
+  } catch (error) {
+    console.error('Error loading job queue:', error);
+    showError('Failed to load job queue');
+  } finally {
+    isRefreshing = false;
+    
+    if (!silent) {
+      const refreshBtn = document.getElementById('refreshBtn');
+      refreshBtn.innerHTML = '<i class="fas fa-sync"></i> Refresh';
+      refreshBtn.disabled = false;
+    }
+  }
+}
+
+{% if current_user.is_subscribed %}
+// Render jobs for pro users
+function renderProJobs(jobs) {
+  const activeJobs = jobs.filter(job => ['queued', 'processing', 'running'].includes(job.status));
+  const completedJobs = jobs.filter(job => job.status === 'completed');
+  const historyJobs = jobs.slice(0, 10); // Last 10 jobs
+  
+  document.getElementById('activeCount').textContent = activeJobs.length;
+  document.getElementById('completedCount').textContent = completedJobs.length;
+  
+  renderJobList('activeJobs', activeJobs);
+  renderJobList('completedJobs', completedJobs);
+  renderJobList('historyJobs', historyJobs);
+}
+{% else %}
+// Render jobs for free users
+function renderFreeJobs(jobs) {
+  const activeJobs = jobs.filter(job => ['queued', 'processing'].includes(job.status));
+  const completedJobs = jobs.filter(job => job.status === 'completed');
+  const historyJobs = jobs.slice(0, 10);
+  
+  document.getElementById('activeCount').textContent = activeJobs.length;
+  document.getElementById('completedCount').textContent = completedJobs.length;
+  
+  renderJobList('activeJobs', activeJobs);
+  renderJobList('completedJobs', completedJobs);
+  renderJobList('historyJobs', historyJobs);
+}
+{% endif %}
+
+// Render job list
+function renderJobList(containerId, jobs) {
+  const container = document.getElementById(containerId);
+  
+  if (jobs.length === 0) {
+    const emptyMessages = {
+      'activeJobs': { icon: 'fas fa-clock', title: 'No Active Jobs', text: 'Your processing queue is empty' },
+      'completedJobs': { icon: 'fas fa-check-circle', title: 'No Completed Jobs', text: 'Completed jobs will appear here' },
+      'historyJobs': { icon: 'fas fa-history', title: 'No Job History', text: 'Your job history will appear here' }
+    };
+    
+    const msg = emptyMessages[containerId];
+    container.innerHTML = `
+      <div class="empty-state">
+        <i class="${msg.icon}"></i>
+        <h5>${msg.title}</h5>
+        <p>${msg.text}</p>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML = jobs.map(job => createJobElement(job)).join('');
+}
+
+// Create job element HTML
+function createJobElement(job) {
+  const createdAt = new Date(job.created_at).toLocaleString();
+  const isActive = ['queued', 'processing', 'running'].includes(job.status);
+  
+  {% if current_user.is_subscribed %}
+  const jobType = job.job_type === 'preload' ? 'Comment Preload' : 
+                  job.job_type === 'channel_sync' ? 'Channel Sync' : 'Analysis';
+  const videoTitle = job.video_id ? `Video: ${job.video_id}` : 
+                    job.channel_id ? `Channel: ${job.channel_id}` : 'Unknown';
+  {% else %}
+  const jobType = 'Sentiment Analysis';
+  const videoTitle = job.video_title || `Video: ${job.video_id}`;
+  {% endif %}
+  
+  const progressBar = isActive && job.progress ? 
+    `<div class="job-progress">
+       <div class="job-progress-bar" style="width: ${job.progress}%"></div>
+     </div>` : '';
+  
+  const actionButton = job.status === 'completed' && job.has_results ? 
+    `<a href="/analysis/${job.job_id}" class="btn btn-sm btn-primary">View Results</a>` :
+    isActive ? 
+    `<button class="btn btn-sm btn-outline-danger" onclick="cancelJob('${job.job_id}')">Cancel</button>` : '';
+  
+  return `
+    <div class="job-item fade-in">
+      <div class="job-header">
+        <div class="job-title">${jobType}</div>
+        <div class="job-status ${job.status}">${job.status}</div>
+      </div>
+      <div class="job-meta">
+        ${videoTitle} • ${createdAt}
+      </div>
+      ${progressBar}
+      ${actionButton ? `<div class="mt-2">${actionButton}</div>` : ''}
+    </div>
+  `;
+}
+
+// Cancel job
+async function cancelJob(jobId) {
+  if (!confirm('Are you sure you want to cancel this job?')) return;
+  
+  try {
+    {% if current_user.is_subscribed %}
+    const response = await fetch(`/api/jobs/cancel/${jobId}`, { method: 'POST' });
+    {% else %}
+    const response = await fetch(`/api/analyze/job/${jobId}`, { method: 'DELETE' });
+    {% endif %}
+    
+    const data = await response.json();
+    
+    if (data.success) {
+      showSuccess('Job cancelled successfully');
+      loadJobQueue();
+    } else {
+      showError(data.error || 'Failed to cancel job');
+    }
+  } catch (error) {
+    console.error('Error cancelling job:', error);
+    showError('Failed to cancel job');
+  }
+}
+
+// Manual refresh
+function refreshQueue() {
+  loadJobQueue(false);
+}
+
+// Enhanced toast notification system
+function showToast(message, variant = 'info', delay = 3000) {
+  const container = document.getElementById('toastContainer');
+  if (!container) {
+    // Fallback to alert if no toast container
+    alert(message);
+    return;
+  }
+  
+  const toast = document.createElement('div');
+  
+  // Define colors and icons for different variants
+  const variants = {
+    success: {
+      gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+      icon: '✅',
+      textColor: 'text-white',
+      borderColor: '#059669'
+    },
+    danger: {
+      gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+      icon: '❌',
+      textColor: 'text-white',
+      borderColor: '#dc2626'
+    },
+    warning: {
+      gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+      icon: '⚠️',
+      textColor: 'text-white',
+      borderColor: '#d97706'
+    },
+    info: {
+      gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      icon: 'ℹ️',
+      textColor: 'text-white',
+      borderColor: '#764ba2'
+    }
+  };
+  
+  const config = variants[variant] || variants.info;
+  
+  toast.className = `toast align-items-center ${config.textColor} border-0`;
+  toast.setAttribute('role', 'alert');
+  toast.setAttribute('aria-live', 'assertive');
+  toast.setAttribute('aria-atomic', 'true');
+  toast.style.minWidth = '350px';
+  toast.style.background = config.gradient;
+  toast.style.border = `2px solid ${config.borderColor}`;
+  toast.style.borderRadius = '12px';
+  toast.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.15)';
+  toast.style.backdropFilter = 'blur(10px)';
+  
+  toast.innerHTML = `
+    <div class="d-flex align-items-center" style="padding: 8px;">
+      <div class="toast-body d-flex align-items-center" style="font-weight: 500;">
+        <span class="me-3" style="font-size: 1.3rem; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">${config.icon}</span>
+        <span style="font-size: 0.95rem; letter-spacing: 0.3px;">${escapeHtml(message)}</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" 
+              style="opacity: 0.9; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));" 
+              data-bs-dismiss="toast" aria-label="Close"></button>
+    </div>`;
+  
+  container.appendChild(toast);
+  
+  // Add smooth entrance animation
+  toast.style.animation = 'slideInRight 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
+  toast.style.transformOrigin = 'top right';
+  
+  const t = new bootstrap.Toast(toast, { delay });
+  t.show();
+  
+  toast.addEventListener('hidden.bs.toast', () => {
+    toast.style.animation = 'slideOutRight 0.3s ease-in';
+    setTimeout(() => toast.remove(), 300);
+  });
+}
+
+// Utility functions using enhanced toast system
+function showSuccess(message, delay = 3000) {
+  showToast(message, 'success', delay);
+}
+
+function showError(message, delay = 5000) {
+  showToast(message, 'danger', delay);
+}
+
+function showWarning(message, delay = 4000) {
+  showToast(message, 'warning', delay);
+}
+
+function showInfo(message, delay = 3000) {
+  showToast(message, 'info', delay);
+}
+
+// Clean up on page unload
+window.addEventListener('beforeunload', function() {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+});
+
+{% if current_user.is_subscribed %}
+// Pro user channel management functionality
+let userChannels = [];
+let activeChannelId = null;
+let preloadedVideos = new Set();
+let channelRefreshInterval;
+const MAX_CHANNELS = 5;
+
+// Initialize channel management
+function initChannelManagement() {
+  // Load saved channels from localStorage
+  try {
+    const saved = localStorage.getItem('vibe:userChannels');
+    if (saved) {
+      userChannels = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.log('Could not load saved channels');
+  }
+  
+  renderChannelTabs();
+  
+  // Set up add channel button
+  document.getElementById('addChannelTab').addEventListener('click', () => {
+    if (userChannels.length >= MAX_CHANNELS) {
+      showError(`Maximum ${MAX_CHANNELS} channels allowed`);
+      return;
+    }
+    showAddChannelDialog();
+  });
+  
+  // Set up channel input functionality
+  const loadBtn = document.getElementById('loadChannelBtn');
+  const channelInput = document.getElementById('channelInput');
+  
+  loadBtn.addEventListener('click', async () => {
+    const channelUrl = channelInput.value.trim();
+    if (!channelUrl) {
+      showError('Please enter a channel URL or @handle');
+      return;
+    }
+    
+    if (userChannels.length === 0) {
+      await addChannelFromInput(channelUrl);
+    } else {
+      await loadChannelVideos(channelUrl);
+    }
+  });
+  
+  // Enter key support
+  channelInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      loadBtn.click();
+    }
+  });
+  
+  // Preload all button
+  document.getElementById('preloadAllBtn').addEventListener('click', preloadLastTen);
+  
+  // Auto-refresh channels every 60 seconds if active
+  channelRefreshInterval = setInterval(() => {
+    if (userChannels.length > 0 && activeChannelId && document.visibilityState === 'visible') {
+      loadChannelVideos(null, true); // Silent refresh
+    }
+  }, 60000);
+}
+
+// Render channel tabs
+function renderChannelTabs() {
+  const tabsContainer = document.getElementById('channelTabs');
+  const addBtn = document.getElementById('addChannelTab').parentElement;
+  
+  // Clear existing tabs except add button
+  while (tabsContainer.firstChild && tabsContainer.firstChild !== addBtn) {
+    tabsContainer.removeChild(tabsContainer.firstChild);
+  }
+  
+  // Add tabs for each channel
+  userChannels.forEach((channel) => {
+    const li = document.createElement('li');
+    li.className = 'nav-item';
+    li.setAttribute('role', 'presentation');
+    
+    const button = document.createElement('button');
+    button.className = 'nav-link' + (channel.id === activeChannelId ? ' active' : '');
+    button.type = 'button';
+    button.innerHTML = `
+      <i class="fab fa-youtube"></i>
+      <span>${escapeHtml(channel.title)}</span>
+      <span class="remove-channel" data-channel-id="${channel.id}">
+        <i class="fas fa-times-circle"></i>
+      </span>
+    `;
+    
+    button.addEventListener('click', (e) => {
+      if (e.target.closest('.remove-channel')) {
+        removeChannel(channel.id);
+      } else {
+        switchToChannel(channel.id);
+      }
+    });
+    
+    li.appendChild(button);
+    tabsContainer.insertBefore(li, addBtn);
+  });
+  
+  // Manage input section visibility
+  const inputSection = document.getElementById('channelInputSection');
+  if (userChannels.length > 0) {
+    inputSection.style.display = 'none';
+  } else {
+    inputSection.style.display = 'block';
+    document.getElementById('channelInput').value = '';
+  }
+  
+  // Clear video list if no channels
+  if (userChannels.length === 0) {
+    const videoList = document.getElementById('videoList');
+    videoList.innerHTML = `
+      <div class="no-items-message">
+        <i class="fas fa-film"></i>
+        <p>Add a channel to view and preload videos</p>
+      </div>
+    `;
+    document.getElementById('channelInfo').classList.remove('active');
+  } else if (!activeChannelId) {
+    // Auto-select first channel
+    switchToChannel(userChannels[0].id);
+  }
+}
+
+// Show add channel dialog
+function showAddChannelDialog() {
+  const inputSection = document.getElementById('channelInputSection');
+  inputSection.style.display = 'block';
+  document.getElementById('channelInput').focus();
+  document.getElementById('channelInput').value = '';
+}
+
+// Add channel from input
+async function addChannelFromInput(channelUrl) {
+  if (userChannels.length >= MAX_CHANNELS) {
+    showError(`Maximum ${MAX_CHANNELS} channels allowed`);
+    return;
+  }
+  
+  // Check if already added
+  if (userChannels.find(c => c.url === channelUrl || c.handle === channelUrl)) {
+    showError('Channel already added');
+    return;
+  }
+  
+  const loadBtn = document.getElementById('loadChannelBtn');
+  const originalContent = loadBtn.innerHTML;
+  loadBtn.disabled = true;
+  loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+  
+  try {
+    const response = await fetch(`/api/youtube/channel-videos?channel=${encodeURIComponent(channelUrl)}&max=10`);
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to load channel');
+    }
+    
+    // Check if already added by ID
+    if (userChannels.find(c => c.id === data.channel.id)) {
+      showError('Channel already added');
+      return;
+    }
+    
+    // Add to channels
+    const newChannel = {
+      id: data.channel.id,
+      title: data.channel.title,
+      handle: data.channel.handle,
+      url: channelUrl
+    };
+    
+    userChannels.push(newChannel);
+    saveChannels();
+    renderChannelTabs();
+    switchToChannel(newChannel.id);
+    showSuccess(`Added: ${newChannel.title}`);
+    
+  } catch (error) {
+    showError(error.message || 'Failed to add channel');
+  } finally {
+    loadBtn.disabled = false;
+    loadBtn.innerHTML = originalContent;
+  }
+}
+
+// Remove channel
+async function removeChannel(channelId) {
+  if (confirm('Remove this channel from your dashboard? This will delete all associated videos and analysis data.')) {
+    try {
+      const response = await fetch(`/api/channel/${channelId}/delete`, {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/json'}
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete channel data');
+      }
+      
+      // Remove from local storage
+      userChannels = userChannels.filter(c => c.id !== channelId);
+      saveChannels();
+      renderChannelTabs();
+      
+      if (activeChannelId === channelId) {
+        activeChannelId = null;
+        document.getElementById('videoList').innerHTML = '';
+        document.getElementById('channelInfo').classList.remove('active');
+        
+        if (userChannels.length > 0) {
+          switchToChannel(userChannels[0].id);
+        }
+      }
+      
+      let message = 'Channel removed';
+      if (data.deleted_videos > 0 || data.deleted_jobs > 0) {
+        message += ` (${data.deleted_videos || 0} videos, ${data.deleted_jobs || 0} jobs deleted)`;
+      }
+      showSuccess(message);
+      
+    } catch (error) {
+      console.error('Error removing channel:', error);
+      showError(error.message || 'Failed to remove channel');
+    }
+  }
+}
+
+// Switch to channel
+function switchToChannel(channelId) {
+  const channel = userChannels.find(c => c.id === channelId);
+  if (!channel) return;
+  
+  activeChannelId = channelId;
+  
+  // Update tabs
+  document.querySelectorAll('.channel-tabs .nav-link').forEach(tab => {
+    tab.classList.remove('active');
+    if (tab.querySelector(`[data-channel-id="${channelId}"]`)) {
+      tab.classList.add('active');
+    }
+  });
+  
+  // Load channel videos
+  loadChannelVideos(channel.url || channel.id);
+}
+
+// Load channel videos
+async function loadChannelVideos(channel, silent = false) {
+  if (!channel && activeChannelId) {
+    const activeChannel = userChannels.find(c => c.id === activeChannelId);
+    channel = activeChannel ? (activeChannel.url || activeChannel.id) : null;
+  }
+  
+  if (!channel) return;
+  
+  if (!silent) {
+    const loadingOverlay = document.getElementById('videoLoadingOverlay');
+    if (loadingOverlay) {
+      loadingOverlay.style.display = 'flex';
+    }
+  }
+  
+  try {
+    const response = await fetch(`/api/youtube/channel-videos?channel=${encodeURIComponent(channel)}&max=50`);
+    const data = await response.json();
+    
+    if (data.success) {
+      // Show channel info
+      const channelInfo = document.getElementById('channelInfo');
+      channelInfo.classList.add('active');
+      document.getElementById('channelTitle').textContent = data.channel.title;
+      document.getElementById('videoCount').textContent = `${data.count} videos`;
+      
+      // Render videos
+      renderVideoList(data.videos || []);
+      
+      if (!silent) {
+        showSuccess(`Loaded ${data.count} videos from ${data.channel.title}`);
+      }
+    } else {
+      throw new Error(data.error || 'Failed to load videos');
+    }
+  } catch (error) {
+    console.error('Error loading channel videos:', error);
+    if (!silent) {
+      showError(error.message || 'Failed to load channel videos');
+    }
+  } finally {
+    if (!silent) {
+      const loadingOverlay = document.getElementById('videoLoadingOverlay');
+      if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+      }
+    }
+  }
+}
+
+// Render video list
+function renderVideoList(videos) {
+  const videoList = document.getElementById('videoList');
+  
+  if (videos.length === 0) {
+    videoList.innerHTML = `
+      <div class="no-items-message">
+        <i class="fas fa-video-slash"></i>
+        <p>No videos found</p>
+      </div>
+    `;
+    return;
+  }
+  
+  videoList.innerHTML = '';
+  videos.forEach((video, index) => {
+    setTimeout(() => {
+      const videoElement = createVideoElement(video);
+      videoList.appendChild(videoElement);
+    }, index * 50);
+  });
+}
+
+// Create video element
+function createVideoElement(video) {
+  const div = document.createElement('div');
+  div.className = 'video-item';
+  div.style.opacity = '0';
+  div.style.animation = 'fadeIn 0.5s ease-in-out forwards';
+  
+  const formatNumber = (num) => (num || 0).toLocaleString();
+  const isPreloaded = preloadedVideos.has(video.id);
+  
+  div.innerHTML = `
+    <div class="flex-grow-1">
+      <p class="video-title">
+        <a href="/analyze/${video.id}" class="text-decoration-none" title="Click to analyze: ${escapeHtml(video.title || 'Untitled')}">
+          <i class="fas fa-play-circle" style="color: #ff0000; transition: all 0.2s ease;"></i>
+          <span>${escapeHtml(video.title || 'Untitled')}</span>
+        </a>
+      </p>
+      <div class="video-meta">
+        <span class="me-3">
+          <i class="fas fa-fingerprint me-1"></i>
+          <code>${video.id}</code>
+        </span>
+        <span class="me-3">
+          <i class="fas fa-eye me-1"></i>
+          ${formatNumber(video.statistics?.views)} views
+        </span>
+        <span>
+          <i class="fas fa-comment me-1"></i>
+          ${formatNumber(video.statistics?.comments)} comments
+        </span>
+      </div>
+    </div>
+    <div>
+      ${isPreloaded ? 
+        `<button class="vibe-button small preloaded" data-video-id="${video.id}">
+          <span class="button-icon">✅</span>
+          <span class="button-text">Preloaded</span>
+        </button>` :
+        `<button class="vibe-button small" data-video-id="${video.id}">
+          <span class="button-icon">🚀</span>
+          <span class="button-text">Preload</span>
+        </button>`
+      }
+    </div>
+  `;
+  
+  // Add preload functionality
+  const preloadBtn = div.querySelector('.vibe-button');
+  if (!isPreloaded && preloadBtn) {
+    preloadBtn.addEventListener('click', async (e) => {
+      e.preventDefault();
+      preloadBtn.disabled = true;
+      preloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Queuing...';
+      await queuePreload(video.id);
+      preloadedVideos.add(video.id);
+      preloadBtn.classList.add('preloaded');
+      preloadBtn.innerHTML = '<span class="button-icon">✅</span><span class="button-text">Preloaded</span>';
+      preloadBtn.disabled = true;
+    });
+  }
+  
+  return div;
+}
+
+// Queue preload
+async function queuePreload(videoId) {
+  try {
+    const response = await fetch(`/api/preload/comments/${videoId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ target_comments: null })
+    });
+    const data = await response.json();
+    
+    if (data.success) {
+      showSuccess(`Preload queued for ${videoId}`);
+      loadJobQueue(); // Refresh job queue
+    } else {
+      throw new Error(data.error || 'Failed to queue preload');
+    }
+  } catch (error) {
+    showError(error.message || 'Failed to queue preload');
+  }
+}
+
+// Preload last ten videos
+async function preloadLastTen() {
+  const preloadAllBtn = document.getElementById('preloadAllBtn');
+  const originalContent = preloadAllBtn.innerHTML;
+  
+  preloadAllBtn.disabled = true;
+  preloadAllBtn.classList.remove('pulse-animation');
+  preloadAllBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Queuing...';
+  
+  const allButtons = Array.from(document.querySelectorAll('.vibe-button[data-video-id]:not(.preloaded)'));
+  const buttons = allButtons.slice(0, 10);
+  
+  if (buttons.length === 0) {
+    showError('No videos to preload');
+    preloadAllBtn.disabled = false;
+    preloadAllBtn.innerHTML = originalContent;
+    return;
+  }
+  
+  const totalToQueue = buttons.length;
+  showSuccess(`Queuing ${totalToQueue} videos for preload...`);
+  
+  let queued = 0;
+  for (const btn of buttons) {
+    const videoId = btn.getAttribute('data-video-id');
+    if (videoId) {
+      await queuePreload(videoId);
+      queued++;
+      preloadAllBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Queued ${queued}/${totalToQueue}`;
+    }
+  }
+  
+  preloadAllBtn.innerHTML = '<i class="fas fa-check"></i> Queued!';
+  showSuccess(`Successfully queued ${queued} videos for preload`);
+  
+  setTimeout(() => {
+    preloadAllBtn.disabled = false;
+    preloadAllBtn.classList.add('pulse-animation');
+    preloadAllBtn.innerHTML = originalContent;
+  }, 3000);
+}
+
+// Save channels to localStorage
+function saveChannels() {
+  try {
+    localStorage.setItem('vibe:userChannels', JSON.stringify(userChannels));
+  } catch (e) {
+    console.log('Could not save channels');
+  }
+}
+
+// Refresh channels
+function refreshChannels() {
+  if (activeChannelId) {
+    loadChannelVideos(null, false);
+  }
+}
+
+// Initialize channel management for pro users on page load
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initChannelManagement);
+} else {
+  initChannelManagement();
+}
+
+// Helper function for HTML escaping
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+{% endif %}
+</script>
+{% endblock %}

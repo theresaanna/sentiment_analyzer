@@ -67,7 +67,10 @@ def google_callback():
     flash('Logged in with Google.', 'success')
 
     next_url = request.args.get('next')
-    return redirect(next_url or url_for('main.index'))
+    if next_url:
+        return redirect(next_url)
+    else:
+        return redirect(url_for('main.user_dashboard'))
 
 
 @bp.before_app_request
@@ -123,9 +126,10 @@ def reset_password(token):
 
 
 @bp.route('/profile')
-@login_required
+@login_required 
 def profile():
-    return render_template('auth/profile.html')
+    """Legacy profile route - redirects to unified dashboard."""
+    return redirect(url_for('main.user_dashboard'))
 
 
 @bp.route('/subscribe')
@@ -169,7 +173,7 @@ def subscribe_success():
         current_user.provider = 'stripe'
         db.session.commit()
     flash('Subscription activated! Enjoy your full access.', 'success')
-    return redirect(url_for('auth.profile'))
+    return redirect(url_for('main.user_dashboard'))
 
 
 @bp.route('/stripe/webhook', methods=['POST', 'GET', 'HEAD'])

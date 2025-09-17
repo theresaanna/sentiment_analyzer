@@ -250,6 +250,14 @@ def analyze_video(video_id):
         )
 
 
+@bp.route('/user-dashboard')
+@bp.route('/profile')  # Backward compatibility alias
+@login_required
+def user_dashboard():
+    """Unified user dashboard for both free and pro users."""
+    return render_template('user_dashboard.html')
+
+
 @bp.route('/about')
 def about():
     """About page."""
@@ -714,6 +722,112 @@ def api_cache_stats():
             'success': True,
             'stats': stats
         })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@bp.route('/api/user/stats')
+@login_required
+def api_user_stats():
+    """
+    API endpoint to get user statistics for the dashboard.
+    """
+    try:
+        from app.models import AnalysisJob, UserChannel
+        
+        # Get basic user stats
+        total_analyses = AnalysisJob.query.filter_by(user_id=current_user.id).count()
+        active_jobs = AnalysisJob.query.filter_by(
+            user_id=current_user.id
+        ).filter(AnalysisJob.status.in_(['queued', 'processing'])).count()
+        
+        completed_jobs = AnalysisJob.query.filter_by(
+            user_id=current_user.id, status='completed'
+        ).count()
+        
+        # Calculate comments analyzed from completed jobs
+        completed_analyses = AnalysisJob.query.filter_by(
+            user_id=current_user.id, status='completed'
+        ).all()
+        
+        comments_analyzed = sum(
+            job.comment_count_processed or job.comment_count_requested or 0 
+            for job in completed_analyses
+        )
+        
+        stats = {
+            'total_analyses': total_analyses,
+            'comments_analyzed': comments_analyzed,
+            'active_jobs': active_jobs,
+            'completed_jobs': completed_jobs
+        }
+        
+        # Add pro-specific stats if user is subscribed
+        if current_user.is_subscribed:
+            channels_tracked = UserChannel.query.filter_by(user_id=current_user.id).count()
+            preloaded_videos = AnalysisJob.query.filter_by(
+                user_id=current_user.id, status='completed'
+            ).filter(AnalysisJob.comment_count_requested > 2500).count()
+            
+            stats.update({
+                'channels_tracked': channels_tracked,
+                'preloaded_videos': preloaded_videos
+            })
+        
+        return jsonify({
+            'success': True,
+            'stats': stats
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@bp.route('/api/user/analysis-jobs')
+@login_required
+def api_user_analysis_jobs():
+    """
+    API endpoint to get user's analysis jobs for the unified dashboard.
+    """
+    try:
+        from app.models import AnalysisJob
+        
+        limit = request.args.get('limit', type=int, default=20)
+        
+        jobs = AnalysisJob.query.filter_by(user_id=current_user.id)\
+            .order_by(AnalysisJob.created_at.desc())\
+            .limit(limit).all()
+        
+        job_list = []
+        for job in jobs:
+            job_data = {
+                'job_id': job.job_id,
+                'video_id': job.video_id,
+                'video_title': job.video_title,
+                'video_url': job.video_url,
+                'status': job.status,
+                'progress': job.progress or 0,
+                'comment_count_requested': job.comment_count_requested,
+                'comment_count_processed': job.comment_count_processed,
+                'created_at': job.created_at.isoformat() if job.created_at else None,
+                'completed_at': job.completed_at.isoformat() if job.completed_at else None,
+                'has_results': bool(job.results and job.status == 'completed'),
+                'error_message': job.error_message
+            }
+            job_list.append(job_data)
+        
+        return jsonify({
+            'success': True,
+            'jobs': job_list,
+            'total': len(job_list)
+        })
+        
     except Exception as e:
         return jsonify({
             'success': False,
