@@ -823,6 +823,11 @@
             grid-template-columns: 1fr 1fr;
         }
         
+        /* Comment stats grid responsive - 2x2 on mobile */
+        .comment-stats-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+        
         .stat-value {
             font-size: 0.95rem;
         }
@@ -1027,19 +1032,30 @@
         }
     }
     
-    /* Scrollable comment samples */
+    /* Scrollable comment samples - updated for vertical stacking */
     .comment-samples-container {
-        height: 450px;
+        max-height: 400px;
         overflow-y: auto;
         overflow-x: hidden;
-        padding-right: 10px;
+        padding: 15px;
         scrollbar-width: thin;
         scrollbar-color: #cbd5e0 #f7fafc;
         background: linear-gradient(to bottom, #f8f9fa 0%, #f0f2f5 100%);
         border-radius: 0 0 8px 8px;
-        padding: 10px;
         border: 1px solid #e9ecef;
         border-top: none;
+        margin-bottom: 0;
+    }
+    
+    /* Sentiment section styling for vertical layout */
+    .sentiment-section {
+        width: 100%;
+    }
+    
+    /* Ensure full width for sentiment headers */
+    .sentiment-header-section {
+        width: 100%;
+        margin-bottom: 0;
     }
     
     /* Sample comments body padding */
@@ -1327,13 +1343,6 @@
                                     <div class="stat-label">Comments</div>
                                 </div>
                             </div>
-                            <div class="stat-item">
-                                <div class="stat-icon text-warning"><i class="fas fa-percentage"></i></div>
-                                <div class="stat-content">
-                                    <div class="stat-value">{{ "%.1f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</div>
-                                    <div class="stat-label">Engagement</div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1398,6 +1407,13 @@
                         <div class="stat-content">
                             <div class="stat-value">{{ comment_stats.get('top_level_count', 0) }}</div>
                             <div class="stat-label">Comments</div>
+                        </div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-icon text-warning"><i class="fas fa-percentage"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ "%.1f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</div>
+                            <div class="stat-label">Engagement</div>
                         </div>
                     </div>
                 </div>
@@ -1654,34 +1670,37 @@
                 </h3>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-4">
-                        <div class="sentiment-positive sentiment-header-section">
-                            <h5>
-                                <span><i class="fas fa-smile"></i> Positive</span>
-                                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="positiveCount">0</span>
-                            </h5>
-                        </div>
-                        <div id="positiveSamples" class="comment-samples-container"></div>
+                <!-- Positive Comments Section -->
+                <div class="sentiment-section mb-4">
+                    <div class="sentiment-positive sentiment-header-section">
+                        <h5>
+                            <span><i class="fas fa-smile"></i> Positive</span>
+                            <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="positiveCount">0</span>
+                        </h5>
                     </div>
-                    <div class="col-lg-4">
-                        <div class="sentiment-neutral sentiment-header-section">
-                            <h5>
-                                <span><i class="fas fa-meh"></i> Neutral</span>
-                                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="neutralCount">0</span>
-                            </h5>
-                        </div>
-                        <div id="neutralSamples" class="comment-samples-container"></div>
+                    <div id="positiveSamples" class="comment-samples-container"></div>
+                </div>
+                
+                <!-- Neutral Comments Section -->
+                <div class="sentiment-section mb-4">
+                    <div class="sentiment-neutral sentiment-header-section">
+                        <h5>
+                            <span><i class="fas fa-meh"></i> Neutral</span>
+                            <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="neutralCount">0</span>
+                        </h5>
                     </div>
-                    <div class="col-lg-4">
-                        <div class="sentiment-negative sentiment-header-section">
-                            <h5>
-                                <span><i class="fas fa-frown"></i> Negative</span>
-                                <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="negativeCount">0</span>
-                            </h5>
-                        </div>
-                        <div id="negativeSamples" class="comment-samples-container"></div>
+                    <div id="neutralSamples" class="comment-samples-container"></div>
+                </div>
+                
+                <!-- Negative Comments Section -->
+                <div class="sentiment-section mb-4">
+                    <div class="sentiment-negative sentiment-header-section">
+                        <h5>
+                            <span><i class="fas fa-frown"></i> Negative</span>
+                            <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;" id="negativeCount">0</span>
+                        </h5>
                     </div>
+                    <div id="negativeSamples" class="comment-samples-container"></div>
                 </div>
                 <!-- Feedback Notice -->
                 <div class="feedback-notice mt-3">
@@ -1897,15 +1916,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     {% endif %}
     
-    // Add debug button for testing
-    const debugDiv = document.createElement('div');
-    debugDiv.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
-    debugDiv.innerHTML = `
-        <button onclick="testAnalysisAPI()" style="background: #ff6b6b; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">
-            🐛 Test API
-        </button>
-    `;
-    document.body.appendChild(debugDiv);
     
     // Load user's previous feedback first
     await loadUserFeedback();
@@ -2242,12 +2252,19 @@ document.addEventListener('DOMContentLoaded', async function() {
             const indicators = document.querySelectorAll('.range-indicator');
             indicators.forEach(indicator => {
                 indicator.addEventListener('click', function() {
-                    // Ignore clicks on disabled indicators
+                    const range = this.dataset.range;
+                    
+                    // Handle clicks on disabled indicators
                     if (this.classList.contains('disabled')) {
+                        // Show appropriate prompt based on range
+                        if (range === 'queue' && !isAuthenticated) {
+                            showLoginPrompt();
+                        } else if (range === 'pro-queue' && !isProUser) {
+                            showProUpgradePrompt();
+                        }
                         return;
                     }
                     
-                    const range = this.dataset.range;
                     let targetValue;
                     
                     switch(range) {
@@ -2565,7 +2582,16 @@ function startSentimentAnalysis() {
         commentsToAnalyze = Math.max(commentsToAnalyze, 5);
     }
     
-    if (isQueueMode && isAuthenticated) {
+    // Handle authentication for queue mode
+    if (isQueueMode && !isAuthenticated) {
+        // Non-authenticated user trying to queue - show login prompt
+        showLoginPrompt();
+        return;
+    } else if (isQueueMode && !isProUser && commentsToAnalyze > 5000) {
+        // Regular user trying to analyze more than 5k comments - show upgrade prompt
+        showProUpgradePrompt();
+        return;
+    } else if (isQueueMode && isAuthenticated) {
         // Queue mode - create a background job
         console.log('Queueing job for', commentsToAnalyze, 'comments');
         
@@ -2599,7 +2625,18 @@ function startSentimentAnalysis() {
                     window.location.href = `/analysis/${data.job_id}`;
                 }, 1500);
             } else {
-                showToast(`Error: ${data.error}`, 'error');
+                // Check for specific auth errors
+                if (data.redirect_to_login) {
+                    // Show the login prompt modal
+                    showLoginPrompt();
+                } else if (data.redirect_to_upgrade) {
+                    // Show the upgrade modal
+                    showProUpgradePrompt();
+                } else {
+                    // Show regular error
+                    showToast(`Error: ${data.error}`, 'error');
+                }
+                
                 // Re-enable button
                 if (analysisActionButton) {
                     analysisActionButton.disabled = false;
@@ -2612,7 +2649,14 @@ function startSentimentAnalysis() {
         })
         .catch(error => {
             console.error('Error queueing analysis:', error);
-            showToast('Failed to queue analysis', 'error');
+            
+            // Check if it's an authentication error (401)
+            if (error.message && error.message.includes('401')) {
+                showLoginPrompt();
+            } else {
+                showToast('Failed to queue analysis', 'error');
+            }
+            
             // Re-enable button
             if (analysisActionButton) {
                 analysisActionButton.disabled = false;
@@ -3993,55 +4037,6 @@ function capitalizeFirst(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-// Debug function to test API directly
-window.testAnalysisAPI = async function() {
-    console.log('===== TEST API START =====');
-    const videoId = '{{ video_id }}';
-    console.log('Video ID:', videoId);
-    
-    try {
-        // Test 1: Start analysis
-        console.log('Test 1: Starting analysis with 100 comments...');
-        const response = await fetch(`/api/analyze/sentiment/${videoId}`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({max_comments: 100})
-        });
-        
-        const data = await response.json();
-        console.log('Analysis start response:', data);
-        
-        if (data.success && data.analysis_id) {
-            console.log('Analysis ID:', data.analysis_id);
-            
-            // Test 2: Check status
-            setTimeout(async () => {
-                console.log('Test 2: Checking status...');
-                const statusResponse = await fetch(`/api/analyze/status/${data.analysis_id}`);
-                const statusData = await statusResponse.json();
-                console.log('Status response:', statusData);
-                
-                // Test 3: Get results
-                if (statusData.success && statusData.status.status === 'completed') {
-                    console.log('Test 3: Getting results...');
-                    const resultsResponse = await fetch(`/api/analyze/results/${data.analysis_id}`);
-                    const resultsData = await resultsResponse.json();
-                    console.log('Results response:', resultsData);
-                    
-                    if (resultsData.success && resultsData.results) {
-                        console.log('SUCCESS! Results received:', resultsData.results);
-                        // Try to display them
-                        displayResults(resultsData.results);
-                    }
-                }
-            }, 3000);
-        }
-    } catch (error) {
-        console.error('Test API Error:', error);
-    }
-    
-    console.log('===== TEST API END =====');
-}
 
 function showError(error) {
     const progressDiv = document.getElementById('analysisProgress');
@@ -4175,6 +4170,130 @@ function showError(error) {
     if (statusCheckInterval) {
         clearInterval(statusCheckInterval);
     }
+}
+
+// Authentication prompt functions for slider
+function showLoginPrompt() {
+    // Create modal or use existing modal structure
+    const modalHtml = `
+        <div class="modal fade" id="loginPromptModal" tabindex="-1" role="dialog" aria-labelledby="loginPromptModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0;">
+                        <h5 class="modal-title" id="loginPromptModalLabel">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In Required
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; opacity: 0.8;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center" style="padding: 2rem;">
+                        <div class="mb-3">
+                            <i class="fas fa-lock" style="font-size: 3rem; color: #667eea; opacity: 0.7;"></i>
+                        </div>
+                        <h5 class="mb-3">Want to analyze more comments?</h5>
+                        <p class="text-muted mb-4">Sign in to queue analysis jobs and analyze up to 10,000 comments!</p>
+                        <div class="mb-3">
+                            <div class="alert alert-info" style="border-radius: 10px;">
+                                <strong>Free Account Benefits:</strong><br>
+                                <small>
+                                    ✓ Analyze up to 10,000 comments<br>
+                                    ✓ Queue background jobs<br>
+                                    ✓ Save analysis history<br>
+                                    ✓ Export results
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: none; padding: 0 2rem 2rem 2rem;">
+                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg" style="border-radius: 25px; width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
+                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In for Free Analysis
+                        </a>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                Don't have an account? 
+                                <a href="{{ url_for('auth.register') }}" class="text-primary">Create one free</a>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('loginPromptModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    $('#loginPromptModal').modal('show');
+}
+
+function showProUpgradePrompt() {
+    // Create modal for Pro upgrade
+    const modalHtml = `
+        <div class="modal fade" id="proUpgradePromptModal" tabindex="-1" role="dialog" aria-labelledby="proUpgradePromptModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+                    <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border-radius: 15px 15px 0 0;">
+                        <h5 class="modal-title" id="proUpgradePromptModalLabel">
+                            <i class="fas fa-crown mr-2"></i>Upgrade to Pro
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; opacity: 0.8;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center" style="padding: 2rem;">
+                        <div class="mb-3">
+                            <i class="fas fa-star" style="font-size: 3rem; color: #f59e0b;"></i>
+                        </div>
+                        <h5 class="mb-3">Unlock Advanced Analysis</h5>
+                        <p class="text-muted mb-4">Upgrade to Pro to analyze up to 100,000 comments or entire videos!</p>
+                        <div class="mb-3">
+                            <div class="alert alert-warning" style="border-radius: 10px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: none;">
+                                <strong>Pro Account Benefits:</strong><br>
+                                <small style="color: #92400e;">
+                                    ✓ Analyze up to 100,000 comments<br>
+                                    ✓ Process entire videos<br>
+                                    ✓ Advanced filtering options<br>
+                                    ✓ Priority processing<br>
+                                    ✓ Detailed analytics reports
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer" style="border-top: none; padding: 0 2rem 2rem 2rem;">
+                        <a href="{{ url_for('auth.subscribe') }}" class="btn btn-warning btn-lg" style="border-radius: 25px; width: 100%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white;">
+                            <i class="fas fa-crown mr-2"></i>Upgrade to Pro
+                        </a>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                <a href="#" class="text-warning" data-dismiss="modal">Maybe later</a>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('proUpgradePromptModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to page
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    
+    // Show modal
+    $('#proUpgradePromptModal').modal('show');
 }
 </script>
 {% endblock %}

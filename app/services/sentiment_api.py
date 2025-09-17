@@ -395,7 +395,7 @@ class SentimentAPIClient:
             'mock': True,
         }
 
-    def summarize(self, comments: List[Dict[str, Any]], sentiment: Optional[Dict[str, Any]] = None, method: str = "auto") -> Dict[str, Any]:
+    def summarize(self, comments: List[Dict[str, Any]], sentiment: Optional[Dict[str, Any]] = None, method: str = "auto", video_title: Optional[str] = None) -> Dict[str, Any]:
         """Request comment summary from the external ML service.
         This compacts the payload to avoid timeouts or 400s due to oversized/malformed inputs.
         """
@@ -515,22 +515,42 @@ class SentimentAPIClient:
             
             return summary
 
-        # Use enhanced summary generator for better insights
+        # Use Modal service's advanced summarization endpoint
         try:
-            from app.services.summary_enhancer import get_enhanced_summary
-            # Pass full comments list (not just texts) for richer analysis
-            enhanced_summary = get_enhanced_summary(comments, compact_sentiment)
+            # Prepare comments in the format expected by the Modal service
+            comment_dicts = []
+            for c in comments:
+                if isinstance(c, dict):
+                    comment_dicts.append(c)
+                else:
+                    comment_dicts.append({'text': str(c)})
             
-            return {
-                'summary': {
-                    'summary': enhanced_summary,
-                    'method': 'enhanced_intelligent',
-                    'comments_analyzed': compact_sentiment.get('total_analyzed', 0),
-                    'confidence': compact_sentiment.get('average_confidence', 0),
+            # Call the Modal service summarization endpoint
+            summary_response = self.make_request('/summarize', {
+                'comments': comment_dicts[:300],  # Limit to 300 comments for performance
+                'sentiment': compact_sentiment,
+                'video_title': video_title,  # Pass video title for filtering redundant words
+                'method': 'auto'  # Let the service choose the best method (OpenAI if available, else transformer)
+            })
+            
+            if summary_response.get('success') and summary_response.get('summary'):
+                summary_result = summary_response['summary']
+                return {
+                    'summary': {
+                        'summary': summary_result.get('summary', ''),
+                        'method': f"modal_{summary_result.get('method', 'unknown')}",
+                        'comments_analyzed': summary_result.get('comments_analyzed', compact_sentiment.get('total_analyzed', 0)),
+                        'confidence': compact_sentiment.get('average_confidence', 0),
+                        'key_themes': summary_result.get('key_themes', []),
+                        'engagement_metrics': summary_result.get('engagement_metrics', {})
+                    }
                 }
-            }
+            else:
+                print(f"Modal summarization failed: {summary_response.get('error', 'Unknown error')}")
+                raise Exception("Modal service returned unsuccessful response")
+                
         except Exception as e:
-            print(f"Enhanced summary generation failed: {e}, using fallback")
+            print(f"Modal summary generation failed: {e}, using fallback")
             # Fall back to original summary generation
             summary_text = generate_intelligent_summary(compact_sentiment)
             

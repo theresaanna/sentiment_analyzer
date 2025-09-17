@@ -16,6 +16,14 @@ from app.cache import cache
 @login_required
 def api_queue_analysis():
     """Queue a sentiment analysis job for background processing."""
+    # Check if user is authenticated
+    if not current_user.is_authenticated:
+        return jsonify({
+            'success': False, 
+            'error': 'Authentication required',
+            'redirect_to_login': True
+        }), 401
+    
     try:
         data = request.get_json()
         video_url = data.get('video_url')
