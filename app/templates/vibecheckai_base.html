@@ -689,9 +689,19 @@
             color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
             transition: var(--transition);
+            font-weight: 500;
         }
         
         .footer-link:hover {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .footer-link:visited {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .footer-link:visited:hover {
             color: white;
         }
         
@@ -699,6 +709,25 @@
             border: none;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
             margin: 30px 0;
+        }
+        
+        .footer-hosting {
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .hosting-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-weight: 500;
+        }
+        
+        .hosting-separator {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.8rem;
         }
         
         .footer-copyright {
@@ -757,6 +786,16 @@
             .nav-menu {
                 display: none;
             }
+            
+            .footer-hosting {
+                flex-wrap: wrap;
+                font-size: 0.9rem;
+                gap: 8px;
+            }
+            
+            .hosting-separator {
+                display: none;
+            }
         }
     </style>
     
@@ -803,10 +842,19 @@
                 <a href="{{ url_for('main.privacy') }}" class="footer-link">Privacy</a>
                 <a href="{{ url_for('main.terms') }}" class="footer-link">Terms</a>
                 <a href="mailto:theresasumma@gmail.com" class="footer-link">Contact</a>
-                <a href="https://theresasumma.com" target="_blank" class="footer-link">Portfolio</a>
+                <a href="https://github.com/theresasumma/VibeCheckAI" target="_blank" class="footer-link">GitHub</a>
             </div>
             
             <hr class="footer-divider">
+            
+            <div class="footer-hosting">
+                <span class="hosting-label">Powered by</span>
+                <a href="https://modal.com" target="_blank" class="footer-link">Modal</a>
+                <span class="hosting-separator">•</span>
+                <a href="https://railway.app" target="_blank" class="footer-link">Railway</a>
+                <span class="hosting-separator">•</span>
+                <a href="https://huggingface.co" target="_blank" class="footer-link">Hugging Face</a>
+            </div>
             
             <div class="footer-copyright">
                 © 2025 VibeCheckAI by Theresa Summa. Made with 💜 for content creators.
