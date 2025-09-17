@@ -1027,37 +1027,22 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str, i
         # Generate summary via external ML service (Modal). Falls back on error.
         print("Generating summary via external ML service...")
         try:
-            from app.services.sentiment_api import get_sentiment_client, SentimentAPIClient
+            from app.services.sentiment_api import get_sentiment_client
             client = get_sentiment_client()
             resp = client.summarize(comments, sentiment_results, method='auto')
             summary_results = resp.get('summary') or resp
-            # If summary came back empty/minimal OR error in summary, try mock summarizer for richer content
-            if (not summary_results or not summary_results.get('summary') or summary_results.get('error')):
-                print("Primary summarizer returned minimal content or error; using mock summarizer as fallback")
-                mock_client = SentimentAPIClient(base_url='')
-                resp2 = mock_client.summarize(comments, sentiment_results, method='mock')
-                summary_results = resp2.get('summary') or summary_results
+            # If service failed to return a summary, set a neutral placeholder (no legacy fallback)
+            if (not summary_results or not summary_results.get('summary')):
+                summary_results = {
+                    'summary': 'Summary is temporarily unavailable.',
+                    'method': 'service_unavailable'
+                }
         except Exception as e:
-            print(f"External summarizer unavailable; using fallback summary. Reason: {e}")
-            dist = sentiment_results.get('sentiment_counts', {}) or sentiment_results.get('distribution', {}) or {}
-            pos = dist.get('positive', 0)
-            neu = dist.get('neutral', 0)
-            neg = dist.get('negative', 0)
-            total = sentiment_results.get('total_analyzed', 0) or (pos + neu + neg)
-            def pct(x):
-                return round((x / total * 100), 1) if total else 0.0
-            trend = 'mixed'
-            if pos >= max(neg, neu) and pos >= total * 0.5:
-                trend = 'mostly positive'
-            elif neg >= max(pos, neu) and neg >= total * 0.4:
-                trend = 'mostly negative'
+            print(f"External summarizer unavailable. Reason: {e}")
             summary_results = {
-                'summary': (
-                    f"Viewer reactions are {trend}. "
-                    f"Distribution — positive: {pct(pos)}%, neutral: {pct(neu)}%, negative: {pct(neg)}%."
-                ),
-                'method': 'fallback',
-                'comments_analyzed': total,
+                'summary': 'Summary is temporarily unavailable.',
+                'method': 'service_error',
+                'error': str(e)
             }
         
         # Build a simple sentiment timeline from external results (first 50 comments)

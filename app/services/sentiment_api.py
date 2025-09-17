@@ -46,6 +46,31 @@ class SentimentAPIClient:
             self.mock_mode = False
             self.base_url = self.base_url.rstrip('/')
 
+    def make_request(self, endpoint: str, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """Generic POST request to the external ML service.
+        Returns parsed JSON or a dict with success=False and an error message.
+        """
+        if self.mock_mode or not self.base_url:
+            return {
+                'success': False,
+                'error': 'Sentiment API base URL is not configured.'
+            }
+        try:
+            response = requests.post(
+                f"{self.base_url}{endpoint}",
+                json=payload,
+                timeout=self.timeout,
+                headers=self.headers,
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e),
+            }
+
     def analyze_text(self, text: str) -> Dict[str, Any]:
         """
         Analyze sentiment of a single text.
@@ -440,105 +465,31 @@ class SentimentAPIClient:
         compact_comments = _to_text_list(comments)
         compact_sentiment = _compact_sentiment(sentiment)
         
-        # Generate intelligent summary based on sentiment distribution
-        def generate_intelligent_summary(sentiment_data):
-            dist = sentiment_data.get('sentiment_distribution', {})
-            pos = dist.get('positive', 0)
-            neu = dist.get('neutral', 0)
-            neg = dist.get('negative', 0)
-            total = sentiment_data.get('total_analyzed', 0)
-            confidence = sentiment_data.get('average_confidence', 0)
-            
-            if total == 0:
-                return "No comments analyzed yet."
-            
-            def pct(x):
-                return round((x / total * 100), 1) if total else 0.0
-            
-            # Determine overall tone
-            pos_pct = pct(pos)
-            neg_pct = pct(neg)
-            neu_pct = pct(neu)
-            
-            # Build dynamic summary based on distribution
-            if pos_pct > 70:
-                tone = "overwhelmingly positive"
-                detail = f"with {pos_pct}% positive reactions"
-            elif pos_pct > 50:
-                tone = "generally positive"
-                detail = f"with {pos_pct}% positive and {neg_pct}% negative reactions"
-            elif neg_pct > 60:
-                tone = "largely negative"
-                detail = f"with {neg_pct}% negative reactions"
-            elif neg_pct > 40:
-                tone = "somewhat critical"
-                detail = f"with {neg_pct}% negative and {pos_pct}% positive reactions"
-            elif abs(pos_pct - neg_pct) < 10:
-                tone = "highly divided"
-                detail = f"with {pos_pct}% positive and {neg_pct}% negative reactions"
-            else:
-                tone = "mixed"
-                detail = f"with {pos_pct}% positive, {neu_pct}% neutral, and {neg_pct}% negative reactions"
-            
-            # Add confidence note if low
-            conf_note = ""
-            if confidence < 0.6:
-                conf_note = " Note: Analysis confidence is relatively low, suggesting nuanced or ambiguous sentiment in many comments."
-            elif confidence > 0.85:
-                conf_note = " The high confidence scores indicate clear sentiment expressions."
-            
-            # Build final summary
-            summary = f"Viewer reactions are {tone}, {detail}.{conf_note}"
-            
-            # Add key themes if we have comments
-            if compact_comments:
-                # Simple keyword extraction
-                positive_keywords = ['love', 'great', 'amazing', 'excellent', 'best', 'awesome', 'fantastic']
-                negative_keywords = ['hate', 'terrible', 'worst', 'awful', 'bad', 'horrible', 'disappointing']
-                
-                pos_found = []
-                neg_found = []
-                
-                for comment in compact_comments[:50]:  # Check first 50 comments
-                    comment_lower = comment.lower()
-                    for kw in positive_keywords:
-                        if kw in comment_lower and kw not in pos_found:
-                            pos_found.append(kw)
-                    for kw in negative_keywords:
-                        if kw in comment_lower and kw not in neg_found:
-                            neg_found.append(kw)
-                
-                if pos_found and pos_pct > 40:
-                    summary += f" Positive comments frequently mention: {', '.join(pos_found[:3])}." 
-                if neg_found and neg_pct > 30:
-                    summary += f" Critical comments often express: {', '.join(neg_found[:3])}."
-            
-            return summary
 
-        # Use Modal service's advanced summarization endpoint
+        # Use ML service's OpenAI summarization endpoint exclusively
         try:
-            # Prepare comments in the format expected by the Modal service
+            # Prepare comments in the format expected by the service
             comment_dicts = []
             for c in comments:
                 if isinstance(c, dict):
                     comment_dicts.append(c)
                 else:
                     comment_dicts.append({'text': str(c)})
-            
-            # Call the Modal service summarization endpoint
+
+            # Call the summarization endpoint
             summary_response = self.make_request('/summarize', {
                 'comments': comment_dicts[:300],  # Limit to 300 comments for performance
                 'sentiment': compact_sentiment,
                 'video_title': video_title,  # Pass video title for filtering redundant words
-                'method': 'auto'  # Let the service choose the best method (OpenAI if available, else transformer)
+                'method': 'auto'  # Let the service choose OpenAI (or fail)
             })
-            
+
             if summary_response.get('success') and summary_response.get('summary'):
                 summary_result = summary_response['summary']
                 return {
                     'summary': {
                         'summary': summary_result.get('summary', ''),
-                        'method': f"modal_{summary_result.get('method', 'unknown')}",
+                        'method': f"service_{summary_result.get('method', 'unknown')}",
                         'comments_analyzed': summary_result.get('comments_analyzed', compact_sentiment.get('total_analyzed', 0)),
                         'confidence': compact_sentiment.get('average_confidence', 0),
                         'key_themes': summary_result.get('key_themes', []),
@@ -546,21 +497,14 @@ class SentimentAPIClient:
                     }
                 }
             else:
-                print(f"Modal summarization failed: {summary_response.get('error', 'Unknown error')}")
-                raise Exception("Modal service returned unsuccessful response")
-                
-        except Exception as e:
-            print(f"Modal summary generation failed: {e}, using fallback")
-            # Fall back to original summary generation
-            summary_text = generate_intelligent_summary(compact_sentiment)
-            
-            return {
-                'summary': {
-                    'summary': summary_text,
-                    'method': 'intelligent_fallback',
-                    'comments_analyzed': compact_sentiment.get('total_analyzed', 0),
-                    'confidence': compact_sentiment.get('average_confidence', 0),
+                # Return error without legacy fallback
+                return {
+                    'error': summary_response.get('error', 'Summarization service returned an unsuccessful response')
                 }
+        except Exception as e:
+            # Return error without legacy fallback
+            return {
+                'error': str(e)
             }
 
 
