@@ -1197,9 +1197,16 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str, i
         # Optimize results before caching (remove redundant data)
         optimized_results = {
             'sentiment': results['sentiment'],
-            'summary': results['summary'],
             'timeline': results.get('timeline', [])[:50],  # Limit timeline to 50 points
         }
+        
+        # Only cache summary if it's not the temporary placeholder
+        try:
+            if results.get('summary') and results['summary'].get('summary') and results['summary'].get('summary') != 'Summary is temporarily unavailable.':
+                optimized_results['summary'] = results['summary']
+        except Exception:
+            # If summary structure is unexpected, skip caching it
+            pass
         
         # Only include updated_stats if present
         if 'updated_stats' in results:
@@ -1236,11 +1243,15 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str, i
                     raise Exception("Failed to cache analysis results due to memory constraints")
         except Exception as cache_error:
             print(f"Cache error: {cache_error}")
-            # Store minimal results in case of memory issues
+            # Store minimal results in case of memory issues (skip placeholder summary)
             minimal_results = {
-                'sentiment': results['sentiment'],
-                'summary': {'summary': results['summary'].get('summary', 'Analysis completed but full details unavailable due to memory constraints.')}
+                'sentiment': results['sentiment']
             }
+            try:
+                if results.get('summary') and results['summary'].get('summary') and results['summary'].get('summary') != 'Summary is temporarily unavailable.':
+                    minimal_results['summary'] = {'summary': results['summary'].get('summary')}
+            except Exception:
+                pass
             success = cache.set('sentiment_analysis', analysis_id, minimal_results, ttl_hours=1)
             if success:
                 print(f"Minimal results cached for {analysis_id}")
@@ -1430,10 +1441,11 @@ def api_retry_summary(analysis_id):
         resp = client.summarize(comments, sentiment, method='auto', video_title=video_info.get('title'))
         summary_results = resp.get('summary') or resp
 
-        if (not summary_results) or (not summary_results.get('summary')):
+        # Treat placeholder or missing summary as unavailable and do not cache
+        if (not summary_results) or (not summary_results.get('summary')) or (summary_results.get('summary') == 'Summary is temporarily unavailable.'):
             return jsonify({'success': False, 'error': 'Summarization service unavailable'}), 502
 
-        # Update cache with the new summary
+        # Update cache with the new summary (valid only)
         existing['summary'] = summary_results
         if existing.get('timeline'):
             existing['timeline'] = existing['timeline'][:50]
