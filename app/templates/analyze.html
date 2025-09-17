@@ -2199,26 +2199,75 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // Initialize slider safely with error handling
+    function initializeSliderSafely() {
+        try {
+            // Check if slider is already initialized
+            if (window.sliderInitialized) {
+                console.log('Slider already initialized, skipping');
+                return;
+            }
+            
+            // Ensure DOM elements exist
+            if (!unifiedSlider) {
+                console.warn('Slider element not found, retrying in 100ms');
+                setTimeout(initializeSliderSafely, 100);
+                return;
+            }
+            
+            // Remove any existing event listeners to prevent duplicates
+            const newSlider = unifiedSlider.cloneNode(true);
+            unifiedSlider.parentNode.replaceChild(newSlider, unifiedSlider);
+            
+            // Update reference to new element
+            const slider = document.getElementById('unifiedSlider');
+            
+            if (slider) {
+                // Configure slider for user
+                configureSliderForUser();
+                
+                // Set initial value based on preloaded comments if available
+                let initialValue = 1000;
+                if (fetchedComments > 0 && fetchedComments <= (isProUser ? 100000 : (isAuthenticated ? 10000 : 2500))) {
+                    initialValue = fetchedComments;
+                }
+                
+                // Add event listeners to new slider element
+                slider.addEventListener('input', function(e) {
+                    try {
+                        updateUnifiedUI(this.value);
+                    } catch (error) {
+                        console.error('Error in slider input handler:', error);
+                    }
+                });
+                
+                slider.addEventListener('change', function(e) {
+                    try {
+                        updateUnifiedUI(this.value);
+                    } catch (error) {
+                        console.error('Error in slider change handler:', error);
+                    }
+                });
+                
+                // Initialize UI with initial value
+                updateUnifiedUI(initialValue);
+                
+                // Mark as initialized
+                window.sliderInitialized = true;
+                console.log('Slider initialized successfully');
+            }
+        } catch (error) {
+            console.error('Error initializing slider:', error);
+            // Retry once after a delay
+            setTimeout(() => {
+                window.sliderInitialized = false;
+                initializeSliderSafely();
+            }, 500);
+        }
+    }
+    
     // Initialize slider
-    configureSliderForUser();
-    
-    // Set initial value based on preloaded comments if available
-    let initialValue = 1000;
-    if (fetchedComments > 0 && fetchedComments <= (isProUser ? 100000 : (isAuthenticated ? 10000 : 2500))) {
-        initialValue = fetchedComments;
-    }
-    updateUnifiedUI(initialValue);
-    
-    // Slider event listener
-    if (unifiedSlider) {
-        unifiedSlider.addEventListener('input', function() {
-            updateUnifiedUI(this.value);
-        });
-        
-        unifiedSlider.addEventListener('change', function() {
-            updateUnifiedUI(this.value);
-        });
-    }
+    initializeSliderSafely();
     
     // Input event listener
     if (commentCountInput) {
@@ -2246,56 +2295,73 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
-    // Add click handlers for range indicators
+    // Add click handlers for range indicators using event delegation
     function setupRangeIndicatorClicks() {
-        setTimeout(() => {
-            const indicators = document.querySelectorAll('.range-indicator');
-            indicators.forEach(indicator => {
-                indicator.addEventListener('click', function() {
-                    const range = this.dataset.range;
+        try {
+            // Use event delegation to avoid issues with dynamically created elements
+            const indicatorContainer = document.getElementById('sliderRangeIndicators');
+            if (indicatorContainer) {
+                // Remove existing listeners first
+                const newContainer = indicatorContainer.cloneNode(true);
+                indicatorContainer.parentNode.replaceChild(newContainer, indicatorContainer);
+                
+                // Add single delegated event listener
+                newContainer.addEventListener('click', function(e) {
+                    const indicator = e.target.closest('.range-indicator');
+                    if (!indicator) return;
                     
-                    // Handle clicks on disabled indicators
-                    if (this.classList.contains('disabled')) {
-                        // Show appropriate prompt based on range
-                        if (range === 'queue' && !isAuthenticated) {
-                            showLoginPrompt();
-                        } else if (range === 'pro-queue' && !isProUser) {
-                            showProUpgradePrompt();
+                    try {
+                        const range = indicator.dataset.range;
+                        
+                        // Handle clicks on disabled indicators
+                        if (indicator.classList.contains('disabled')) {
+                            if (range === 'queue' && !isAuthenticated) {
+                                showLoginPrompt();
+                            } else if (range === 'pro-queue' && !isProUser) {
+                                showProUpgradePrompt();
+                            }
+                            return;
                         }
-                        return;
-                    }
-                    
-                    let targetValue;
-                    
-                    switch(range) {
-                        case 'instant':
-                            targetValue = Math.min(1000, totalAvailableComments);
-                            break;
-                        case 'queue':
-                            targetValue = Math.min(5000, totalAvailableComments);
-                            break;
-                        case 'pro-queue':
-                            targetValue = Math.min(50000, totalAvailableComments);
-                            break;
-                        case 'all':
-                            targetValue = totalAvailableComments;
-                            break;
-                        default:
-                            targetValue = 1000;
-                    }
-                    
-                    // Update the slider and UI
-                    if (unifiedSlider) {
-                        unifiedSlider.value = targetValue;
-                        updateUnifiedUI(targetValue);
+                        
+                        let targetValue;
+                        
+                        switch(range) {
+                            case 'instant':
+                                targetValue = Math.min(1000, totalAvailableComments);
+                                break;
+                            case 'queue':
+                                targetValue = Math.min(5000, totalAvailableComments);
+                                break;
+                            case 'pro-queue':
+                                targetValue = Math.min(50000, totalAvailableComments);
+                                break;
+                            case 'all':
+                                targetValue = totalAvailableComments;
+                                break;
+                            default:
+                                targetValue = 1000;
+                        }
+                        
+                        // Update the slider and UI
+                        const slider = document.getElementById('unifiedSlider');
+                        if (slider) {
+                            slider.value = targetValue;
+                            updateUnifiedUI(targetValue);
+                        }
+                    } catch (error) {
+                        console.error('Error in range indicator click handler:', error);
                     }
                 });
-            });
-        }, 100); // Small delay to ensure indicators are rendered
+                
+                console.log('Range indicator clicks setup successfully');
+            }
+        } catch (error) {
+            console.error('Error setting up range indicator clicks:', error);
+        }
     }
     
-    // Setup click handlers after indicators are created
-    setupRangeIndicatorClicks();
+    // Setup click handlers after a delay to ensure indicators are created
+    setTimeout(setupRangeIndicatorClicks, 150);
     
 });
 
