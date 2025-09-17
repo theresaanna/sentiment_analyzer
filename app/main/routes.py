@@ -1316,6 +1316,62 @@ def api_analysis_results(analysis_id):
         }), 500
 
 
+@bp.route('/api/analyze/retry-summary/<analysis_id>', methods=['POST'])
+def api_retry_summary(analysis_id):
+    """
+    Retry generating the summary for an existing analysis by re-calling the ML service.
+    Uses the analysis_id to infer video_id and max_comments and re-fetches comments.
+    """
+    try:
+        # Load existing cached results
+        existing = cache.get('sentiment_analysis', analysis_id)
+        if not existing:
+            return jsonify({'success': False, 'error': 'Analysis not found'}), 404
+
+        # Parse analysis_id to extract video_id and max_comments
+        import re
+        m = re.match(r'^sentiment_(?P<video_id>.+)_(?P<pct>\d+)pct_(?P<max>\d+)_no_replies$', analysis_id)
+        if not m:
+            return jsonify({'success': False, 'error': 'Unsupported analysis_id format'}), 400
+
+        video_id = m.group('video_id')
+        max_comments = int(m.group('max'))
+
+        # Re-fetch comments (never include replies)
+        from app.services.enhanced_youtube_service import EnhancedYouTubeService
+        youtube_service = EnhancedYouTubeService()
+        result = youtube_service.get_all_available_comments(
+            video_id=video_id,
+            target_comments=max_comments,
+            include_replies=False,
+            sort_order='relevance'
+        )
+        comments = result.get('comments', [])
+        video_info = result.get('video', {})
+
+        # Use existing sentiment stats as guidance for summary
+        sentiment = existing.get('sentiment') or {}
+
+        # Call external ML summarization service
+        from app.services.sentiment_api import get_sentiment_client
+        client = get_sentiment_client()
+        resp = client.summarize(comments, sentiment, method='auto', video_title=video_info.get('title'))
+        summary_results = resp.get('summary') or resp
+
+        if (not summary_results) or (not summary_results.get('summary')):
+            return jsonify({'success': False, 'error': 'Summarization service unavailable'}), 502
+
+        # Update cache with the new summary
+        existing['summary'] = summary_results
+        if existing.get('timeline'):
+            existing['timeline'] = existing['timeline'][:50]
+        cache.set('sentiment_analysis', analysis_id, existing, ttl_hours=2)
+
+        return jsonify({'success': True, 'summary': summary_results})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 # Channel routes
 @bp.route('/channels/add', methods=['POST'])
 @login_required

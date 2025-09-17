@@ -3118,6 +3118,33 @@ function fetchAnalysisResults() {
         });
 }
 
+function retrySummary() {
+    if (!analysisId) return;
+    const aiSummaryEl = document.getElementById('aiSummary');
+    if (aiSummaryEl) {
+        aiSummaryEl.innerHTML = '<p>Retrying summary...</p>';
+    }
+    fetch(`/api/analyze/retry-summary/${analysisId}`, {
+        method: 'POST'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.summary && data.summary.summary) {
+                // Refresh the results to pick up the new summary
+                fetchAnalysisResults();
+            } else {
+                if (aiSummaryEl) {
+                    aiSummaryEl.innerHTML = `<p>Summary retry failed: ${data.error || 'Unknown error'}</p>`;
+                }
+            }
+        })
+        .catch(error => {
+            if (aiSummaryEl) {
+                aiSummaryEl.innerHTML = `<p>Summary retry failed: ${error}</p>`;
+            }
+        });
+}
+
 function displayResults(results) {
     console.log('displayResults called with results:', JSON.stringify(results ? Object.keys(results) : 'null', null, 2));
     if (results) {
@@ -3251,16 +3278,25 @@ function displayResults(results) {
     console.log('Summary data:', summary);
     
     // Display the summary
-    if (aiSummaryEl && summary) {
-        if (summary.summary) {
-            aiSummaryEl.innerHTML = `<p>${summary.summary}</p>`;
-            console.log('Set summary text:', summary.summary);
-        } else {
-            aiSummaryEl.innerHTML = '<p>Summary not available</p>';
-        }
-        
-        // Skip complex processing for now - just display basic summary
-        /*
+        if (aiSummaryEl && summary) {
+            if (summary.summary) {
+                aiSummaryEl.innerHTML = `<p>${summary.summary}</p>`;
+                console.log('Set summary text:', summary.summary);
+            } else {
+                aiSummaryEl.innerHTML = '<p>Summary not available. <a href="#" id="retrySummaryLink">Try again</a></p>';
+                const retryLink = document.getElementById('retrySummaryLink');
+                if (retryLink) {
+                    retryLink.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        retryLink.textContent = 'Retrying...';
+                        retryLink.classList.add('disabled');
+                        retrySummary();
+                    });
+                }
+            }
+            
+            // Skip complex processing for now - just display basic summary
+            /*
         // Check for any reception type sections
         const receptionTypes = [
             { marker: '⚡ CONTROVERSY DETECTED:', type: 'controversy', icon: 'fas fa-bolt', alertClass: 'alert-warning' },
