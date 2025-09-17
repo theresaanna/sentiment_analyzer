@@ -45,7 +45,6 @@ def test_enhanced_service():
         result = service.get_all_available_comments(
             video_id=test_video_id,
             target_comments=50,  # Small number for testing
-            include_replies=True,
             use_cache=False
         )
         
@@ -139,13 +138,11 @@ def test_forms():
             # Check that new fields exist
             assert hasattr(form, 'max_comments'), "Missing max_comments field"
             assert hasattr(form, 'sort_order'), "Missing sort_order field"
-            assert hasattr(form, 'include_replies'), "Missing include_replies field"
             assert hasattr(form, 'use_cache'), "Missing use_cache field"
             
             print("✓ Enhanced form has all required fields:")
             print(f"  - max_comments (default: {form.max_comments.default})")
             print(f"  - sort_order (default: {form.sort_order.default})")
-            print(f"  - include_replies (default: {form.include_replies.default})")
             print(f"  - use_cache (default: {form.use_cache.default})")
             
     except Exception as e:
@@ -175,7 +172,6 @@ def test_integration():
         result = youtube_service.get_all_available_comments(
             video_id=test_video_id,
             target_comments=30,  # Small number for quick test
-            include_replies=False,
             use_cache=False
         )
         

@@ -19,8 +19,7 @@ class TestAnalysisJobModel:
                 video_id='test_video_123',
                 video_title='Test Video',
                 channel_name='Test Channel',
-                comment_count_requested=100,
-                include_replies=True
+                comment_count_requested=100
             )
             db.session.add(job)
             db.session.commit()
@@ -30,7 +29,6 @@ class TestAnalysisJobModel:
             assert 'test_video_123' in job.job_id
             assert job.status == 'queued'
             assert job.progress == 0
-            assert job.include_replies is True
             assert job.comment_count_processed == 0
     
     def test_job_id_generation(self, app, test_user):
@@ -116,8 +114,7 @@ class TestAnalysisJobModel:
                 video_id='test_video',
                 video_title='Test Video Title',
                 channel_name='Test Channel',
-                comment_count_requested=100,
-                include_replies=False
+                comment_count_requested=100
             )
             db.session.add(job)
             db.session.commit()
@@ -129,7 +126,6 @@ class TestAnalysisJobModel:
             assert job_dict['video_title'] == 'Test Video Title'
             assert job_dict['channel_name'] == 'Test Channel'
             assert job_dict['comment_count_requested'] == 100
-            assert job_dict['include_replies'] is False
             assert job_dict['status'] == 'queued'
             assert job_dict['progress'] == 0
             assert job_dict['has_results'] is False

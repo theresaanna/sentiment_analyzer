@@ -20,8 +20,7 @@ class TestQueueAnalysisRoute:
         response = authenticated_client.post('/api/analyze/queue', 
             data=json.dumps({
                 'video_id': 'test123',
-                'comment_count': 100,
-                'include_replies': True
+                'comment_count': 100
             }),
             content_type='application/json'
         )
@@ -35,7 +34,6 @@ class TestQueueAnalysisRoute:
         job = AnalysisJob.query.filter_by(video_id='test123').first()
         assert job is not None
         assert job.comment_count_requested == 100
-        assert job.include_replies is True
         assert job.status == 'queued'
     
     def test_queue_analysis_missing_video_id(self, authenticated_client):
