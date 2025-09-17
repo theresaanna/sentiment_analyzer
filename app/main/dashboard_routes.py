@@ -201,7 +201,7 @@ def api_preload_comments(video_id):
 @bp.route('/api/jobs/status')
 @login_required
 def api_jobs_status():
-    """Get job status from unified AnalysisJob system."""
+    """Get job status from unified AnalysisJob system with enhanced video metadata."""
     guard = require_pro()
     if guard:
         return guard
@@ -212,12 +212,36 @@ def api_jobs_status():
             .order_by(AnalysisJob.created_at.desc())\
             .limit(20).all()
         
+        # Get video metadata for all video IDs
+        video_ids = [job.video_id for job in jobs if job.video_id]
+        video_metadata_map = {}
+        
+        if video_ids:
+            # Try to get video metadata from Video table
+            from app.models import Video
+            videos = Video.query.filter(
+                Video.yt_video_id.in_(video_ids)
+            ).all()
+            
+            for video in videos:
+                video_metadata_map[video.yt_video_id] = {
+                    'title': video.title,
+                    'views': video.views or 0,
+                    'comments': video.comments or 0,
+                    'published': video.published_at.isoformat() if video.published_at else '',
+                    'channel_title': '',  # Would need to join with Channel table
+                    'duration': ''
+                }
+        
         # Convert to status format expected by dashboard
         statuses = []
         for job in jobs:
             # Determine job type from comment count or metadata
             is_pro = job.comment_count_requested > 2500
             job_type = 'preload' if is_pro else 'analysis'
+            
+            # Get video metadata if available
+            metadata = video_metadata_map.get(job.video_id)
             
             status = {
                 'job_id': job.job_id,
@@ -228,7 +252,8 @@ def api_jobs_status():
                 'channel_id': None,  # Could be extracted from video
                 'video_title': job.video_title,
                 'comment_count': job.comment_count_requested,
-                'created_at': job.created_at.isoformat() if job.created_at else None
+                'created_at': job.created_at.isoformat() if job.created_at else None,
+                'video_metadata': metadata  # Include enhanced metadata
             }
             statuses.append(status)
         

@@ -476,20 +476,124 @@
         text-decoration: underline;
     }
     
-    /* Unified Slider Styles */
-    .unified-slider-section {
-        padding: 1rem;
+    /* Simplified Tab Styles */
+    .analysis-tabs {
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 0;
     }
     
-    .analysis-header {
-        text-align: center;
+    .analysis-tabs .nav-link {
+        border: none;
+        border-radius: 0;
+        padding: 12px 24px;
+        color: #6c757d;
+        font-weight: 600;
+        background: transparent;
         transition: all 0.3s ease;
+        position: relative;
     }
     
-    .analysis-header h6 {
-        font-size: 1.1rem;
+    .analysis-tabs .nav-link:hover {
+        color: #495057;
+        background: #f8f9fa;
+    }
+    
+    .analysis-tabs .nav-link.active {
+        color: #667eea;
+        background: transparent;
+        border: none;
+    }
+    
+    .analysis-tabs .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .analysis-form {
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .slider-container {
+        margin-bottom: 20px;
+    }
+    
+    .slider-label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #2d3748;
+    }
+    
+    .analysis-slider {
+        width: 100%;
+        height: 8px;
+        border-radius: 4px;
+        background: #e2e8f0;
+        outline: none;
+        -webkit-appearance: none;
+    }
+    
+    .analysis-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+    }
+    
+    .analysis-slider::-moz-range-thumb {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(102, 126, 234, 0.4);
+    }
+    
+    .slider-limits {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 5px;
+        color: #6c757d;
+        font-size: 0.85rem;
+    }
+    
+    .analysis-stats {
+        display: flex;
+        justify-content: space-around;
+        gap: 20px;
+        padding: 15px;
+        background: white;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .analysis-stats .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
         color: #4a5568;
-        margin-bottom: 0.5rem;
+    }
+    
+    .analysis-stats .stat-item i {
+        color: #667eea;
+        font-size: 1rem;
+    }
+    
+    .analysis-stats .stat-item strong {
+        color: #2d3748;
+        font-size: 1.1rem;
     }
     
     .slider-range-indicators {
@@ -1462,103 +1566,129 @@
                             <h5 class="coverage-title">
                                 <span class="coverage-icon">📊</span>
                                 Analysis Coverage
-                                {% if not (current_user.is_authenticated and current_user.is_subscribed) %}
-                                    <span class="pro-badge-inline">PRO</span>
-                                {% endif %}
                             </h5>
                         </div>
                         
                         <div class="coverage-body">
-                            <!-- Unified Adaptive Slider -->
-                            <div class="unified-slider-section">
-                                <!-- Dynamic Analysis Header -->
-                                <div class="analysis-header mb-3" id="analysisHeader">
-                                    <h6 id="analysisTitle">
-                                        <i class="fas fa-bolt" id="analysisTitleIcon"></i>
-                                        <span id="analysisTitleText">Instant Analysis</span>
-                                    </h6>
-                                    <p class="small text-muted" id="analysisDescription">
-                                        Analyze up to 2,500 comments instantly
-                                    </p>
-                                </div>
-                                
-                                <!-- Slider Range Indicators (moved above slider) -->
-                                <div class="slider-range-indicators" id="sliderRangeIndicators">
-                                    <!-- Will be populated dynamically -->
-                                </div>
-                                
-                                <!-- Unified Slider Container -->
-                                <div class="slider-container">
-                                    <input type="range" 
-                                           class="coverage-slider" 
-                                           id="unifiedSlider" 
-                                           min="5" 
-                                           max="2500" 
-                                           step="5" 
-                                           value="1000">
-                                    <div class="slider-values">
-                                        <span id="sliderMin">5</span>
-                                        <span class="current-value" id="sliderCurrent">1,000</span>
-                                        <span id="sliderMax">2,500</span>
+                            <!-- Tab Navigation -->
+                            <ul class="nav nav-tabs analysis-tabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="instant-tab" data-bs-toggle="tab" data-bs-target="#instant" type="button" role="tab" aria-controls="instant" aria-selected="true">
+                                        <i class="fas fa-bolt"></i> Instant
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button" role="tab" aria-controls="queue" aria-selected="false">
+                                        <i class="fas fa-clock"></i> Queue
+                                    </button>
+                                </li>
+                            </ul>
+                            
+                            <!-- Tab Content -->
+                            <div class="tab-content mt-4">
+                                <!-- Instant Tab -->
+                                <div class="tab-pane fade show active" id="instant" role="tabpanel" aria-labelledby="instant-tab">
+                                    <div class="analysis-form">
+                                        <h6 class="text-muted mb-3" id="analysisTypeHeader">Instant Analysis</h6>
+                                        
+                                        <!-- Instant Slider -->
+                                        <div class="slider-container mb-3">
+                                            <label for="instantSlider" class="slider-label">Comments: <span id="instantValue">100</span></label>
+                                            <input type="range" 
+                                                   class="form-range coverage-slider" 
+                                                   id="instantSlider"
+                                                   min="1" 
+                                                   max="500" 
+                                                   step="1" 
+                                                   value="100">
+                                            <div class="slider-limits">
+                                                <small>1</small>
+                                                <small id="instantMax">500</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Instant Stats -->
+                                        <div class="analysis-stats mb-3">
+                                            <span class="stat-item">
+                                                <i class="fas fa-percentage"></i>
+                                                Coverage: <strong id="instantCoverage">2%</strong>
+                                            </span>
+                                            <span class="stat-item">
+                                                <i class="fas fa-clock"></i>
+                                                Time: <strong>~5s</strong>
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Instant Button -->
+                                        <button class="btn btn-primary btn-lg btn-block" id="instantAnalyzeBtn">
+                                            <i class="fas fa-bolt"></i> Analyze
+                                        </button>
                                     </div>
                                 </div>
                                 
-                                <!-- Coverage Stats -->
-                                <div class="coverage-stats mt-3">
-                                    <div class="stat-badge" id="modeBadge" style="display: none;">
-                                        <span class="stat-label">Mode</span>
-                                        <span class="stat-value" id="analysisMode">Instant</span>
-                                    </div>
-                                    <div class="stat-badge">
-                                        <span class="stat-label">Comments</span>
-                                        <input type="number" 
-                                               class="stat-value-input" 
-                                               id="commentCountInput" 
-                                               value="1000"
-                                               min="5"
-                                               max="2500">
-                                    </div>
-                                    <div class="stat-badge">
-                                        <span class="stat-label">Coverage</span>
-                                        <span class="stat-value" id="coveragePercent">~20%</span>
-                                    </div>
-                                    <div class="stat-badge">
-                                        <span class="stat-label">Est. Time</span>
-                                        <span class="stat-value" id="timeEstimate">~20s</span>
+                                <!-- Queue Tab -->
+                                <div class="tab-pane fade" id="queue" role="tabpanel" aria-labelledby="queue-tab">
+                                    <div class="analysis-form">
+                                        <h6 class="text-muted mb-3" id="queueAnalysisHeader">Queue Analysis</h6>
+                                        
+                                        {% if not current_user.is_authenticated %}
+                                            <!-- Not logged in -->
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-lock"></i> Sign in to queue analysis
+                                                <div class="mt-3">
+                                                    <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Sign In</a>
+                                                    <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-primary">Create Account</a>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <!-- Queue Slider -->
+                                            <div class="slider-container mb-3">
+                                                <label for="queueSlider" class="slider-label">Comments: <span id="queueValue">1000</span></label>
+                                                <input type="range" 
+                                                       class="form-range coverage-slider" 
+                                                       id="queueSlider"
+                                                       min="1" 
+                                                       max="{{ [comment_stats.get('top_level_count', 2500), 2500 if not current_user.is_subscribed else 5000]|min }}"
+                                                       step="{% if comment_stats.get('top_level_count', 2500) < 100 %}1{% else %}10{% endif %}" 
+                                                       value="{% if comment_stats.get('top_level_count', 2500) < 100 %}{{ [comment_stats.get('top_level_count', 10), 10]|min }}{% elif comment_stats.get('top_level_count', 2500) < 1000 %}100{% else %}1000{% endif %}">
+                                            <div class="slider-limits">
+                                                <small>1</small>
+                                                <small id="queueMax">{% if comment_stats.get('top_level_count', 0) < 1000 %}{{ comment_stats.get('top_level_count', 2500) }}{% else %}{{ '2.5k' if not current_user.is_subscribed else '5k' }}{% endif %}</small>
+                                            </div>
+                                            </div>
+                                            
+                                            <!-- Queue Stats -->
+                                            <div class="analysis-stats mb-3">
+                                                <span class="stat-item">
+                                                    <i class="fas fa-percentage"></i>
+                                                    Coverage: <strong id="queueCoverage">20%</strong>
+                                                </span>
+                                                <span class="stat-item">
+                                                    <i class="fas fa-clock"></i>
+                                                    Time: <strong>~2 min</strong>
+                                                </span>
+                                            </div>
+                                            
+                                            <!-- Queue Button -->
+                                            <button class="btn btn-warning btn-lg btn-block" id="queueAnalyzeBtn">
+                                                <i class="fas fa-clock"></i> Queue Analysis
+                                            </button>
+                                            
+                                            {% if not current_user.is_subscribed %}
+                                                <div class="mt-3 text-center">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-crown"></i> Upgrade to Pro for up to 5,000 comments (currently 2,500 limit)
+                                                        <br>
+                                                        <a href="{{ url_for('auth.subscribe') }}">Learn More</a>
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                        {% endif %}
                                     </div>
                                 </div>
-                                
-                                <!-- Dynamic Action Button -->
-                                <button class="vibe-button mt-4 w-100 pulse-animation" id="analysisActionButton">
-                                    <span class="button-icon" id="buttonIcon">🧠</span>
-                                    <span class="button-text" id="buttonText">Start Analysis</span>
-                                </button>
-                                
-                                <!-- User-specific messaging -->
-                                {% if not current_user.is_authenticated %}
-                                    <div class="pro-features-teaser mt-3">
-                                        <p class="mb-2"><i class="fas fa-lock"></i> <strong>Want to analyze more comments?</strong></p>
-                                        <p class="small mb-2">Sign in to analyze up to 10,000 comments!</p>
-                                        <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Sign In</a>
-                                        <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-primary ml-2">Create Account</a>
-                                    </div>
-                                {% elif current_user.is_authenticated and not current_user.is_subscribed %}
-                                    <div class="pro-features-teaser mt-3" id="proTeaser" style="display: none;">
-                                        <p class="mb-2"><i class="fas fa-crown"></i> <strong>Unlock Pro Features</strong></p>
-                                        <p class="small mb-2">Queue up to 100,000 comments or analyze entire videos!</p>
-                                        <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-warning">Upgrade to Pro</a>
-                                    </div>
-                                {% elif current_user.is_subscribed %}
-                                    <div class="pro-badge-display mt-3 text-center">
-                                        <span class="badge badge-success"><i class="fas fa-star"></i> Pro Account Active</span>
-                                        <small class="d-block mt-1 text-muted">Analyze up to 100,000 comments or entire videos</small>
-                                    </div>
-                                {% endif %}
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Additional info section (removed duplicate buttons) -->
                 </div>
             </div>
         </div>
@@ -1747,11 +1877,14 @@
 let analysisId = null;
 let statusCheckInterval = null;
 let charts = {};
+let currentAnalysisMode = 'instant'; // Default to instant mode
 let commentData = {
     positive: [],
     neutral: [],
     negative: []
 };
+let instantSlider = null; // Will be initialized in DOMContentLoaded
+let commentCountInput = null; // Legacy support, will be initialized if needed
 
 // Define showToast function globally so it can be used by submitFeedback
 function showToast(message, type = 'info', duration = 3000) {
@@ -1945,423 +2078,289 @@ document.addEventListener('DOMContentLoaded', async function() {
         startButton.addEventListener('click', startSentimentAnalysis);
     }
     
-    // ============= UNIFIED SLIDER HANDLER =============
+    // ============= SIMPLIFIED TAB-BASED HANDLERS =============
     
-    // Unified slider elements
-    const unifiedSlider = document.getElementById('unifiedSlider');
-    const sliderCurrent = document.getElementById('sliderCurrent');
-    const sliderMin = document.getElementById('sliderMin');
-    const sliderMax = document.getElementById('sliderMax');
-    const commentCountInput = document.getElementById('commentCountInput');
-    const coveragePercent = document.getElementById('coveragePercent');
-    const timeEstimate = document.getElementById('timeEstimate');
-    const analysisMode = document.getElementById('analysisMode');
-    const modeBadge = document.getElementById('modeBadge');
-    const analysisTitleIcon = document.getElementById('analysisTitleIcon');
-    const analysisTitleText = document.getElementById('analysisTitleText');
-    const analysisDescription = document.getElementById('analysisDescription');
-    const analysisActionButton = document.getElementById('analysisActionButton');
-    const buttonIcon = document.getElementById('buttonIcon');
-    const buttonText = document.getElementById('buttonText');
-    const sliderRangeIndicators = document.getElementById('sliderRangeIndicators');
-    const proTeaser = document.getElementById('proTeaser');
+    // Get slider elements (update global references)
+    instantSlider = document.getElementById('instantSlider');
+    const queueSlider = document.getElementById('queueSlider');
+    const instantValue = document.getElementById('instantValue');
+    const queueValue = document.getElementById('queueValue');
+    const instantCoverage = document.getElementById('instantCoverage');
+    const queueCoverage = document.getElementById('queueCoverage');
+    const instantAnalyzeBtn = document.getElementById('instantAnalyzeBtn');
+    const queueAnalyzeBtn = document.getElementById('queueAnalyzeBtn');
     
-    // Configure slider based on user status
-    function configureSliderForUser() {
-        let maxValue = 2500; // Default for logged out users
-        let step = 5;
-        
-        // Use currentTotalComments which respects the reply toggle state
+    // Configure sliders based on user status and video
+    function configureSlidersForUser() {
         const effectiveTotal = window.currentTotalComments || totalAvailableComments;
         
-        if (isProUser) {
-            // Pro users can analyze up to 50k or all (if less than 50k)
-            maxValue = Math.min(50000, effectiveTotal);
-            step = effectiveTotal > 10000 ? 500 : 100;
-            
-            // Add range indicators for Pro users
-            if (sliderRangeIndicators) {
-                // Only show "All Comments" if total is <= 50k
-                const showAllComments = effectiveTotal <= 50000 && effectiveTotal > 5000;
-                sliderRangeIndicators.innerHTML = `
-                    <div class="range-indicator instant" data-range="instant">
-                        <span class="range-label">Instant</span>
-                        <span class="range-limit">(≤2.5k)</span>
-                    </div>
-                    <div class="range-indicator queue" data-range="queue">
-                        <span class="range-label">Queue</span>
-                        <span class="range-limit">(≤ 5k)</span>
-                    </div>
-                    <div class="range-indicator pro-queue" data-range="pro-queue">
-                        <span class="range-label">Pro Queue</span>
-                        <span class="range-limit">(≤50k)</span>
-                    </div>
-                    ${showAllComments ? `<div class="range-indicator all" data-range="all">
-                        <span class="range-label">All Comments</span>
-                        <span class="range-limit">(${effectiveTotal.toLocaleString()})</span>
-                    </div>` : ''}
-                `;
+        // Configure instant slider - always max 500 for instant
+        if (instantSlider) {
+            const instantMax = Math.min(500, effectiveTotal);
+            instantSlider.max = instantMax;
+            document.getElementById('instantMax').textContent = instantMax;
+            updateInstantSlider();
+        }
+        
+        // Configure queue slider based on user status
+        if (queueSlider && isAuthenticated) {
+            let queueMax;
+            if (isProUser) {
+                queueMax = Math.min(5000, effectiveTotal);
+            } else {
+                queueMax = Math.min(2500, effectiveTotal);
             }
-        } else if (isAuthenticated) {
-            // Logged in but not Pro - can queue up to 5k
-            maxValue = Math.min(5000, effectiveTotal);
-            step = 50;
+            queueSlider.max = queueMax;
+            queueSlider.min = 1;
             
-            // Add range indicators for regular users (with Pro options disabled)
-            if (sliderRangeIndicators) {
-                sliderRangeIndicators.innerHTML = `
-                    <div class="range-indicator instant" data-range="instant">
-                        <span class="range-label">Instant</span>
-                        <span class="range-limit">(≤2.5k)</span>
-                    </div>
-                    <div class="range-indicator queue" data-range="queue">
-                        <span class="range-label">Queue</span>
-                        <span class="range-limit">(≤ 5k)</span>
-                    </div>
-                    <div class="range-indicator disabled" data-range="pro-queue" title="Pro feature">
-                        <span class="range-label">Pro Queue 👑</span>
-                        <span class="range-limit">(≤50k)</span>
-                    </div>
-                `;
+            // Set appropriate value based on available comments
+            if (queueMax < 100) {
+                queueSlider.value = Math.min(queueMax, 10);
+                queueSlider.step = 1;
+            } else if (queueMax < 1000) {
+                queueSlider.value = Math.min(100, queueMax);
+                queueSlider.step = 10;
+            } else {
+                queueSlider.value = 1000;
+                queueSlider.step = 10;
             }
+            
+            const queueMaxLabel = document.getElementById('queueMax');
+            if (queueMaxLabel) {
+                // Format max label appropriately - just show the number
+                if (queueMax < 1000) {
+                    queueMaxLabel.textContent = queueMax.toString();
+                } else {
+                    // Format as k with proper decimals (2.5k, 5k, etc)
+                    const kValue = (queueMax/1000).toFixed(1);
+                    queueMaxLabel.textContent = kValue.replace('.0', '') + 'k';
+                }
+            }
+            updateQueueSlider();
+        }
+    }
+    
+    // Update instant slider display
+    function updateInstantSlider() {
+        if (!instantSlider) return;
+        
+        const value = parseInt(instantSlider.value);
+        const effectiveTotal = window.currentTotalComments || totalAvailableComments;
+        const percentage = Math.min(100, Math.round((value / effectiveTotal) * 100));
+        
+        if (instantValue) instantValue.textContent = value;
+        if (instantCoverage) instantCoverage.textContent = `${percentage}%`;
+        
+        // Update time estimate for instant mode
+        const timeEstimate = value <= 100 ? '~5s' : value <= 300 ? '~15s' : '~30s';
+        const timeSpan = document.querySelector('#instant .analysis-stats .stat-item:nth-child(2) strong');
+        if (timeSpan) timeSpan.textContent = timeEstimate;
+    }
+    
+    // Update queue slider display
+    function updateQueueSlider() {
+        if (!queueSlider) return;
+        
+        const value = parseInt(queueSlider.value) || 1;
+        const effectiveTotal = window.currentTotalComments || totalAvailableComments;
+        const percentage = Math.min(100, Math.round((value / effectiveTotal) * 100));
+        
+        // Format value display based on size
+        if (queueValue) {
+            if (value < 1000) {
+                queueValue.textContent = value.toString();
+            } else {
+                queueValue.textContent = value.toLocaleString();
+            }
+        }
+        
+        if (queueCoverage) queueCoverage.textContent = `${percentage}%`;
+        
+        // Update time estimate for queue mode
+        const seconds = Math.round(value * 0.12); // ~0.12 seconds per comment
+        let timeEstimate;
+        if (seconds < 60) {
+            timeEstimate = `~${seconds}s`;
         } else {
-            // Not logged in - show all options with disabled state
-            if (sliderRangeIndicators) {
-                sliderRangeIndicators.innerHTML = `
-                    <div class="range-indicator instant active" data-range="instant">
-                        <span class="range-label">Free Analysis</span>
-                        <span class="range-limit">(≤2.5k)</span>
-                    </div>
-                    <div class="range-indicator disabled" data-range="queue" title="Sign in required">
-                        <span class="range-label">Queue 🔒</span>
-                        <span class="range-limit">(≤ 5k)</span>
-                    </div>
-                    <div class="range-indicator disabled" data-range="pro-queue" title="Pro subscription required">
-                        <span class="range-label">Pro Queue 👑</span>
-                        <span class="range-limit">(≤50k)</span>
-                    </div>
-                `;
-            }
+            const minutes = Math.round(seconds / 60);
+            timeEstimate = minutes === 1 ? '~1 min' : `~${minutes} min`;
         }
-        
-        // Update slider attributes
-        if (unifiedSlider) {
-            unifiedSlider.max = maxValue;
-            unifiedSlider.step = step;
-            if (commentCountInput) {
-                commentCountInput.max = maxValue;
-            }
-        }
-        
-        // Update max display
-        if (sliderMax) {
-            sliderMax.textContent = maxValue >= 50000 ? 
-                (maxValue === effectiveTotal ? 'All' : '50k') : 
-                maxValue.toLocaleString();
-        }
+        const timeSpan = document.querySelector('#queue .analysis-stats .stat-item:nth-child(2) strong');
+        if (timeSpan) timeSpan.textContent = timeEstimate;
     }
     
-    // Update UI based on selected value
-    function updateUnifiedUI(value) {
-        value = parseInt(value) || 5;
-        
-        // Determine analysis mode based on value and user status
-        let newMode = 'instant';
-        let icon = 'fas fa-bolt';
-        let title = 'Instant Analysis';
-        let description = 'Analyze up to 2,500 comments instantly';
-        let buttonIconEmoji = '🧠';
-        let buttonTextStr = 'Start Analysis';
-        
-        if (!isAuthenticated) {
-            // Logged out users - always instant, capped at 2500
-            value = Math.min(2500, value);
-            buttonTextStr = 'Start Free Analysis';
-        } else if (value <= 2500) {
-            // Instant analysis range
-            newMode = 'instant';
-            buttonTextStr = 'Analyze Instantly';
-        } else if (value <= 5000) {
-            // Queue analysis range
-            newMode = 'queue';
-            icon = 'fas fa-clock';
-            title = 'Queue Analysis';
-            description = 'Queue analysis for background processing';
-            buttonIconEmoji = '⏰';
-            buttonTextStr = 'Queue Analysis';
-            
-            // Show pro teaser for non-pro users when in queue range
-            if (!isProUser && proTeaser) {
-                proTeaser.style.display = 'block';
-            }
-        } else if (isProUser && value <= 50000) {
-            // Check if this should be "all" mode for videos with <= 50k comments
-            const effectiveTotal = window.currentTotalComments || totalAvailableComments;
-            if (value === effectiveTotal && effectiveTotal <= 50000 && effectiveTotal > 5000) {
-                // This is "All Comments" mode
-                newMode = 'all';
-                icon = 'fas fa-infinity';
-                title = 'Complete Analysis';
-                description = `Analyze all ${effectiveTotal.toLocaleString()} comments`;
-                buttonIconEmoji = '✨';
-                buttonTextStr = 'Analyze All Comments';
-            } else {
-                // Regular pro queue range
-                newMode = 'pro-queue';
-                icon = 'fas fa-crown';
-                title = 'Pro Queue Analysis';
-                description = 'Queue large-scale analysis (Pro feature)';
-                buttonIconEmoji = '👑';
-                buttonTextStr = 'Queue Pro Analysis';
-            }
-        }
-        
-        // Update current mode
-        currentAnalysisMode = newMode;
-        
-        // Update slider and input values
-        if (unifiedSlider) unifiedSlider.value = value;
-        if (commentCountInput) commentCountInput.value = value;
-        if (sliderCurrent) sliderCurrent.textContent = value.toLocaleString();
-        
-        // Update coverage percentage
-        if (coveragePercent) {
-            const effectiveTotal = window.currentTotalComments || totalAvailableComments;
-            const percentage = Math.min(100, Math.round((value / effectiveTotal) * 100));
-            coveragePercent.textContent = `~${percentage}%`;
-        }
-        
-        // Update time estimate
-        if (timeEstimate) {
-            if (newMode === 'instant') {
-                const estimatedTime = Math.max(1, Math.round((value / 100) * 2));
-                if (estimatedTime >= 60) {
-                    const minutes = Math.round(estimatedTime / 60);
-                    timeEstimate.textContent = `~${minutes} min${minutes > 1 ? 's' : ''}`;
-                } else {
-                    timeEstimate.textContent = `~${estimatedTime}s`;
-                }
-            } else {
-                timeEstimate.textContent = 'Queued';
-            }
-        }
-        
-        // Update header
-        if (analysisTitleIcon) analysisTitleIcon.className = icon;
-        if (analysisTitleText) analysisTitleText.textContent = title;
-        if (analysisDescription) analysisDescription.textContent = description;
-        
-        // Update button
-        if (buttonIcon) buttonIcon.textContent = buttonIconEmoji;
-        if (buttonText) buttonText.textContent = buttonTextStr;
-        
-        // Update button styling
-        if (analysisActionButton) {
-            analysisActionButton.className = 'vibe-button mt-4 w-100 pulse-animation';
-            if (newMode === 'queue') {
-                analysisActionButton.classList.add('queue-mode');
-            } else if (newMode === 'pro-queue' || newMode === 'all') {
-                analysisActionButton.classList.add('pro-mode');
-            }
-        }
-        
-        // Update mode badge (for logged-in users)
-        if (isAuthenticated && modeBadge) {
-            modeBadge.style.display = 'block';
-            if (analysisMode) {
-                analysisMode.textContent = newMode === 'instant' ? 'Instant' : 
-                                          newMode === 'queue' ? 'Queue' : 
-                                          newMode === 'pro-queue' ? 'Pro Queue' : 'All';
-            }
-        }
-        
-        // Update range indicators
-        const indicators = document.querySelectorAll('.range-indicator');
-        indicators.forEach(indicator => {
-            indicator.classList.remove('active', 'queue-active', 'pro-active');
-            const range = indicator.dataset.range;
-            
-            if (range === newMode) {
-                // Apply appropriate active class based on mode
-                if (newMode === 'queue') {
-                    indicator.classList.add('queue-active');
-                } else if (newMode === 'pro-queue' || newMode === 'all') {
-                    indicator.classList.add('pro-active');
-                } else {
-                    indicator.classList.add('active');
-                }
-            }
-        });
-        
-        // Hide pro teaser if not in queue range
-        if (proTeaser && (newMode === 'instant' || isProUser)) {
-            proTeaser.style.display = 'none';
-        }
+    // Initialize sliders
+    configureSlidersForUser();
+    
+    // Add event listeners for instant slider
+    if (instantSlider) {
+        instantSlider.addEventListener('input', updateInstantSlider);
+        instantSlider.addEventListener('change', updateInstantSlider);
+        // Initialize display values
+        updateInstantSlider();
     }
     
-    // Initialize slider safely with error handling
-    function initializeSliderSafely() {
-        try {
-            // Check if slider is already initialized
-            if (window.sliderInitialized) {
-                console.log('Slider already initialized, skipping');
-                return;
-            }
-            
-            // Ensure DOM elements exist
-            if (!unifiedSlider) {
-                console.warn('Slider element not found, retrying in 100ms');
-                setTimeout(initializeSliderSafely, 100);
-                return;
-            }
-            
-            // Remove any existing event listeners to prevent duplicates
-            const newSlider = unifiedSlider.cloneNode(true);
-            unifiedSlider.parentNode.replaceChild(newSlider, unifiedSlider);
-            
-            // Update reference to new element
-            const slider = document.getElementById('unifiedSlider');
-            
-            if (slider) {
-                // Configure slider for user
-                configureSliderForUser();
-                
-                // Set initial value based on preloaded comments if available
-                let initialValue = 1000;
-                if (fetchedComments > 0 && fetchedComments <= (isProUser ? 100000 : (isAuthenticated ? 10000 : 2500))) {
-                    initialValue = fetchedComments;
-                }
-                
-                // Add event listeners to new slider element
-                slider.addEventListener('input', function(e) {
-                    try {
-                        updateUnifiedUI(this.value);
-                    } catch (error) {
-                        console.error('Error in slider input handler:', error);
-                    }
-                });
-                
-                slider.addEventListener('change', function(e) {
-                    try {
-                        updateUnifiedUI(this.value);
-                    } catch (error) {
-                        console.error('Error in slider change handler:', error);
-                    }
-                });
-                
-                // Initialize UI with initial value
-                updateUnifiedUI(initialValue);
-                
-                // Mark as initialized
-                window.sliderInitialized = true;
-                console.log('Slider initialized successfully');
-            }
-        } catch (error) {
-            console.error('Error initializing slider:', error);
-            // Retry once after a delay
-            setTimeout(() => {
-                window.sliderInitialized = false;
-                initializeSliderSafely();
-            }, 500);
-        }
+    // Add event listeners for queue slider  
+    if (queueSlider) {
+        queueSlider.addEventListener('input', updateQueueSlider);
+        queueSlider.addEventListener('change', updateQueueSlider);
+        // Initialize display values
+        updateQueueSlider();
     }
     
-    // Initialize slider
-    initializeSliderSafely();
+    // Handle tab switching with vanilla JavaScript and Bootstrap 5
+    const instantTab = document.getElementById('instant-tab');
+    const queueTab = document.getElementById('queue-tab');
+    const instantPane = document.getElementById('instant');
+    const queuePane = document.getElementById('queue');
     
-    // Input event listener
-    if (commentCountInput) {
-        commentCountInput.addEventListener('input', function() {
-            updateUnifiedUI(this.value);
+    // Listen for tab shown events (Bootstrap 5)
+    if (instantTab) {
+        instantTab.addEventListener('shown.bs.tab', function (event) {
+            console.log('Switched to Instant tab');
+            currentAnalysisMode = 'instant';
+            // Update header if needed
+            const header = document.getElementById('analysisTypeHeader');
+            if (header) header.textContent = 'Instant Analysis';
+            updateInstantSlider();
         });
-        
-        commentCountInput.addEventListener('blur', function() {
-            updateUnifiedUI(this.value);
-        });
-        
-        commentCountInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                this.blur();
+    }
+    
+    if (queueTab) {
+        queueTab.addEventListener('shown.bs.tab', function (event) {
+            console.log('Switched to Queue tab');
+            currentAnalysisMode = 'queue';
+            // Update header
+            const header = document.getElementById('queueAnalysisHeader');
+            if (header) header.textContent = 'Queue Analysis';
+            updateQueueSlider();
+            
+            // If not authenticated, the tab content will show login prompt
+            if (!isAuthenticated) {
+                console.log('User not authenticated, showing login prompt in Queue tab');
             }
         });
     }
     
-    // Action button handler
-    if (analysisActionButton) {
-        analysisActionButton.addEventListener('click', function(e) {
+    // Manual tab switching function for programmatic use
+    function switchToTab(tabName) {
+        if (tabName === 'instant' && instantTab) {
+            // Use Bootstrap 5 Tab API
+            const tab = new bootstrap.Tab(instantTab);
+            tab.show();
+        } else if (tabName === 'queue' && queueTab) {
+            const tab = new bootstrap.Tab(queueTab);
+            tab.show();
+        }
+    }
+    
+    // Add click handlers for analyze buttons
+    if (instantAnalyzeBtn) {
+        instantAnalyzeBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            startSentimentAnalysis();
+            const value = parseInt(instantSlider.value);
+            startAnalysisWithMode('instant', value);
         });
     }
     
-    // Add click handlers for range indicators using event delegation
-    function setupRangeIndicatorClicks() {
-        try {
-            // Use event delegation to avoid issues with dynamically created elements
-            const indicatorContainer = document.getElementById('sliderRangeIndicators');
-            if (indicatorContainer) {
-                // Remove existing listeners first
-                const newContainer = indicatorContainer.cloneNode(true);
-                indicatorContainer.parentNode.replaceChild(newContainer, indicatorContainer);
-                
-                // Add single delegated event listener
-                newContainer.addEventListener('click', function(e) {
-                    const indicator = e.target.closest('.range-indicator');
-                    if (!indicator) return;
-                    
-                    try {
-                        const range = indicator.dataset.range;
-                        
-                        // Handle clicks on disabled indicators
-                        if (indicator.classList.contains('disabled')) {
-                            if (range === 'queue' && !isAuthenticated) {
-                                showLoginPrompt();
-                            } else if (range === 'pro-queue' && !isProUser) {
-                                showProUpgradePrompt();
-                            }
-                            return;
-                        }
-                        
-                        let targetValue;
-                        
-                        switch(range) {
-                            case 'instant':
-                                targetValue = Math.min(1000, totalAvailableComments);
-                                break;
-                            case 'queue':
-                                targetValue = Math.min(5000, totalAvailableComments);
-                                break;
-                            case 'pro-queue':
-                                targetValue = Math.min(50000, totalAvailableComments);
-                                break;
-                            case 'all':
-                                targetValue = totalAvailableComments;
-                                break;
-                            default:
-                                targetValue = 1000;
-                        }
-                        
-                        // Update the slider and UI
-                        const slider = document.getElementById('unifiedSlider');
-                        if (slider) {
-                            slider.value = targetValue;
-                            updateUnifiedUI(targetValue);
-                        }
-                    } catch (error) {
-                        console.error('Error in range indicator click handler:', error);
-                    }
-                });
-                
-                console.log('Range indicator clicks setup successfully');
+    if (queueAnalyzeBtn) {
+        queueAnalyzeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const value = parseInt(queueSlider.value);
+            startAnalysisWithMode('queue', value);
+        });
+    }
+    // New simplified analysis function
+    function startAnalysisWithMode(mode, commentsToAnalyze) {
+        console.log('Starting analysis with mode:', mode, 'comments:', commentsToAnalyze);
+        
+        // Store the mode globally
+        currentAnalysisMode = mode;
+        
+        if (mode === 'queue') {
+            // Queue mode - handle authentication
+            if (!isAuthenticated) {
+                // Show authentication required message
+                showToast('Please sign in to use Queue mode', 'warning');
+                // Could also trigger a modal or redirect here
+                if (typeof showLoginPrompt === 'function') {
+                    showLoginPrompt();
+                }
+                return;
             }
-        } catch (error) {
-            console.error('Error setting up range indicator clicks:', error);
+            
+            // Create a background job
+            const videoId = '{{ video_id }}';
+            const button = queueAnalyzeBtn;
+            
+            // Disable button with loading state
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Queueing...';
+            }
+            
+            fetch('/api/analyze/queue', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    video_id: videoId,
+                    comment_count: commentsToAnalyze,
+                    include_replies: false
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const estimatedMinutes = Math.round((commentsToAnalyze / 100) * 1.5 / 60);
+                    const timeText = estimatedMinutes > 1 ? `${estimatedMinutes} minutes` : '1 minute';
+                    showToast(`Analysis queued! Estimated time: ~${timeText}`, 'success');
+                    
+                    // Redirect to the analysis status page
+                    setTimeout(() => {
+                        window.location.href = `/analysis/${data.job_id}`;
+                    }, 1500);
+                } else {
+                    showToast(`Error: ${data.error}`, 'error');
+                    // Re-enable button
+                    if (button) {
+                        button.disabled = false;
+                        button.innerHTML = '<i class="fas fa-clock"></i> Queue Analysis';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error queueing analysis:', error);
+                showToast('Failed to queue analysis', 'error');
+                // Re-enable button
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="fas fa-clock"></i> Queue Analysis';
+                }
+            });
+        } else {
+            // Instant mode - direct analysis
+            console.log('Starting instant analysis with', commentsToAnalyze, 'comments');
+            
+            // Show sentiment analysis section
+            const section = document.getElementById('sentimentAnalysisSection');
+            if (section) {
+                section.style.display = 'block';
+                section.classList.add('active');
+            }
+            
+            // Show progress, hide results
+            const progressDiv = document.getElementById('analysisProgress');
+            const resultsDiv = document.getElementById('analysisResults');
+            if (progressDiv) progressDiv.style.display = 'flex';
+            if (resultsDiv) resultsDiv.style.display = 'none';
+            
+            // Start the analysis
+            const videoId = '{{ video_id }}';
+            initiateAnalysis(videoId, commentsToAnalyze, Math.round((commentsToAnalyze / (window.currentTotalComments || 5000)) * 100));
         }
     }
-    
-    // Setup click handlers after a delay to ensure indicators are created
-    setTimeout(setupRangeIndicatorClicks, 150);
     
 });
 
@@ -2613,9 +2612,15 @@ function startSentimentAnalysis() {
     const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
     const fetchedComments = {{ comment_stats.fetched_comments|default(0) }};
     
-    // Get value from unified slider/input
-    const commentCountInput = document.getElementById('commentCountInput');
-    let commentsToAnalyze = parseInt(commentCountInput ? commentCountInput.value : 1000) || 1000;
+    // Get value based on current mode
+    let commentsToAnalyze;
+    if (currentAnalysisMode === 'instant') {
+        commentsToAnalyze = parseInt(instantSlider ? instantSlider.value : 100) || 100;
+        } else {
+            // For backward compatibility with old button
+            commentCountInput = document.getElementById('commentCountInput');
+            commentsToAnalyze = parseInt(commentCountInput ? commentCountInput.value : 1000) || 1000;
+    }
     let selectedPercentage = Math.round((commentsToAnalyze / totalAvailableComments) * 100);
     
     // Determine if we're in queue mode based on the current analysis mode
@@ -2633,17 +2638,17 @@ function startSentimentAnalysis() {
     
     // Apply appropriate limits based on user status
     if (!isAuthenticated) {
-        commentsToAnalyze = Math.min(commentsToAnalyze, 2500);
+        commentsToAnalyze = Math.min(commentsToAnalyze, 500);  // Non-authenticated: instant only up to 500
         commentsToAnalyze = Math.max(commentsToAnalyze, 5);
     } else if (!isProUser) {
-        commentsToAnalyze = Math.min(commentsToAnalyze, 10000);
+        commentsToAnalyze = Math.min(commentsToAnalyze, 2500);  // Free users: up to 2500
         commentsToAnalyze = Math.max(commentsToAnalyze, 5);
     } else {
-        // Pro users can go up to 100k or all
+        // Pro users can go up to 5000
         if (currentAnalysisMode === 'all') {
-            commentsToAnalyze = totalAvailableComments;
+            commentsToAnalyze = Math.min(totalAvailableComments, 5000);
         } else {
-            commentsToAnalyze = Math.min(commentsToAnalyze, 100000);
+            commentsToAnalyze = Math.min(commentsToAnalyze, 5000);
         }
         commentsToAnalyze = Math.max(commentsToAnalyze, 5);
     }
@@ -2653,8 +2658,8 @@ function startSentimentAnalysis() {
         // Non-authenticated user trying to queue - show login prompt
         showLoginPrompt();
         return;
-    } else if (isQueueMode && !isProUser && commentsToAnalyze > 5000) {
-        // Regular user trying to analyze more than 5k comments - show upgrade prompt
+    } else if (isQueueMode && !isProUser && commentsToAnalyze > 2500) {
+        // Regular user trying to analyze more than 2.5k comments - show upgrade prompt
         showProUpgradePrompt();
         return;
     } else if (isQueueMode && isAuthenticated) {
@@ -2914,8 +2919,7 @@ function checkAnalysisStatus() {
         });
 }
 
-// Global analysis mode tracking
-let currentAnalysisMode = 'instant'; // 'instant', 'queue', 'pro-queue', 'all'
+// currentAnalysisMode is already declared at line 1880, removing duplicate
 
 // Fun loading messages
 const loadingMessages = {
@@ -3197,7 +3201,7 @@ function displayResults(results) {
     const analysisActionButton = document.getElementById('analysisActionButton');
     const buttonIcon = document.getElementById('buttonIcon');
     const buttonText = document.getElementById('buttonText');
-    const commentCountInput = document.getElementById('commentCountInput');
+    commentCountInput = document.getElementById('commentCountInput');
     
     if (analysisActionButton) {
         analysisActionButton.disabled = false;
@@ -3212,7 +3216,7 @@ function displayResults(results) {
         } else if (currentValue <= 2500) {
             if (buttonIcon) buttonIcon.textContent = '🧠';
             if (buttonText) buttonText.textContent = 'Analyze Again';
-        } else if (currentValue <= 10000) {
+        } else if (currentValue <= 5000) {
             if (buttonIcon) buttonIcon.textContent = '⏰';
             if (buttonText) buttonText.textContent = 'Queue Again';
         } else {
@@ -4285,21 +4289,19 @@ function showLoginPrompt() {
                         <h5 class="modal-title" id="loginPromptModalLabel">
                             <i class="fas fa-sign-in-alt mr-2"></i>Sign In Required
                         </h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; opacity: 0.8;">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: brightness(0) invert(1); opacity: 0.8;"></button>
                     </div>
                     <div class="modal-body text-center" style="padding: 2rem;">
                         <div class="mb-3">
                             <i class="fas fa-lock" style="font-size: 3rem; color: #667eea; opacity: 0.7;"></i>
                         </div>
                         <h5 class="mb-3">Want to analyze more comments?</h5>
-                        <p class="text-muted mb-4">Sign in to queue analysis jobs and analyze up to 10,000 comments!</p>
+                        <p class="text-muted mb-4">Sign in to queue analysis jobs and analyze up to 2,500 comments!</p>
                         <div class="mb-3">
                             <div class="alert alert-info" style="border-radius: 10px;">
                                 <strong>Free Account Benefits:</strong><br>
                                 <small>
-                                    ✓ Analyze up to 10,000 comments<br>
+                                    ✓ Analyze up to 2,500 comments<br>
                                     ✓ Queue background jobs<br>
                                     ✓ Save analysis history<br>
                                     ✓ Export results
@@ -4332,8 +4334,9 @@ function showLoginPrompt() {
     // Add modal to page
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    // Show modal
-    $('#loginPromptModal').modal('show');
+    // Show modal using Bootstrap 5
+    const loginModal = new bootstrap.Modal(document.getElementById('loginPromptModal'));
+    loginModal.show();
 }
 
 function showProUpgradePrompt() {
@@ -4346,21 +4349,19 @@ function showProUpgradePrompt() {
                         <h5 class="modal-title" id="proUpgradePromptModalLabel">
                             <i class="fas fa-crown mr-2"></i>Upgrade to Pro
                         </h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: white; opacity: 0.8;">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: brightness(0) invert(1); opacity: 0.8;"></button>
                     </div>
                     <div class="modal-body text-center" style="padding: 2rem;">
                         <div class="mb-3">
                             <i class="fas fa-star" style="font-size: 3rem; color: #f59e0b;"></i>
                         </div>
                         <h5 class="mb-3">Unlock Advanced Analysis</h5>
-                        <p class="text-muted mb-4">Upgrade to Pro to analyze up to 100,000 comments or entire videos!</p>
+                        <p class="text-muted mb-4">Upgrade to Pro to analyze up to 5,000 comments!</p>
                         <div class="mb-3">
                             <div class="alert alert-warning" style="border-radius: 10px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: none;">
                                 <strong>Pro Account Benefits:</strong><br>
                                 <small style="color: #92400e;">
-                                    ✓ Analyze up to 100,000 comments<br>
+                                    ✓ Analyze up to 5,000 comments<br>
                                     ✓ Process entire videos<br>
                                     ✓ Advanced filtering options<br>
                                     ✓ Priority processing<br>
@@ -4393,8 +4394,9 @@ function showProUpgradePrompt() {
     // Add modal to page
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
-    
-    // Show modal
+    // Show modal using Bootstrap 5
+    const proModal = new bootstrap.Modal(document.getElementById('proUpgradePromptModal'));
+    proModal.show();
     $('#proUpgradePromptModal').modal('show');
 }
 </script>

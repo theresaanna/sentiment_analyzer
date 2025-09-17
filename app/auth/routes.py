@@ -133,10 +133,11 @@ def profile():
 
 
 @bp.route('/subscribe')
-@login_required
 def subscribe():
+    """Pricing page - accessible to everyone without login."""
     return render_template('auth/subscribe.html',
-                           stripe_price_id=current_app.config.get('STRIPE_PRICE_ID'))
+                           stripe_price_id=current_app.config.get('STRIPE_PRICE_ID'),
+                           current_user=current_user if current_user.is_authenticated else None)
 
 
 @bp.route('/create-checkout-session', methods=['POST'])

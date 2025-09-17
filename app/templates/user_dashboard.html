@@ -4,7 +4,7 @@
 <style>
   /* Unified dashboard styling */
   .user-dashboard-page {
-    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    background: transparent;
     min-height: 100vh;
     padding: 2rem 0;
   }
@@ -1039,15 +1039,35 @@ function renderJobList(containerId, jobs) {
 function createJobElement(job) {
   const createdAt = new Date(job.created_at).toLocaleString();
   const isActive = ['queued', 'processing', 'running'].includes(job.status);
+  const isCompleted = job.status === 'completed';
   
   {% if current_user.is_subscribed %}
   const jobType = job.job_type === 'preload' ? 'Comment Preload' : 
                   job.job_type === 'channel_sync' ? 'Channel Sync' : 'Analysis';
-  const videoTitle = job.video_id ? `Video: ${job.video_id}` : 
-                    job.channel_id ? `Channel: ${job.channel_id}` : 'Unknown';
+  
+  // Build video title with link if completed
+  let videoDisplay = '';
+  if (job.video_id) {
+    if (isCompleted) {
+      videoDisplay = `<a href="/analyze/${job.video_id}" class="text-decoration-none fw-bold">
+                       <i class="fas fa-chart-line me-1"></i>Video: ${job.video_id}
+                     </a>`;
+    } else {
+      videoDisplay = `Video: ${job.video_id}`;
+    }
+  } else if (job.channel_id) {
+    videoDisplay = `Channel: ${job.channel_id}`;
+  } else {
+    videoDisplay = 'Unknown';
+  }
   {% else %}
   const jobType = 'Sentiment Analysis';
-  const videoTitle = job.video_title || `Video: ${job.video_id}`;
+  let videoDisplay = job.video_title || `Video: ${job.video_id}`;
+  if (isCompleted && job.video_id) {
+    videoDisplay = `<a href="/analyze/${job.video_id}" class="text-decoration-none fw-bold">
+                     <i class="fas fa-chart-line me-1"></i>${job.video_title || job.video_id}
+                   </a>`;
+  }
   {% endif %}
   
   const progressBar = isActive && job.progress ? 
@@ -1055,10 +1075,15 @@ function createJobElement(job) {
        <div class="job-progress-bar" style="width: ${job.progress}%"></div>
      </div>` : '';
   
-  const actionButton = job.status === 'completed' && job.has_results ? 
-    `<a href="/analysis/${job.job_id}" class="btn btn-sm btn-primary">View Results</a>` :
-    isActive ? 
-    `<button class="btn btn-sm btn-outline-danger" onclick="cancelJob('${job.job_id}')">Cancel</button>` : '';
+  // Update action button logic
+  let actionButton = '';
+  if (isCompleted && job.video_id) {
+    actionButton = `<a href="/analyze/${job.video_id}" class="btn btn-sm btn-primary">
+                     <i class="fas fa-external-link-alt me-1"></i>View Analysis
+                   </a>`;
+  } else if (isActive) {
+    actionButton = `<button class="btn btn-sm btn-outline-danger" onclick="cancelJob('${job.job_id}')">Cancel</button>`;
+  }
   
   return `
     <div class="job-item fade-in">
@@ -1067,7 +1092,7 @@ function createJobElement(job) {
         <div class="job-status ${job.status}">${job.status}</div>
       </div>
       <div class="job-meta">
-        ${videoTitle} • ${createdAt}
+        ${videoDisplay} • ${createdAt}
       </div>
       ${progressBar}
       ${actionButton ? `<div class="mt-2">${actionButton}</div>` : ''}
