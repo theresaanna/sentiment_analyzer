@@ -210,8 +210,35 @@ class EnhancedYouTubeService(YouTubeService):
             return result
             
         except HttpError as e:
-            logger.error(f"API error: {e}")
-            raise
+            # Log detailed error information for debugging
+            logger.error(f"YouTube API HttpError for video {video_id}:")
+            logger.error(f"  Status: {e.resp.status}")
+            logger.error(f"  Reason: {e.resp.reason}")
+            logger.error(f"  Error content: {e.content.decode('utf-8') if e.content else 'No content'}")
+            logger.error(f"  API error: {e}")
+            
+            # More detailed error handling
+            error_msg = str(e)
+            status = e.resp.status
+            
+            if status == 403:
+                if 'commentsDisabled' in error_msg or 'disabled comments' in error_msg:
+                    raise ValueError("Comments are disabled for this video")
+                elif 'quota' in error_msg.lower():
+                    raise ValueError("YouTube API quota exceeded")
+                elif 'processingFailure' in error_msg:
+                    if 'commentThread' in error_msg:
+                        raise ValueError(f"YouTube API processing failure for video {video_id}: This may be due to temporary restrictions, rate limiting, or the video having special access controls. Please try again later or use a different video.")
+                    else:
+                        raise ValueError(f"YouTube API processing failure: {error_msg}")
+                else:
+                    raise ValueError(f"YouTube API access forbidden (status 403): {error_msg}")
+            elif status == 404:
+                raise ValueError(f"Video with ID {video_id} not found or is private")
+            elif status == 400:
+                raise ValueError(f"Invalid request for video {video_id}: {error_msg}")
+            else:
+                raise ValueError(f"YouTube API error (status {status}) for video {video_id}: {error_msg}")
     
     def _process_comment_thread_enhanced(self, thread_data: Dict[str, Any], 
                                         include_replies: bool) -> Dict[str, Any]:
