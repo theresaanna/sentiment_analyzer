@@ -3122,7 +3122,7 @@ function retrySummary() {
     if (!analysisId) return;
     const aiSummaryEl = document.getElementById('aiSummary');
     if (aiSummaryEl) {
-        aiSummaryEl.innerHTML = '<p>Retrying summary...</p>';
+        aiSummaryEl.innerHTML = '<p>Retrying summary... <i class="fas fa-spinner fa-spin"></i></p>';
     }
     fetch(`/api/analyze/retry-summary/${analysisId}`, {
         method: 'POST'
@@ -3288,7 +3288,7 @@ function displayResults(results) {
                 if (retryLink) {
                     retryLink.addEventListener('click', (e) => {
                         e.preventDefault();
-                        retryLink.textContent = 'Retrying...';
+                        retryLink.innerHTML = 'Retrying... <i class="fas fa-spinner fa-spin"></i>';
                         retryLink.classList.add('disabled');
                         retrySummary();
                     });
