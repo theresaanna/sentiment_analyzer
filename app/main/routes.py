@@ -154,11 +154,11 @@ def analyze_video(video_id):
             max_comments = total_video_comments
         
         # Fetch maximum available comments using enhanced service
-        # Don't include replies by default to avoid confusion in counts
+        # Never include replies to keep counts consistent
         result = youtube_service.get_all_available_comments(
             video_id=video_id,
             target_comments=max_comments,
-            include_replies=False,  # Changed to False to avoid count confusion
+            include_replies=False,  # Never include replies
             sort_order='relevance'
         )
         comments = result['comments']
@@ -583,12 +583,12 @@ def api_get_comments(video_id):
         
         format_type = request.args.get('format', 'threaded')
         
-        # Fetch comments using enhanced service
+        # Fetch comments using enhanced service - never include replies
         if format_type == 'flat':
             result = youtube_service.get_all_available_comments(
                 video_id=video_id,
                 target_comments=max_comments,
-                include_replies=True,
+                include_replies=False,  # Never include replies
                 sort_order='relevance'
             )
             return jsonify({
@@ -605,7 +605,7 @@ def api_get_comments(video_id):
             result = youtube_service.get_all_available_comments(
                 video_id=video_id,
                 target_comments=max_comments,
-                include_replies=True,
+                include_replies=False,  # Never include replies
                 sort_order='relevance'
             )
             return jsonify({
@@ -747,12 +747,11 @@ def api_analyze_sentiment(video_id):
         max_comments = min(max_comments, user_limit)
         
         percentage_selected = data.get('percentage_selected', 10)
-        include_replies = data.get('include_replies', True)  # Default to True for backward compatibility
+        include_replies = False  # Never include replies
         
-        # Generate analysis_id based on percentage, video_id, and reply setting for consistency
-        # This ensures the same ID is used regardless of exact comment count
-        reply_suffix = "with_replies" if include_replies else "no_replies"
-        analysis_id = f"sentiment_{video_id}_{percentage_selected}pct_{max_comments}_{reply_suffix}"
+        # Generate analysis_id based on percentage and video_id for consistency
+        # Always no_replies since we never include them
+        analysis_id = f"sentiment_{video_id}_{percentage_selected}pct_{max_comments}_no_replies"
         
         print(f"API: Received request - video_id: {video_id}, max_comments: {max_comments}, percentage: {percentage_selected}")
         print(f"API: Generated analysis_id: {analysis_id}")
@@ -804,7 +803,7 @@ def api_analyze_sentiment(video_id):
         }), 500
 
 
-def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str, include_replies: bool = True):
+def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str, include_replies: bool = False):
     """
     Run sentiment analysis in background.
     """
@@ -820,7 +819,7 @@ def run_sentiment_analysis(video_id: str, max_comments: int, analysis_id: str, i
         result = youtube_service.get_all_available_comments(
             video_id=video_id,
             target_comments=max_comments,
-            include_replies=include_replies,  # Use the parameter from frontend
+            include_replies=False,  # Never include replies
             sort_order='relevance'
         )
         video_info = result['video']

@@ -1223,63 +1223,6 @@
         color: #dc3545;
     }
     
-    /* Toggle Switch Styles */
-    .toggle-switch {
-        position: relative;
-        display: inline-block;
-        width: 60px;
-        height: 28px;
-    }
-    
-    .toggle-switch input {
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-    
-    .toggle-slider {
-        position: absolute;
-        cursor: pointer;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: #ccc;
-        transition: .4s;
-        border-radius: 28px;
-    }
-    
-    .toggle-slider:before {
-        position: absolute;
-        content: "";
-        height: 20px;
-        width: 20px;
-        left: 4px;
-        bottom: 4px;
-        background-color: white;
-        transition: .4s;
-        border-radius: 50%;
-    }
-    
-    input:checked + .toggle-slider {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
-    
-    input:focus + .toggle-slider {
-        box-shadow: 0 0 1px #667eea;
-    }
-    
-    input:checked + .toggle-slider:before {
-        transform: translateX(32px);
-    }
-    
-    .reply-toggle-section {
-        background: #f8f9fa;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #e9ecef;
-    }
-    
     .feedback-notice {
         background: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -1409,7 +1352,7 @@
                 <div class="comment-coverage-info mb-3">
                     <div class="coverage-summary">
                     <div class="coverage-main">
-                        <span class="coverage-number comment-count-value" data-comment-total="true">{{ "{:,}".format(comment_stats.total_comments) }}</span>
+                        <span class="coverage-number comment-count-value" data-comment-total="true">{{ "{:,}".format(comment_stats.get('top_level_count', 0)) }}</span>
                         <span class="coverage-text">comments analyzed</span>
                             {% if comment_stats.fetch_percentage >= 99.9 %}
                                 <span class="badge badge-success ml-2 fetch-percentage-badge">100% coverage</span>
@@ -1419,12 +1362,9 @@
                         </div>
                         <div class="coverage-details">
                             {% if comment_stats.get('threads_fetched', 0) > 0 %}
-                                <span class="detail-item">
-                                    <i class="fas fa-comments"></i> {{ "{:,}".format(comment_stats.get('threads_fetched', 0)) }} threads
-                                </span>
-                                <span class="detail-item" id="repliesDetailItem">
-                                    <i class="fas fa-reply"></i> <span class="replies-count-value">{{ "{:,}".format(comment_stats.get('replies_count', 0)) }}</span> replies
-                                </span>
+                            <span class="detail-item">
+                                <i class="fas fa-comments"></i> {{ "{:,}".format(comment_stats.get('threads_fetched', 0)) }} threads
+                            </span>
                             {% endif %}
                             <span class="detail-item">
                                 <i class="fas fa-clock"></i> {{ comment_stats.get('fetch_time', 0) | format_fetch_time }}
@@ -1435,16 +1375,6 @@
                         </div>
                     </div>
                     
-                    {% if comment_stats.get('top_level_count', 0) > 0 and comment_stats.get('replies_count', 0) > 0 %}
-                        {% set avg_replies_per_thread = (comment_stats.get('replies_count', 0) / comment_stats.get('top_level_count', 1))|round(1) %}
-                        {% if avg_replies_per_thread > 20 %}
-                            <div class="mt-2">
-                                <span class="badge badge-warning">
-                                    <i class="fas fa-fire"></i> Highly discussed: ~{{ avg_replies_per_thread|int }} replies per thread
-                                </span>
-                            </div>
-                        {% endif %}
-                    {% endif %}
                 </div>
                 
                 <!-- Comment Statistics Grid -->
@@ -1467,14 +1397,7 @@
                         <div class="stat-icon text-info"><i class="fas fa-comment-dots"></i></div>
                         <div class="stat-content">
                             <div class="stat-value">{{ comment_stats.get('top_level_count', 0) }}</div>
-                            <div class="stat-label">Threads</div>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon text-warning"><i class="fas fa-reply"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">{{ comment_stats.get('replies_count', 0) }}</div>
-                            <div class="stat-label">Replies</div>
+                            <div class="stat-label">Comments</div>
                         </div>
                     </div>
                 </div>
@@ -1530,22 +1453,6 @@
                         </div>
                         
                         <div class="coverage-body">
-                            <!-- Reply Toggle Section -->
-                            <div class="reply-toggle-section mb-3">
-                                <div class="d-flex align-items-center justify-content-center">
-                                    <label class="toggle-switch mb-0">
-                                        <input type="checkbox" id="includeRepliesToggle" checked>
-                                        <span class="toggle-slider"></span>
-                                    </label>
-                                    <div class="ml-3">
-                                        <strong id="replyToggleLabel">Include Reply Threads</strong>
-                                        <div class="small text-muted" id="replyToggleDescription">
-                                            Analyze both top-level comments and replies
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <hr class="my-3">
                             <!-- Unified Adaptive Slider -->
                             <div class="unified-slider-section">
                                 <!-- Dynamic Analysis Header -->
@@ -1931,99 +1838,9 @@ function applyStoredCorrections() {
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('DOMContentLoaded fired - initializing analyze page');
     
-    // Store original comment counts
+    // Use only top-level comment counts throughout
     const topLevelCount = {{ comment_stats.get('top_level_count', 0) }};
-    const repliesCount = {{ comment_stats.get('replies_count', 0) }};
-    const totalWithReplies = {{ comment_stats.get('total_comments', 0) }};
-    const totalTopLevelOnly = topLevelCount;
-    
-    // Function to update all comment counts on page
-    function updateCommentCounts(includeReplies) {
-        const newTotal = includeReplies ? totalWithReplies : totalTopLevelOnly;
-        
-        // Update total comments display in Comment Statistics section
-        const totalCommentsElement = document.querySelector('.comment-count-value');
-        if (totalCommentsElement) {
-            totalCommentsElement.textContent = newTotal.toLocaleString();
-        }
-        
-        // Update coverage badge
-        const percentageBadge = document.querySelector('.fetch-percentage-badge');
-        if (percentageBadge && totalAvailableComments > 0) {
-            const percentage = Math.min(100, Math.round((newTotal / totalAvailableComments) * 100));
-            if (percentage >= 99.9) {
-                percentageBadge.className = 'badge badge-success ml-2 fetch-percentage-badge';
-                percentageBadge.textContent = '100% coverage';
-            } else {
-                percentageBadge.className = 'badge badge-info ml-2 fetch-percentage-badge';
-                percentageBadge.textContent = `${percentage.toFixed(1)}% coverage`;
-            }
-        }
-        
-        // Show/hide replies detail item based on toggle state
-        const repliesDetailItem = document.getElementById('repliesDetailItem');
-        if (repliesDetailItem) {
-            repliesDetailItem.style.display = includeReplies ? 'inline' : 'none';
-        }
-        
-        // Update slider max and reconfigure
-        const effectiveTotal = Math.min(newTotal, totalAvailableComments);
-        window.currentTotalComments = effectiveTotal;
-        
-        // Reconfigure slider with new totals
-        configureSliderForUser();
-        
-        // Update current slider value if it exceeds new max
-        const currentValue = parseInt(unifiedSlider.value);
-        const maxValue = parseInt(unifiedSlider.max);
-        if (currentValue > maxValue) {
-            updateUnifiedUI(maxValue);
-        } else {
-            // Recalculate coverage percentage with new total
-            updateUnifiedUI(currentValue);
-        }
-        
-        // Update any displayed "total comments" text
-        document.querySelectorAll('[data-comment-total]').forEach(el => {
-            el.textContent = newTotal.toLocaleString();
-        });
-        
-        return newTotal;
-    }
-    
-    // Initialize reply toggle
-    const replyToggle = document.getElementById('includeRepliesToggle');
-    const replyToggleLabel = document.getElementById('replyToggleLabel');
-    const replyToggleDescription = document.getElementById('replyToggleDescription');
-    
-    if (replyToggle) {
-        replyToggle.addEventListener('change', function() {
-            const includeReplies = this.checked;
-            
-            // Update labels
-            if (includeReplies) {
-                replyToggleLabel.textContent = 'Include Reply Threads';
-                replyToggleDescription.textContent = `Analyze both top-level comments and replies (${repliesCount.toLocaleString()} replies)`;
-            } else {
-                replyToggleLabel.textContent = 'Top-Level Comments Only';
-                replyToggleDescription.textContent = `Analyze only direct responses to the video (${topLevelCount.toLocaleString()} comments)`;
-            }
-            
-            // Update all comment counts on page
-            const newTotal = updateCommentCounts(includeReplies);
-            
-            // Log the change
-            console.log(`Reply toggle changed - Include replies: ${includeReplies}, New total: ${newTotal}`);
-        });
-        
-        // Initialize with current state
-        const initialIncludeReplies = replyToggle.checked;
-        if (initialIncludeReplies && repliesCount > 0) {
-            replyToggleDescription.textContent = `Analyze both top-level comments and replies (${repliesCount.toLocaleString()} replies)`;
-        } else if (!initialIncludeReplies) {
-            replyToggleDescription.textContent = `Analyze only direct responses to the video (${topLevelCount.toLocaleString()} comments)`;
-        }
-    }
+    const totalComments = topLevelCount;  // Always use top-level count only
     
     // Check if we have precomputed results from a completed job
     {% if precomputed_results %}
@@ -2093,21 +1910,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load user's previous feedback first
     await loadUserFeedback();
     
-    // Get comment statistics
-    const fetchedComments = {{ comment_stats.fetched_comments|default(0) }};
-    const totalAvailable = {{ comment_stats.total_available|default(0) }};
+    // Get comment statistics - use top-level counts only
+    const fetchedComments = {{ comment_stats.get('top_level_count', 0) }};
+    const totalAvailable = {{ comment_stats.get('total_top_level_comments', comment_stats.get('total_available', 0)) }};
     const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0)|default(0) }};
-    const fetchedCommentsCount = {{ comment_stats.total_comments|default(0) }};
     
-    console.log('Debug - totalAvailable:', totalAvailable);
+    console.log('Debug - totalAvailable (top-level):', totalAvailable);
     console.log('Debug - videoStatsComments:', videoStatsComments);
-    console.log('Debug - fetchedCommentsCount:', fetchedCommentsCount);
+    console.log('Debug - fetchedComments (top-level):', fetchedComments);
     
-    // Use the correct total - prefer total_available, then video stats, NOT fetched count
-    let totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount || 5000;
+    // Use the top-level count as the total
+    let totalAvailableComments = totalAvailable || fetchedComments || 5000;
     console.log('Debug - totalAvailableComments used:', totalAvailableComments);
     
-    // Track current total based on reply toggle state
+    // Set current total to top-level comments only
     window.currentTotalComments = totalAvailableComments;
     
     // Use global isAuthenticated and isProUser variables
@@ -2771,7 +2587,7 @@ function startSentimentAnalysis() {
             body: JSON.stringify({
                 video_id: videoId,
                 comment_count: commentsToAnalyze,
-                include_replies: document.getElementById('includeRepliesToggle')?.checked ?? true
+                include_replies: false  // Never include replies
             })
         })
         .then(response => response.json())
@@ -2895,9 +2711,8 @@ function startSentimentAnalysis() {
 }
 
 function initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage) {
-    // Get reply toggle state
-    const includeRepliesToggle = document.getElementById('includeRepliesToggle');
-    const includeReplies = includeRepliesToggle ? includeRepliesToggle.checked : true;
+    // Always exclude replies
+    const includeReplies = false;
     
     console.log('Initiating analysis with:', JSON.stringify({
         videoId: videoId,

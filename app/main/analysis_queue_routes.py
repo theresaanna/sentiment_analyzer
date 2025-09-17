@@ -21,7 +21,7 @@ def api_queue_analysis():
         video_url = data.get('video_url')
         video_id = data.get('video_id')
         comment_count = data.get('comment_count', 500)
-        include_replies = data.get('include_replies', True)  # Default to True for backward compatibility
+        include_replies = False  # Never include replies
         
         # Extract video ID if URL provided
         if video_url and not video_id:
@@ -52,7 +52,7 @@ def api_queue_analysis():
             video_url=build_youtube_url(video_id),
             comment_count_requested=min(comment_count, 10000),  # Cap at 10000 for Pro users
             status='queued',
-            include_replies=include_replies  # Store the reply preference
+            include_replies=False  # Never include replies
         )
         
         db.session.add(job)

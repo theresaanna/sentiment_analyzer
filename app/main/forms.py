@@ -75,7 +75,7 @@ class EnhancedYouTubeURLForm(FlaskForm):
     
     include_replies = BooleanField(
         'Include Replies',
-        default=True,
+        default=False,  # Never include replies by default
         render_kw={'class': 'form-check-input'}
     )
     
