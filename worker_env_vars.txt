@@ -1,0 +1,27 @@
+# Copy these environment variables from your web service to the worker service:
+
+# Essential - Required for worker to function
+DATABASE_URL=<copy from web service>
+SECRET_KEY=<copy from web service>
+YOUTUBE_API_KEY=<copy from web service>
+SENTIMENT_API_URL=<copy from web service>
+
+# Optional but recommended  
+REDIS_URL=<copy from web service if you have it>
+FLASK_ENV=production
+FLASK_APP=run.py
+
+# API Performance settings (optional, will use defaults if not set)
+API_TIMEOUT=30
+MAX_WORKERS=4
+MAX_COMMENTS_PRO=50000
+MAX_COMMENTS_PER_VIDEO=50000
+
+# Email (only needed if worker sends notifications)
+MAIL_SERVER=<copy if needed>
+MAIL_USERNAME=<copy if needed>
+MAIL_PASSWORD=<copy if needed>
+
+# Stripe (only needed if worker handles payment processing)  
+STRIPE_SECRET_KEY=<copy if needed>
+STRIPE_WEBHOOK_SECRET=<copy if needed>

@@ -30,6 +30,12 @@ aiohttp==3.9.1  # For async YouTube service
 pandas>=2.1.0
 numpy>=1.26.0
 
+# AI/ML for enhanced summaries
+transformers>=4.30.0
+torch>=2.0.0
+sentence-transformers>=2.2.0
+huggingface-hub>=0.16.0
+
 # Utilities
 urllib3==1.26.18
 python-dateutil==2.8.2

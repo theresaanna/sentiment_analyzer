@@ -89,9 +89,9 @@ class SummaryEnhancer:
             'education': ['learn', 'study', 'understand', 'knowledge', 'information']
         }
     
-    def extract_meaningful_keywords(self, comments: List[str], max_keywords: int = 10) -> List[Tuple[str, int]]:
+    def extract_meaningful_keywords(self, comments: List[str], max_keywords: int = 10, title_words: List[str] = None) -> List[Tuple[str, int]]:
         """
-        Extract meaningful keywords from comments, excluding stop words and generic terms.
+        Extract meaningful keywords from comments, excluding stop words, generic terms, and title words.
         Returns list of (keyword, frequency) tuples.
         """
         # Limit comments for keyword extraction to avoid performance issues
@@ -107,12 +107,22 @@ class SummaryEnhancer:
         # Extract words (keeping only alphabetic characters)
         words = re.findall(r'\b[a-z]+\b', all_text)
         
-        # Filter out stop words, video terms, and short words
+        # Create title words filter set
+        title_filter = set()
+        if title_words:
+            for word in title_words:
+                # Clean and filter title words
+                clean_word = re.sub(r'[^a-zA-Z]', '', word.lower())
+                if len(clean_word) > 3 and clean_word not in self.stop_words:
+                    title_filter.add(clean_word)
+        
+        # Filter out stop words, video terms, title words, and short words
         meaningful_words = [
             word for word in words 
             if len(word) > 3 
             and word not in self.stop_words 
             and word not in self.video_terms
+            and word not in title_filter
         ]
         
         # Count word frequencies
@@ -195,18 +205,105 @@ class SummaryEnhancer:
             'engaging_percentage': engaging_pct
         }
     
+    def detect_controversial_topics(self, comments: List[str]) -> List[Dict[str, Any]]:
+        """
+        Detect controversial topics and debates in the comments.
+        """
+        controversial_indicators = {
+            'disagreement': ['disagree', 'wrong', 'not true', 'actually', 'but', 'however', 'although'],
+            'strong_opinions': ['absolutely', 'definitely', 'completely', 'totally', 'never', 'always'],
+            'debate_starters': ['unpopular opinion', 'hot take', 'controversial', 'debate', 'argue'],
+            'political': ['left', 'right', 'liberal', 'conservative', 'politics', 'government'],
+            'personal_attacks': ['stupid', 'idiot', 'moron', 'pathetic', 'ridiculous'],
+            'defensive': ['triggered', 'offended', 'sensitive', 'cope', 'mad']
+        }
+        
+        topics = []
+        controversy_scores = {}
+        
+        # Sample comments to avoid performance issues
+        sample_size = min(len(comments), 300)
+        sample_comments = comments[:sample_size]
+        
+        for i, comment in enumerate(sample_comments):
+            comment_lower = comment.lower()
+            controversy_score = 0
+            indicators_found = []
+            
+            # Check for controversial indicators
+            for category, indicators in controversial_indicators.items():
+                for indicator in indicators:
+                    if indicator in comment_lower:
+                        controversy_score += 1
+                        indicators_found.append(category)
+            
+            # High controversy if multiple indicators or sensitive topics
+            if controversy_score >= 2 or any(cat in indicators_found for cat in ['political', 'personal_attacks']):
+                topics.append({
+                    'text': comment[:200] + ('...' if len(comment) > 200 else ''),
+                    'score': controversy_score,
+                    'categories': list(set(indicators_found)),
+                    'index': i
+                })
+        
+        # Sort by controversy score
+        topics.sort(key=lambda x: x['score'], reverse=True)
+        return topics[:5]  # Return top 5 controversial topics
+    
+    def extract_discussion_themes(self, comments: List[str], title_words: List[str] = None) -> List[Dict[str, Any]]:
+        """
+        Extract major discussion themes and topics from comments.
+        """
+        # Get meaningful keywords first
+        keywords = self.extract_meaningful_keywords(comments, max_keywords=20, title_words=title_words)
+        
+        # Group related keywords into themes
+        theme_categories = {
+            'quality': ['quality', 'production', 'editing', 'cinematography', 'direction', 'acting'],
+            'technical': ['audio', 'sound', 'video', 'graphics', 'resolution', 'streaming'],
+            'content': ['story', 'plot', 'narrative', 'characters', 'dialogue', 'script'],
+            'educational': ['learn', 'educational', 'informative', 'helpful', 'tutorial', 'explanation'],
+            'entertainment': ['funny', 'entertaining', 'humor', 'comedy', 'hilarious', 'amusing'],
+            'emotional': ['emotional', 'touching', 'heartwarming', 'inspiring', 'motivating', 'uplifting'],
+            'comparison': ['better', 'worse', 'compared', 'similar', 'different', 'like'],
+            'personal': ['experience', 'personal', 'relate', 'happened', 'remember', 'story']
+        }
+        
+        themes = []
+        keyword_dict = dict(keywords)
+        
+        for theme_name, theme_words in theme_categories.items():
+            theme_score = 0
+            found_words = []
+            
+            for word in theme_words:
+                if word in keyword_dict:
+                    theme_score += keyword_dict[word]
+                    found_words.append(word)
+            
+            if theme_score > 3:  # Minimum threshold
+                themes.append({
+                    'name': theme_name,
+                    'score': theme_score,
+                    'keywords': found_words[:3],
+                    'percentage': round((theme_score / sum(count for _, count in keywords[:10]) * 100), 1)
+                })
+        
+        # Sort by score
+        themes.sort(key=lambda x: x['score'], reverse=True)
+        return themes[:4]  # Return top 4 themes
+    
     def generate_enhanced_summary(self, 
                                    comments: List[Any],
                                    sentiment_data: Dict[str, Any],
                                    video_info: Dict[str, Any] = None) -> str:
         """
-        Generate an enhanced summary with unique insights.
+        Generate a comprehensive, conversational summary with deep insights.
         """
         # Extract comment texts
         comment_texts = []
-        # Use all comments for summary, but limit for keyword extraction
         total_comments_count = len(comments)
-        for c in comments:  # Process all comments
+        for c in comments:
             if isinstance(c, dict):
                 text = c.get('text', '')
             else:
@@ -230,146 +327,147 @@ class SummaryEnhancer:
         neu_pct = round((dist.get('neutral', 0) / total * 100), 1)
         neg_pct = round((dist.get('negative', 0) / total * 100), 1)
         
-        # Determine overall tone
-        if pos_pct > 70:
-            tone = "overwhelmingly positive"
-        elif pos_pct > 50:
-            tone = "predominantly positive"
-        elif neg_pct > 60:
-            tone = "largely critical"
-        elif neg_pct > 40:
-            tone = "notably critical"
-        elif abs(pos_pct - neg_pct) < 10:
-            tone = "highly polarized"
-        else:
-            tone = "mixed"
+        # Extract title words for filtering
+        title_words = []
+        if video_info and video_info.get('title'):
+            title_words = video_info['title'].split()
         
-        # Start building summary
+        # Get comprehensive analysis
+        emotions = self.identify_emotion_patterns(comment_texts)
+        quality = self.analyze_comment_quality(comment_texts)
+        keywords = self.extract_meaningful_keywords(comment_texts, max_keywords=15, title_words=title_words)
+        themes = self.extract_discussion_themes(comment_texts, title_words=title_words)
+        controversies = self.detect_controversial_topics(comment_texts)
+        
+        # Start building conversational summary
         summary_parts = []
         
-        # Opening statement
-        summary_parts.append(
-            f"Audience reaction is {tone} ({pos_pct}% positive, {neu_pct}% neutral, {neg_pct}% negative)."
-        )
+        # Opening with conversational tone
+        if pos_pct > 75:
+            opening = f"The audience is absolutely loving this content! With {pos_pct}% positive reactions, it's clear this really resonated with viewers."
+        elif pos_pct > 60:
+            opening = f"This content is getting a warm reception from the audience, with {pos_pct}% positive reactions outweighing the {neg_pct}% negative ones."
+        elif neg_pct > 60:
+            opening = f"The comments reveal some significant criticism here, with {neg_pct}% of viewers expressing negative sentiments."
+        elif abs(pos_pct - neg_pct) < 10:
+            opening = f"This content has really split the audience down the middle - we're seeing {pos_pct}% positive and {neg_pct}% negative reactions, making it quite polarizing."
+        else:
+            opening = f"The reaction is fairly mixed across the board, with {pos_pct}% positive, {neu_pct}% neutral, and {neg_pct}% negative responses."
         
-        # Extract meaningful keywords
-        keywords = self.extract_meaningful_keywords(comment_texts, max_keywords=8)
-        if keywords and len(keywords) >= 3:
-            # Group keywords by sentiment if possible
-            keyword_list = [word for word, _ in keywords[:5]]
+        summary_parts.append(opening)
+        
+        # Discuss major themes in conversation style
+        if themes:
+            theme_intro = "\n\nLooking at what people are actually talking about, "
+            theme_descriptions = []
             
-            # Check which keywords appear more in positive vs negative contexts
-            pos_keywords = []
-            neg_keywords = []
-            neutral_keywords = []
-            
-            for keyword in keyword_list:
-                pos_count = sum(1 for c in comment_texts[:100] 
-                               if keyword in c.lower() and any(
-                                   ind in c.lower() for ind in self.positive_indicators))
-                neg_count = sum(1 for c in comment_texts[:100]
-                               if keyword in c.lower() and any(
-                                   ind in c.lower() for ind in self.negative_indicators))
+            for i, theme in enumerate(themes[:3]):
+                theme_name = theme['name']
+                keywords = theme['keywords']
+                percentage = theme.get('percentage', 0)
                 
-                if pos_count > neg_count * 1.5:
-                    pos_keywords.append(keyword)
-                elif neg_count > pos_count * 1.5:
-                    neg_keywords.append(keyword)
+                if theme_name == 'quality':
+                    theme_descriptions.append(f"there's quite a bit of discussion around the production quality, with viewers mentioning {', '.join(keywords)}")
+                elif theme_name == 'educational':
+                    theme_descriptions.append(f"many people are appreciating the educational value, frequently discussing {', '.join(keywords)}")
+                elif theme_name == 'entertainment':
+                    theme_descriptions.append(f"the entertainment factor is a big talking point, with comments about {', '.join(keywords)}")
+                elif theme_name == 'technical':
+                    theme_descriptions.append(f"viewers are getting into the technical aspects, particularly {', '.join(keywords)}")
+                elif theme_name == 'emotional':
+                    theme_descriptions.append(f"there's a strong emotional response, with people talking about {', '.join(keywords)}")
+                elif theme_name == 'comparison':
+                    theme_descriptions.append(f"viewers are making comparisons, often mentioning {', '.join(keywords)}")
                 else:
-                    neutral_keywords.append(keyword)
+                    theme_descriptions.append(f"the {theme_name} aspect is generating discussion around {', '.join(keywords)}")
             
-            # Add keyword insights
-            if pos_keywords:
-                summary_parts.append(
-                    f"Positive feedback centers on: {', '.join(pos_keywords[:3])}."
-                )
-            if neg_keywords:
-                summary_parts.append(
-                    f"Concerns mentioned include: {', '.join(neg_keywords[:3])}."
-                )
-            if not pos_keywords and not neg_keywords and neutral_keywords:
-                summary_parts.append(
-                    f"Key discussion topics: {', '.join(neutral_keywords[:4])}."
-                )
+            if theme_descriptions:
+                if len(theme_descriptions) == 1:
+                    summary_parts.append(theme_intro + theme_descriptions[0] + ".")
+                else:
+                    summary_parts.append(theme_intro + ", ".join(theme_descriptions[:-1]) + f", and {theme_descriptions[-1]}.")
         
-        # Analyze emotional patterns
-        emotions = self.identify_emotion_patterns(comment_texts)
-        top_emotions = sorted(
-            [(e, v) for e, v in emotions.items() if v > 10],
-            key=lambda x: x[1],
-            reverse=True
-        )[:2]
+        # Analyze emotional undercurrents
+        emotion_insights = []
+        top_emotions = sorted([(e, v) for e, v in emotions.items() if v > 8], key=lambda x: x[1], reverse=True)
         
         if top_emotions:
-            emotion_insights = []
-            for emotion, percentage in top_emotions:
-                if emotion == 'enthusiasm' and percentage > 20:
-                    emotion_insights.append(f"{percentage}% express strong enthusiasm")
-                elif emotion == 'frustration' and percentage > 15:
-                    emotion_insights.append(f"{percentage}% voice frustration")
+            for emotion, percentage in top_emotions[:3]:
+                if emotion == 'enthusiasm' and percentage > 15:
+                    emotion_insights.append(f"genuine enthusiasm ({percentage}% of comments)")
+                elif emotion == 'frustration' and percentage > 12:
+                    emotion_insights.append(f"notable frustration ({percentage}% of comments)")
                 elif emotion == 'gratitude' and percentage > 15:
-                    emotion_insights.append(f"{percentage}% express gratitude")
-                elif emotion == 'curiosity' and percentage > 20:
-                    emotion_insights.append(f"{percentage}% have questions or show curiosity")
-                elif emotion == 'humor' and percentage > 15:
-                    emotion_insights.append(f"{percentage}% found it humorous")
-                elif emotion == 'recommendation' and percentage > 10:
-                    emotion_insights.append(f"{percentage}% recommend to others")
+                    emotion_insights.append(f"heartfelt gratitude ({percentage}% of comments)")
+                elif emotion == 'curiosity' and percentage > 15:
+                    emotion_insights.append(f"curious engagement ({percentage}% asking questions)")
+                elif emotion == 'humor' and percentage > 12:
+                    emotion_insights.append(f"humor and amusement ({percentage}% of comments)")
+                elif emotion == 'recommendation' and percentage > 8:
+                    emotion_insights.append(f"strong recommendations to others ({percentage}% of comments)")
             
             if emotion_insights:
-                summary_parts.append(
-                    f"Notable patterns: {' and '.join(emotion_insights)}."
-                )
+                summary_parts.append(f"\n\nEmotionally, the comment section shows {', '.join(emotion_insights[:-1])}" + 
+                                    (f", and {emotion_insights[-1]}" if len(emotion_insights) > 1 else emotion_insights[0]) + ".")
         
-        # Analyze comment quality
-        quality = self.analyze_comment_quality(comment_texts)
-        quality_insights = []
+        # Comment quality and engagement patterns
+        engagement_notes = []
+        if quality['detailed_percentage'] > 35:
+            engagement_notes.append(f"a high number of detailed, thoughtful responses ({quality['detailed_percentage']}% are longer than 100 characters)")
+        elif quality['detailed_percentage'] < 15:
+            engagement_notes.append("mostly quick reactions rather than detailed commentary")
         
-        if quality['detailed_percentage'] > 40:
-            quality_insights.append("viewers are writing detailed responses")
-        elif quality['detailed_percentage'] < 20:
-            quality_insights.append("most comments are brief reactions")
+        if quality['engaging_percentage'] > 25:
+            engagement_notes.append(f"active discussion and debate ({quality['engaging_percentage']}% include questions or strong opinions)")
         
-        if quality['engaging_percentage'] > 30:
-            quality_insights.append("high discussion engagement")
+        if engagement_notes:
+            summary_parts.append(f"\n\nThe comment section itself shows {' and '.join(engagement_notes)}.")
         
-        if quality_insights:
-            summary_parts.append(
-                f"Comment characteristics: {' with '.join(quality_insights)}."
-            )
+        # Controversial topics and debates
+        if controversies:
+            controversy_intro = "\n\n🔥 There are some heated discussions brewing in the comments. "
+            controversy_details = []
+            
+            for controversy in controversies[:2]:
+                categories = controversy['categories']
+                if 'disagreement' in categories:
+                    controversy_details.append("viewers are debating and disagreeing with each other")
+                elif 'political' in categories:
+                    controversy_details.append("some political undertones are sparking debate")
+                elif 'personal_attacks' in categories:
+                    controversy_details.append("tensions are running high with some heated exchanges")
+                elif 'strong_opinions' in categories:
+                    controversy_details.append("people are expressing very strong, absolute opinions")
+            
+            if controversy_details:
+                summary_parts.append(controversy_intro + "We're seeing " + ", ".join(controversy_details[:2]) + 
+                                    (f", and {controversy_details[2]}" if len(controversy_details) > 2 else "") + 
+                                    f". About {len(controversies)} comments are particularly divisive.")
         
-        # Add confidence note if relevant
+        # Confidence and analysis notes
         if confidence < 0.6:
-            summary_parts.append(
-                "Note: Lower confidence scores suggest nuanced or sarcastic expressions."
-            )
+            summary_parts.append(f"\n\n📊 Analysis note: The relatively lower confidence score ({confidence*100:.1f}%) suggests that many comments contain nuanced, sarcastic, or ambiguous language that makes sentiment harder to pin down - which often happens with more sophisticated or ironic commentary.")
         elif confidence > 0.85:
-            summary_parts.append(
-                "High confidence indicates clear, unambiguous sentiment expressions."
-            )
+            summary_parts.append(f"\n\n📊 Analysis note: The high confidence score ({confidence*100:.1f}%) indicates that viewers are expressing their feelings quite clearly and directly, without much ambiguity or sarcasm.")
         
-        # Identify unique aspects
+        # Final insights based on patterns
         if pos_pct > 80 and emotions.get('gratitude', 0) > 20:
-            summary_parts.append(
-                "This content has genuinely helped or inspired many viewers."
-            )
-        elif neg_pct > 50 and emotions.get('frustration', 0) > 30:
-            summary_parts.append(
-                "Viewers expected something different from this content."
-            )
-        elif abs(pos_pct - neg_pct) < 5:
-            summary_parts.append(
-                "This content is divisive, splitting the audience almost evenly."
-            )
+            summary_parts.append("\n\n💡 This appears to be the kind of content that genuinely helps or inspires people - the combination of high positivity and gratitude suggests real value delivery.")
+        elif neg_pct > 50 and emotions.get('frustration', 0) > 25:
+            summary_parts.append("\n\n💡 There seems to be a disconnect between what viewers expected and what they got, leading to disappointment and frustration.")
+        elif abs(pos_pct - neg_pct) < 5 and controversies:
+            summary_parts.append("\n\n💡 This content has hit a nerve and created a real divide in the audience - it's the kind of topic that people have strong opinions about either way.")
+        elif emotions.get('recommendation', 0) > 15:
+            summary_parts.append("\n\n💡 Viewers are actively recommending this to others, which suggests it has strong word-of-mouth potential.")
         
-        return ' '.join(summary_parts)
+        return ''.join(summary_parts)
 
 
 def get_enhanced_summary(comments: List[Any], 
                          sentiment_data: Dict[str, Any],
                          video_info: Dict[str, Any] = None) -> str:
     """
-    Convenience function to generate enhanced summary.
+    Convenience function to generate enhanced summary with video title filtering.
     """
     enhancer = SummaryEnhancer()
     return enhancer.generate_enhanced_summary(comments, sentiment_data, video_info)

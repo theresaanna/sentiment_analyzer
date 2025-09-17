@@ -68,7 +68,6 @@ class AnalysisWorker:
             result = self.youtube_service.get_all_available_comments(
                 video_id=job.video_id,
                 target_comments=job.comment_count_requested,
-                include_replies=False,  # Never include replies
                 sort_order='relevance'
             )
             
