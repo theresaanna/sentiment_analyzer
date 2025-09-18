@@ -150,10 +150,6 @@ test.describe('Analysis Status Page JavaScript', () => {
       expect(badgeText?.toUpperCase()).toContain('COMPLETED');
     }
   });
-    
-    // In testing env, login is required for results page, so either redirect or stay is acceptable
-    expect(isRedirected || currentUrl.includes('/analyze/status/')).toBeTruthy();
-  });
 
   test('should handle job cancellation', async ({ page }) => {
     // Mock the cancel endpoint
