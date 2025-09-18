@@ -137,17 +137,18 @@ test.describe('Analysis Status Page JavaScript', () => {
     await page.goto('/analyze/status/test-job-completed');
     await waitForJavaScriptReady(page);
 
-    // Wait for potential redirect to login or results; otherwise ensure Completed status is shown
-    await Promise.race([
-      page.waitForURL(url => /\/auth\/login|\/analysis\//.test(url.toString()), { timeout: 5000 }).catch(() => null),
-      page.waitForTimeout(2000)
-    ]);
-    const currentUrl = page.url();
-    if (currentUrl.includes('/auth/login') || currentUrl.includes('/analysis/')) {
+    // Either we redirect (login/results) or we stay and show Completed badge
+    const redirected = await page
+      .waitForURL(url => /\/auth\/login|\/analysis\//.test(url.toString()), { timeout: 7000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (redirected) {
       expect(true).toBeTruthy();
     } else {
+      await waitForElement(page, '.status-badge');
       const badgeText = await page.locator('.status-badge').textContent();
-      expect(badgeText?.toUpperCase()).toContain('COMPLETED');
+      expect((badgeText || '').toUpperCase()).toContain('COMPLETED');
     }
   });
 
