@@ -16,6 +16,10 @@
     "test:forms": "playwright test tests/e2e/form-interactions.test.js",
     "install:browsers": "playwright install",
     "install:deps": "playwright install-deps",
+    "web:install": "npm --prefix frontend install",
+    "web:build": "npm --prefix frontend run build",
+    "web:dev": "npm --prefix frontend run dev",
+    "web:preview": "npm --prefix frontend run preview",
     "pre-push": "./run_pre_push_tests.sh"
   },
   "keywords": ["e2e", "testing", "playwright", "javascript", "flask"],
