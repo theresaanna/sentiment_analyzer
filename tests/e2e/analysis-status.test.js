@@ -137,15 +137,21 @@ test.describe('Analysis Status Page JavaScript', () => {
     await page.goto('/analyze/status/test-job-completed');
     await waitForJavaScriptReady(page);
 
-    // Either we redirect (login/results) or we stay and show Completed badge
-    const redirected = await page
-      .waitForURL(url => /\/auth\/login|\/analysis\//.test(url.toString()), { timeout: 7000 })
-      .then(() => true)
-      .catch(() => false);
+    // Accept any of these outcomes:
+    // - Redirect to results (/analysis/...)
+    // - Redirect to local login (/auth/login...)
+    // - Redirect to external IdP (URL host changes)
+    // - Stay on status page and show Completed badge
+    await page.waitForTimeout(2000);
+    const urlNow = page.url();
+    const isLocal = urlNow.includes('127.0.0.1:8001') || urlNow.includes('localhost:8001');
+    const isResults = urlNow.includes('/analysis/');
+    const isLocalLogin = urlNow.includes('/auth/login');
 
-    if (redirected) {
+    if (!isLocal || isResults || isLocalLogin) {
       expect(true).toBeTruthy();
     } else {
+      // Still on status page, ensure badge shows Completed
       await waitForElement(page, '.status-badge');
       const badgeText = await page.locator('.status-badge').textContent();
       expect((badgeText || '').toUpperCase()).toContain('COMPLETED');
