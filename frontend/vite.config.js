@@ -8,13 +8,16 @@ export default defineConfig({
   build: {
     outDir: '../app/static/react',
     emptyOutDir: false, // do not wipe other static assets
-    lib: {
-      entry: './src/main.jsx',
-      name: 'VibeHome',
-      formats: ['iife'],
-      fileName: () => 'vibe-home.js',
-    },
     rollupOptions: {
+      input: {
+        'vibe-home': './src/main.jsx',
+        'vibe-analyze': './src/analyze.jsx'
+      },
+      output: {
+        entryFileNames: (chunk) => `${chunk.name}.js`,
+        assetFileNames: (assetInfo) => assetInfo.name || '[name][extname]',
+        chunkFileNames: 'chunks/[name]-[hash].js'
+      },
       external: [],
     },
   },
