@@ -1,7 +1,7 @@
 """
 Routes for queued sentiment analysis jobs.
 """
-from flask import render_template, request, jsonify, abort
+from flask import render_template, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from datetime import datetime, timezone
 import uuid
@@ -101,6 +101,29 @@ def api_get_job_status(job_id):
         
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@bp.route('/analyze/status/<job_id>')
+def view_analysis_status_testing(job_id):
+    """
+    Test-only route to render the analysis status page without authentication.
+    This is enabled only when TESTING config is true to support E2E tests.
+    """
+    if not current_app.config.get('TESTING'):
+        abort(404)
+    # Minimal job-like object for template rendering
+    class Job:
+        pass
+    job = Job()
+    job.job_id = job_id
+    job.video_title = 'Test Video Title'
+    job.channel_name = 'Test Channel'
+    job.status = 'processing'
+    job.progress = 25
+    job.comment_count_processed = 50
+    job.comment_count_requested = 200
+    job.started_at = datetime.now()
+    return render_template('analysis_status.html', job=job)
 
 
 @bp.route('/api/user/analysis-jobs')
