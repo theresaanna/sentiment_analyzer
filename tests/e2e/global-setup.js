@@ -24,7 +24,7 @@ async function globalSetup() {
   flaskProcess = spawn('python', [flaskScript], {
     env: {
       ...process.env,
-      FLASK_ENV: 'development',
+      FLASK_ENV: 'testing',
       DEBUG: 'false',
       DB_INIT_ON_START: 'false',
       PORT: testPort.toString(),

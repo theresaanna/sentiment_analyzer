@@ -28,10 +28,12 @@ except Exception:
 
 from app import create_app, db
 from app.models import User
+from app.config import config_dict
 
 # Get configuration from environment or use default
-config_name = os.environ.get('FLASK_ENV', 'development')
-app = create_app()
+config_name = os.environ.get('FLASK_ENV', 'development').lower()
+config_class = config_dict.get(config_name, config_dict['development'])
+app = create_app(config_class)
 
 # Optionally ensure database tables exist (disabled by default in production)
 with app.app_context():
