@@ -141,6 +141,10 @@ test.describe('Analysis Status Page JavaScript', () => {
     await page.waitForTimeout(2000);
     
     // Check if redirected to results page or if completion message is shown
+    // Wait briefly for potential redirect to results or login
+    await Promise.race([
+      page.waitForURL(url => /\/auth\/login|\/analysis\//.test(url.toString()), { timeout: 5000 }).catch(() => null)
+    ]);
     const currentUrl = page.url();
     const isRedirected = currentUrl.includes('/analysis/') || currentUrl.includes('/auth/login');
     
