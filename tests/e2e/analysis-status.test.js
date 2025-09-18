@@ -137,16 +137,19 @@ test.describe('Analysis Status Page JavaScript', () => {
     await page.goto('/analyze/status/test-job-completed');
     await waitForJavaScriptReady(page);
 
-    // Wait for potential redirect
-    await page.waitForTimeout(2000);
-    
-    // Check if redirected to results page or if completion message is shown
-    // Wait briefly for potential redirect to results or login
+    // Wait for potential redirect to login or results; otherwise ensure Completed status is shown
     await Promise.race([
-      page.waitForURL(url => /\/auth\/login|\/analysis\//.test(url.toString()), { timeout: 5000 }).catch(() => null)
+      page.waitForURL(url => /\/auth\/login|\/analysis\//.test(url.toString()), { timeout: 5000 }).catch(() => null),
+      page.waitForTimeout(2000)
     ]);
     const currentUrl = page.url();
-    const isRedirected = currentUrl.includes('/analysis/') || currentUrl.includes('/auth/login');
+    if (currentUrl.includes('/auth/login') || currentUrl.includes('/analysis/')) {
+      expect(true).toBeTruthy();
+    } else {
+      const badgeText = await page.locator('.status-badge').textContent();
+      expect(badgeText?.toUpperCase()).toContain('COMPLETED');
+    }
+  });
     
     // In testing env, login is required for results page, so either redirect or stay is acceptable
     expect(isRedirected || currentUrl.includes('/analyze/status/')).toBeTruthy();
