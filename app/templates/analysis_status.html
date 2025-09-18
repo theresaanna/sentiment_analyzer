@@ -171,7 +171,9 @@
 
 <script>
 const jobId = "{{ job.job_id }}";
+window.jobId = jobId;
 const statusApiBase = "{{ '/api/testing/analyze/status' if is_testing else '/api/analyze/status' }}";
+window.statusApiBase = statusApiBase;
 let refreshInterval;
 
 function checkStatus() {
@@ -302,6 +304,12 @@ function cancelJob() {
       });
   }
 }
+
+// Expose key functions for E2E tests
+window.formatTime = formatTime;
+window.checkStatus = checkStatus;
+window.updateProgress = updateProgress;
+window.cancelJob = cancelJob;
 
 // Start checking status immediately and then every 5 seconds
 checkStatus();
