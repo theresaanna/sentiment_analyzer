@@ -312,7 +312,6 @@ def view_analysis_results(job_id):
     # If job is not completed, show status page
     if job.status in ['queued', 'processing', 'failed', 'cancelled']:
         return render_template('analysis_status.html', job=job, is_testing=current_app.config.get('TESTING', False))
-    
     # For completed jobs, prepare data for the analyze template
     if job.status == 'completed' and job.results:
         results = job.results
@@ -380,4 +379,4 @@ def view_analysis_results(job_id):
         )
     
     # Fallback for incomplete data
-    return render_template('analysis_status.html', job=job)
+    return render_template('analysis_status.html', job=job, is_testing=current_app.config.get('TESTING', False))

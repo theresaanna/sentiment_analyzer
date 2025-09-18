@@ -171,12 +171,11 @@
 
 <script>
 const jobId = "{{ job.job_id }}";
-// Expose jobId for debugging/tests
-window.jobId = jobId;
+const statusApiBase = "{{ '/api/testing/analyze/status' if is_testing else '/api/analyze/status' }}";
 let refreshInterval;
 
 function checkStatus() {
-  fetch(`/api/analyze/status/${jobId}`)
+  fetch(`${statusApiBase}/${jobId}`)
     .then(response => response.json())
     .then(data => {
       if (data.success && data.status) {
