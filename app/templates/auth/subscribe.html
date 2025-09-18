@@ -3,6 +3,38 @@
 
 {% block extra_css %}
 <style>
+/* Override main container for consistent styling */
+main.container {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.pricing-hero {
+    background: var(--primary-gradient);
+    padding: 60px 0;
+    color: white;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.pricing-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    pointer-events: none;
+}
+
+.pricing-content {
+    position: relative;
+    z-index: 1;
+}
+
 .pricing-page {
     padding: 40px 0;
 }
@@ -137,16 +169,23 @@ a.vibe-button:hover {
 </style>
 {% endblock %}
 {% block content %}
+<!-- Hero Section -->
+<div class="pricing-hero">
+    <div class="container pricing-content">
+        <h1 class="display-4 fw-bold mb-3">
+            Choose Your Plan
+        </h1>
+        <p class="lead fs-4">
+            Start free and upgrade when you need more power
+        </p>
+    </div>
+</div>
+
+<!-- Main Content -->
 <div class="pricing-page">
   <div class="container">
     <div class="row justify-content-center">
-      <div class="col-md-10 col-lg-10">
-        <div class="text-center mb-5">
-          <h1 class="display-4 fw-bold mb-3">
-            Choose Your <span class="gradient-text">Plan</span>
-          </h1>
-          <p class="lead">Start free and upgrade when you need more power</p>
-        </div>
+      <div class="col-md-10 col-lg-10 mt-5">
           <div class="card-body">
             {% if current_user and current_user.is_authenticated and current_user.is_subscribed %}
               <div class="pro-active-badge">
@@ -250,7 +289,7 @@ a.vibe-button:hover {
                       <tr>
                         <td><strong>AI Summaries</strong></td>
                         <td class="text-center">✅ Included</td>
-                        <td class="text-center">✅ Enhanced</td>
+                        <td class="text-center">✅ <strong>Enhanced</strong></td>
                       </tr>
                       <tr>
                         <td><strong>Visualizations</strong></td>
@@ -260,22 +299,12 @@ a.vibe-button:hover {
                       <tr>
                         <td><strong>Analysis History</strong></td>
                         <td class="text-center">❌</td>
-                        <td class="text-center">✅ Unlimited</td>
+                        <td class="text-center">✅ <strong>Unlimited</strong></td>
                       </tr>
                       <tr>
                         <td><strong>Export Results</strong></td>
                         <td class="text-center">❌</td>
-                        <td class="text-center">✅ CSV & JSON</td>
-                      </tr>
-                      <tr>
-                        <td><strong>API Access</strong></td>
-                        <td class="text-center">❌</td>
-                        <td class="text-center">✅ Coming Soon</td>
-                      </tr>
-                      <tr>
-                        <td><strong>Support</strong></td>
-                        <td class="text-center">Community</td>
-                        <td class="text-center"><strong>Priority Email Support</strong></td>
+                        <td class="text-center">✅ <strong>CSV & JSON</strong></td>
                       </tr>
                     </tbody>
                   </table>
