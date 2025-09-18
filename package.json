@@ -1,0 +1,27 @@
+{
+  "name": "sentiment-analyzer-e2e-tests",
+  "version": "1.0.0",
+  "description": "End-to-end tests for VibeCheckAI sentiment analyzer",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "test:fast": "playwright test --timeout=30000 --retries=1 --workers=1",
+    "test:example": "playwright test tests/e2e/example.test.js",
+    "test:homepage": "playwright test tests/e2e/homepage.test.js",
+    "test:status": "playwright test tests/e2e/analysis-status.test.js",
+    "test:forms": "playwright test tests/e2e/form-interactions.test.js",
+    "install:browsers": "playwright install",
+    "install:deps": "playwright install-deps",
+    "pre-push": "./run_pre_push_tests.sh"
+  },
+  "keywords": ["e2e", "testing", "playwright", "javascript", "flask"],
+  "author": "Theresa Summa",
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.40.0"
+  }
+}

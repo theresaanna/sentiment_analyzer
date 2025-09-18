@@ -171,24 +171,27 @@
 
 <script>
 const jobId = "{{ job.job_id }}";
+// Expose jobId for debugging/tests
+window.jobId = jobId;
 let refreshInterval;
 
 function checkStatus() {
-  fetch(`/api/analyze/job/${jobId}`)
+  fetch(`/api/analyze/status/${jobId}`)
     .then(response => response.json())
     .then(data => {
-      if (data.success && data.job) {
-        if (data.job.status === 'completed') {
+      if (data.success && data.status) {
+        const job = data.status;
+        if (job.status === 'completed') {
           // Redirect to results page
           window.location.href = `/analysis/${jobId}`;
-        } else if (data.job.status === 'failed' || data.job.status === 'cancelled') {
-          // Stop refreshing if job failed or was cancelled
+        } else if (job.status === 'failed' || job.status === 'cancelled' || job.status === 'error') {
+          // Stop refreshing if job failed/cancelled/errored
           clearInterval(refreshInterval);
           // Reload page to show updated status
           window.location.reload();
         } else {
-          // Update progress if still processing
-          updateProgress(data.job);
+          // Update progress if still processing/queued
+          updateProgress(job);
         }
       }
     })
