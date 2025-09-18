@@ -134,8 +134,47 @@ def view_analysis_status_testing(job_id):
     job.comment_count_processed = 50
     job.comment_count_requested = 200
     job.started_at = datetime.now()
-    return render_template('analysis_status.html', job=job)
+    return render_template('analysis_status.html', job=job, is_testing=True)
 
+
+# In-memory progress map for testing status API
+_test_progress = {}
+
+@bp.route('/api/testing/analyze/status/<job_id>')
+def api_testing_analysis_status(job_id):
+    """Testing-only status API that simulates polling progress."""
+    if not current_app.config.get('TESTING'):
+        abort(404)
+    # Initialize progress based on job id
+    if job_id not in _test_progress:
+        if 'queued' in job_id:
+            _test_progress[job_id] = 0
+        elif 'completed' in job_id:
+            _test_progress[job_id] = 100
+        elif 'error' in job_id or 'failed' in job_id:
+            _test_progress[job_id] = -1  # error
+        else:
+            _test_progress[job_id] = 25
+    # Simulate progress increments up to 100
+    if _test_progress[job_id] >= 0 and _test_progress[job_id] < 100:
+        _test_progress[job_id] = min(_test_progress[job_id] + 25, 100)
+    status = 'failed' if _test_progress[job_id] == -1 else ('completed' if _test_progress[job_id] >= 100 else ('queued' if _test_progress[job_id] == 0 else 'processing'))
+    progress = 0 if _test_progress[job_id] == -1 else max(0, _test_progress[job_id])
+    resp = {
+        'success': True,
+        'status': {
+            'id': job_id,
+            'status': status,
+            'progress': progress,
+            'video_title': 'Test Video Title',
+            'comment_count_processed': max(0, progress * 2),
+            'comment_count_requested': 200,
+            'queue_position': 3 if status == 'queued' else None,
+            'estimated_wait_time': 120 if status == 'queued' else None,
+            'estimated_processing_time': max(0, 300 - progress * 3) if status in ('processing', 'queued') else 0
+        }
+    }
+    return jsonify(resp)
 
 @bp.route('/api/user/analysis-jobs')
 @login_required
@@ -272,7 +311,7 @@ def view_analysis_results(job_id):
     
     # If job is not completed, show status page
     if job.status in ['queued', 'processing', 'failed', 'cancelled']:
-        return render_template('analysis_status.html', job=job)
+        return render_template('analysis_status.html', job=job, is_testing=current_app.config.get('TESTING', False))
     
     # For completed jobs, prepare data for the analyze template
     if job.status == 'completed' and job.results:
