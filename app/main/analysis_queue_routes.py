@@ -118,8 +118,19 @@ def view_analysis_status_testing(job_id):
     job.job_id = job_id
     job.video_title = 'Test Video Title'
     job.channel_name = 'Test Channel'
-    job.status = 'processing'
-    job.progress = 25
+    # Derive initial status from job_id for testing routes
+    if 'queued' in job_id:
+        job.status = 'queued'
+        job.progress = 0
+    elif 'completed' in job_id:
+        job.status = 'completed'
+        job.progress = 100
+    elif 'error' in job_id or 'failed' in job_id:
+        job.status = 'failed'
+        job.progress = 0
+    else:
+        job.status = 'processing'
+        job.progress = 25
     job.comment_count_processed = 50
     job.comment_count_requested = 200
     job.started_at = datetime.now()
