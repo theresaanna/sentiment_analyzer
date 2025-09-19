@@ -13,6 +13,7 @@ Configuration via environment variables:
 - PRECACHE_AT: 'HH:MM' in 24h UTC to run daily (default: 03:00)
   or
 - PRECACHE_INTERVAL_HOURS: integer > 0 to run every N hours (overrides PRECACHE_AT)
+- PRECACHE_RUN_ONCE: 'true'|'false' (default: false). If true, run once and exit
 
 Required environment:
 - YOUTUBE_API_KEY
@@ -20,6 +21,10 @@ Required environment:
 
 Start command (Railway service):
   python scripts/precache_scheduler.py
+
+Cron mode (recommended for Railway):
+  - Set Start Command: python scripts/precache_scheduler.py
+  - Set PRECACHE_RUN_ONCE=1 and configure a cron schedule in the service
 """
 import os
 import sys
@@ -27,6 +32,7 @@ import time
 import shlex
 import subprocess
 from datetime import datetime
+from typing import Optional
 
 # Local schedule runner (already in requirements.txt)
 import schedule  # type: ignore
@@ -37,7 +43,7 @@ if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
 
-def _bool(val: str, default: bool = False) -> bool:
+def _bool(val: Optional[str], default: bool = False) -> bool:
     if val is None:
         return default
     return str(val).strip().lower() in ("1", "true", "yes", "y")
@@ -48,7 +54,11 @@ def _env(name: str, default: str) -> str:
     return v if v is not None and v != "" else default
 
 
-def run_precache_once():
+def run_precache_once() -> bool:
+    """Run a single precache cycle.
+
+    Returns True if all requested precache operations succeeded; False otherwise.
+    """
     video_list = [v.strip() for v in _env("PRECACHE_VIDEO_IDS", "dQw4w9WgXcQ").split(",") if v.strip()]
     comments = int(_env("PRECACHE_COMMENTS", "500"))
     include_replies = _bool(_env("PRECACHE_INCLUDE_REPLIES", "false"))
@@ -57,13 +67,19 @@ def run_precache_once():
     # Verify YOUTUBE_API_KEY present
     if not os.getenv("YOUTUBE_API_KEY"):
         print("[precache] ERROR: YOUTUBE_API_KEY not set in environment", flush=True)
-        return
+        return False
 
     # Build base command
     base = [sys.executable, os.path.join(PROJECT_ROOT, "scripts", "precache_video.py")]
 
+    all_ok = True
     for vid in video_list:
-        cmd = base + [vid, "--comments", str(comments), "--include-replies", ("true" if include_replies else "false"), "--sort", sort]
+        cmd = base + [
+            vid,
+            "--comments", str(comments),
+            "--include-replies", ("true" if include_replies else "false"),
+            "--sort", sort,
+        ]
         print(f"[precache] {datetime.utcnow().isoformat()}Z → Running: {' '.join(shlex.quote(p) for p in cmd)}", flush=True)
         try:
             proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
@@ -73,14 +89,26 @@ def run_precache_once():
                 print(proc.stderr, end="", flush=True)
             if proc.returncode != 0:
                 print(f"[precache] ERROR: precache returned code {proc.returncode} for {vid}", flush=True)
+                all_ok = False
         except Exception as e:
             print(f"[precache] EXCEPTION while precaching {vid}: {e}", flush=True)
+            all_ok = False
+
+    return all_ok
 
 
 def main():
     print("🚂 Precache Scheduler starting...", flush=True)
     print(f"Environment: {os.getenv('RAILWAY_ENVIRONMENT', 'local')} | UTC now: {datetime.utcnow().isoformat()}Z", flush=True)
 
+    # Cron/one-off mode: run once and exit
+    run_once = _bool(os.getenv("PRECACHE_RUN_ONCE"), default=False)
+    if run_once:
+        ok = run_precache_once()
+        # Exit status reflects success for cron jobs
+        sys.exit(0 if ok else 1)
+
+    # Long-running scheduler mode
     # Run immediately at start (warm right away)
     run_precache_once()
 
