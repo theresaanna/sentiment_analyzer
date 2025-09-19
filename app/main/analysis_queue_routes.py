@@ -134,6 +134,22 @@ def view_analysis_status_testing(job_id):
     job.comment_count_processed = 50
     job.comment_count_requested = 200
     job.started_at = datetime.now()
+    
+    # Reset the simulated progress for this job on each page load to avoid cross-test leakage
+    try:
+        global _test_progress
+        if 'queued' in job_id:
+            _test_progress[job_id] = 0
+        elif 'completed' in job_id:
+            _test_progress[job_id] = 100
+        elif 'error' in job_id or 'failed' in job_id:
+            _test_progress[job_id] = -1
+        else:
+            _test_progress[job_id] = 25
+    except Exception:
+        # Best-effort reset; if anything goes wrong, continue rendering
+        pass
+    
     return render_template('analysis_status.html', job=job, is_testing=True)
 
 
@@ -155,11 +171,21 @@ def api_testing_analysis_status(job_id):
             _test_progress[job_id] = -1  # error
         else:
             _test_progress[job_id] = 25
+    
     # Simulate progress increments up to 100
     if _test_progress[job_id] >= 0 and _test_progress[job_id] < 100:
         _test_progress[job_id] = min(_test_progress[job_id] + 25, 100)
-    status = 'failed' if _test_progress[job_id] == -1 else ('completed' if _test_progress[job_id] >= 100 else ('queued' if _test_progress[job_id] == 0 else 'processing'))
-    progress = 0 if _test_progress[job_id] == -1 else max(0, _test_progress[job_id])
+    
+    # Determine status and progress to return
+    current = _test_progress[job_id]
+    status = 'failed' if current == -1 else ('completed' if current >= 100 else ('queued' if current == 0 else 'processing'))
+    progress = 0 if current == -1 else max(0, current)
+
+    # Keep explicitly queued jobs in 'queued' state for a couple polls to allow UI assertions
+    if 'queued' in job_id and current < 50:
+        status = 'queued'
+        progress = 0
+    
     resp = {
         'success': True,
         'status': {

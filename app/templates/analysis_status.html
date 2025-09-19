@@ -12,6 +12,7 @@
           </h3>
         </div>
         <div class="card-body">
+          <div id="apiError" class="alert alert-danger mt-2" style="display: none;"></div>
           <h4>{{ job.video_title or 'Loading video information...' }}</h4>
           {% if job.channel_name %}
           <p class="text-muted">Channel: {{ job.channel_name }}</p>
@@ -175,29 +176,67 @@ window.jobId = jobId;
 const statusApiBase = "{{ '/api/testing/analyze/status' if is_testing else '/api/analyze/status' }}";
 window.statusApiBase = statusApiBase;
 let refreshInterval;
+const initialStatus = "{{ job.status }}";
+window.initialStatus = initialStatus;
+
+function showApiError(message) {
+  const el = document.getElementById('apiError');
+  if (!el) return;
+  el.textContent = message || 'Unable to check status. Please try again later.';
+  el.style.display = 'block';
+}
+
+function showTerminalStatus(job) {
+  // Hide progress and processing/queue info
+  const progressContainer = document.querySelector('.progress-container');
+  if (progressContainer) progressContainer.style.display = 'none';
+  const queueInfo = document.getElementById('queueInfo');
+  if (queueInfo) queueInfo.innerHTML = '';
+  const processingInfo = document.getElementById('processingInfo');
+  if (processingInfo) processingInfo.innerHTML = '';
+
+  // Ensure badge reflects terminal state
+  updateProgress(job);
+
+  // Add an alert if not already present
+  const statusSection = document.querySelector('.status-section');
+  if (statusSection && !statusSection.querySelector('.alert.alert-danger')) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-danger mt-3';
+    const msg = job.status === 'cancelled' ? 'This analysis was cancelled.' : (job.error || job.error_message || 'An unexpected error occurred.');
+    alertDiv.innerHTML = `<strong>Analysis ${job.status === 'cancelled' ? 'Cancelled' : 'Failed'}:</strong> ${msg}`;
+    statusSection.appendChild(alertDiv);
+  }
+}
 
 function checkStatus() {
   fetch(`${statusApiBase}/${jobId}`)
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    })
     .then(data => {
-      if (data.success && data.status) {
-        const job = data.status;
-        if (job.status === 'completed') {
-          // Redirect to results page
-          window.location.href = `/analysis/${jobId}`;
-        } else if (job.status === 'failed' || job.status === 'cancelled' || job.status === 'error') {
-          // Stop refreshing if job failed/cancelled/errored
-          clearInterval(refreshInterval);
-          // Reload page to show updated status
-          window.location.reload();
-        } else {
-          // Update progress if still processing/queued
-          updateProgress(job);
-        }
+      if (!data || !data.success || !data.status) {
+        throw new Error(data && data.error ? data.error : 'Invalid status payload');
+      }
+      const job = data.status;
+      if (job.status === 'completed') {
+        // Redirect to results page
+        window.location.href = `/analysis/${jobId}`;
+      } else if (job.status === 'failed' || job.status === 'cancelled' || job.status === 'error') {
+        // Stop refreshing if job failed/cancelled/errored and update UI without reload
+        if (refreshInterval) clearInterval(refreshInterval);
+        showTerminalStatus(job);
+      } else {
+        // Update progress if still processing/queued
+        updateProgress(job);
       }
     })
     .catch(error => {
       console.error('Error checking status:', error);
+      showApiError('We are having trouble updating the status. Retrying...');
     });
 }
 
@@ -311,9 +350,11 @@ window.checkStatus = checkStatus;
 window.updateProgress = updateProgress;
 window.cancelJob = cancelJob;
 
-// Start checking status immediately and then every 5 seconds
-checkStatus();
-refreshInterval = setInterval(checkStatus, 5000);
+// Start polling only if job is active (queued or processing)
+if (['queued', 'processing'].includes(initialStatus)) {
+  checkStatus();
+  refreshInterval = setInterval(checkStatus, 5000);
+}
 
 // Clean up interval when page is unloaded
 window.addEventListener('beforeunload', () => {
