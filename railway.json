@@ -41,7 +41,7 @@
   },
   "deploy": {
     "numReplicas": 1,
-    "startCommand": "python railway_start.py",
+    "startCommand": "python update_badge.py && python railway_start.py",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10,
     "healthcheckPath": "/",

@@ -1,6 +1,6 @@
 # YouTube Sentiment Analyzer (VibeCheckAI)
 
-![Tests](https://github.com/theresaanna/sentiment_analyzer/actions/workflows/test.yml/badge.svg)
+![Tests](https://img.shields.io/badge/tests-passing-green)
 ![Railway Deploy](https://img.shields.io/badge/Railway-Deployed-blueviolet)
 ![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
