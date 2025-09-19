@@ -7,7 +7,7 @@ scripts/precache_video.py for one or more video IDs at startup and then daily.
 
 Configuration via environment variables:
 - PRECACHE_VIDEO_IDS: CSV of video IDs or URLs (default: dQw4w9WgXcQ)
-- PRECACHE_COMMENTS: integer (default: 2500)
+- PRECACHE_COMMENTS: integer (default: 500)
 - PRECACHE_INCLUDE_REPLIES: 'true'|'false' (default: false)
 - PRECACHE_SORT: 'relevance'|'time' (default: relevance)
 - PRECACHE_AT: 'HH:MM' in 24h UTC to run daily (default: 03:00)
@@ -50,7 +50,7 @@ def _env(name: str, default: str) -> str:
 
 def run_precache_once():
     video_list = [v.strip() for v in _env("PRECACHE_VIDEO_IDS", "dQw4w9WgXcQ").split(",") if v.strip()]
-    comments = int(_env("PRECACHE_COMMENTS", "2500"))
+    comments = int(_env("PRECACHE_COMMENTS", "500"))
     include_replies = _bool(_env("PRECACHE_INCLUDE_REPLIES", "false"))
     sort = _env("PRECACHE_SORT", "relevance")
 
