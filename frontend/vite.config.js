@@ -18,7 +18,9 @@ export default defineConfig({
         assetFileNames: (assetInfo) => assetInfo.name || '[name][extname]',
         chunkFileNames: 'chunks/[name]-[hash].js'
       },
-      external: [],
+      external: [
+        "sparklefall/styles.css"
+      ],
     },
   },
 });

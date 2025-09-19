@@ -94,7 +94,7 @@
         }
         
         /* Sparkle Container */
-        .sparkle-container {
+.sparklefall-container {
             position: absolute;
             top: 0;
             left: 0;
@@ -104,14 +104,14 @@
             z-index: 1;
         }
         
-        .sparkle {
+        .sparklefall-sparkle {
             position: absolute;
-            animation: sparkle-fall linear;
+            animation: sparklefall-fall linear;
             pointer-events: none;
             user-select: none;
         }
         
-        @keyframes sparkle-fall {
+        @keyframes sparklefall-fall {
             to {
                 transform: translateY(100vh) rotate(360deg);
                 opacity: 0;

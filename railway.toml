@@ -8,7 +8,7 @@ builder = "NIXPACKS"
 providers = ["python"]
 
 [build.nixpacksPlan.phases.setup]
-# Ensure Python and packaging tools are present in the image
+# Ensure Python, Node, and packaging tools are present in the image
 nixPkgs = [
     "python311",
     "gcc",
@@ -17,11 +17,12 @@ nixPkgs = [
     "python311Packages.pip",
     "python311Packages.setuptools",
     "python311Packages.wheel",
-    "python311Packages.virtualenv"
+    "python311Packages.virtualenv",
+    "nodejs_20"  # for building the React frontend
 ]
 
 [build.nixpacksPlan.phases.install]
-# Create a virtualenv and install into it to avoid PATH/packaging issues
+# Create a virtualenv and install into it; also install frontend deps
 cmds = [
     "python3 -V",
     "which pip || true; pip --version || true",
@@ -31,12 +32,20 @@ cmds = [
     "/opt/venv/bin/pip --version",
     "/opt/venv/bin/pip install --upgrade pip setuptools wheel",
     "/opt/venv/bin/pip install -r requirements.txt",
-    "echo 'Dependencies installed for all services'"
+    "echo 'Python dependencies installed'",
+    "node --version && npm --version",
+"npm --prefix frontend install"
+]
+
+[build.nixpacksPlan.phases.build]
+dependsOn = ["install"]
+cmds = [
+    "npm --prefix frontend run build"
 ]
 
 # Test phase to run during build (optional)
 [build.nixpacksPlan.phases.test]
-dependsOn = ["install"]
+dependsOn = ["build"]
 cmds = [
     "/opt/venv/bin/python scripts/run_tests_railway.py"
 ]
@@ -48,6 +57,6 @@ restartPolicyMaxRetries = 10
 
 # Service-specific configurations will be handled by Railway service settings
 # Each service should have its own start command configured in Railway dashboard:
-# - Web service: the gunicorn command from railway.json
+# - Web service: the gunicorn command from railway.json or `python railway_start.py`
 # - Worker service: python analysis_worker.py
 # IMPORTANT: Worker service must have healthcheck DISABLED in Railway dashboard

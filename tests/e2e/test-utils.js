@@ -30,13 +30,13 @@ async function waitForJavaScriptReady(page) {
  */
 async function checkSparklesAnimation(page) {
   // Wait for sparkle container to exist
-  await waitForElement(page, '.sparkle-container');
+  await waitForElement(page, '.sparklefall-container');
   
   // Wait for sparkles to be created
   await page.waitForTimeout(1000);
   
   // Check if sparkles exist
-  const sparkleCount = await page.locator('.sparkle').count();
+  const sparkleCount = await page.locator('.sparklefall-sparkle').count();
   expect(sparkleCount).toBeGreaterThan(0);
   
   return sparkleCount;

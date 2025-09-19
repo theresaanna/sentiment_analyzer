@@ -2,11 +2,15 @@
 
 {% block title %}VibeCheckAI - Know Your Audience's Real Feelings{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/sparklefall@latest/dist/sparklefall.css">
+{% endblock %}
+
 {% block content %}
 <!-- Hero Section with Animated Background -->
 <div class="hero-section">
-    <div class="sparkle-container">
-        <!-- Sparkles will be added by JavaScript -->
+    <div class="sparklefall-container" id="sparkleContainer">
+        <!-- Sparkles will be added by SparkleFall -->
     </div>
     
     <div class="container">
@@ -296,30 +300,22 @@ document.getElementById('vibeCheckForm').addEventListener('submit', function(e) 
     btn.classList.add('loading');
 });
 
-// Create sparkles
-function createSparkle() {
-    const sparkleContainer = document.querySelector('.sparkle-container');
-    if (!sparkleContainer) return;
-    
-    const sparkles = ['✨', '⭐', '💫', '🌟'];
-    const sparkle = document.createElement('div');
-    sparkle.className = 'sparkle';
-    sparkle.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
-    sparkle.style.left = Math.random() * 100 + '%';
-    sparkle.style.animationDuration = (Math.random() * 3 + 2) + 's';
-    sparkle.style.fontSize = (Math.random() * 20 + 10) + 'px';
-    
-    sparkleContainer.appendChild(sparkle);
-    
-    setTimeout(() => sparkle.remove(), 5000);
-}
+</script>
+{% endblock %}
 
-// Add sparkles periodically
-setInterval(createSparkle, 800);
-
-// Initial sparkles
-for (let i = 0; i < 5; i++) {
-    setTimeout(createSparkle, i * 200);
-}
+{% block extra_js %}
+<script src="https://unpkg.com/sparklefall@latest/dist/sparklefall.min.js"></script>
+<script>
+(function initSparklefall() {
+    const container = document.querySelector('.sparklefall-container');
+    if (!container || typeof window === 'undefined' || !window.SparkleFall) return;
+    try {
+        if (typeof window.SparkleFall.start === 'function') {
+            window.SparkleFall.start(container, { injectStyles: true, emojis: ['✨','⭐','💫','🌟'], intervalMs: 800 });
+        } else {
+            new window.SparkleFall({ container, autoStart: true, injectStyles: true, sparkles: ['✨','⭐','💫','🌟'], interval: 800 });
+        }
+    } catch (e) { /* no-op */ }
+})();
 </script>
 {% endblock %}

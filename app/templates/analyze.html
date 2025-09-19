@@ -1883,7 +1883,7 @@
 <!-- WordCloud2.js for word cloud visualization -->
 <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
 <!-- React bundle for analyze page -->
-<script src="{{ url_for('static', filename='react/vibe-analyze.js') }}"></script>
+<script type="module" src="{{ url_for('static', filename='react/vibe-analyze.js') }}"></script>
     console.log('startSentimentAnalysis called');
     
     // Clear any existing loading intervals

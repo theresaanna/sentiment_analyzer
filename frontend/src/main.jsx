@@ -1,40 +1,49 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
+import SparkleFall from 'sparklefall';
 
 function Sparkles() {
-  const containerRef = useRef(null);
-
   useEffect(() => {
-    const container = containerRef.current || document.getElementById('sparkleContainer');
+    const container = document.getElementById('sparkleContainer');
     if (!container) return;
 
-    let active = true;
+    let teardown = null;
 
-    function createSparkle() {
-      if (!active) return;
-      const sparkles = ['✨', '⭐', '💫', '🌟'];
-      const el = document.createElement('div');
-      el.className = 'sparkle';
-      el.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
-      el.style.left = Math.random() * 100 + '%';
-      el.style.animationDuration = (Math.random() * 3 + 2) + 's';
-      el.style.fontSize = (Math.random() * 20 + 10) + 'px';
-      container.appendChild(el);
-      setTimeout(() => el.remove(), 5000);
+    try {
+      // Use the default class export from sparklefall
+      const instance = new SparkleFall({
+        container,
+        sparkles: ['✨', '⭐', '💫', '🌟'],
+        interval: 800,
+        maxSparkles: 50,
+        injectStyles: true,
+      });
+      // Instance auto-starts by default; keep a teardown
+      teardown = instance && (instance.destroy ? instance.destroy.bind(instance) : null);
+    } catch (e) {
+      // Fallback: simple sparkles if library init fails
+      let active = true;
+      function createSparkle() {
+        if (!active) return;
+        const sparkles = ['✨', '⭐', '💫', '🌟'];
+        const el = document.createElement('div');
+        el.className = 'sparklefall-sparkle';
+        el.textContent = sparkles[Math.floor(Math.random() * sparkles.length)];
+        el.style.left = Math.random() * 100 + '%';
+        el.style.animationDuration = (Math.random() * 3 + 2) + 's';
+        el.style.fontSize = (Math.random() * 20 + 10) + 'px';
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 5000);
+      }
+      const interval = setInterval(createSparkle, 800);
+      for (let i = 0; i < 5; i++) setTimeout(createSparkle, i * 200);
+      teardown = () => { active = false; clearInterval(interval); };
     }
 
-    const interval = setInterval(createSparkle, 800);
-    // initial sparkles
-    for (let i = 0; i < 5; i++) setTimeout(createSparkle, i * 200);
-
-    return () => {
-      active = false;
-      clearInterval(interval);
-    };
+    return () => { if (teardown) teardown(); };
   }, []);
 
-  // This component can optionally render its own container, but we rely on existing DOM
-  return <div ref={containerRef} style={{ display: 'none' }} />;
+  return null;
 }
 
 function FormEnhancer() {
