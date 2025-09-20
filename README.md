@@ -38,7 +38,8 @@ A production-ready Flask web application that analyzes the sentiment of YouTube 
 
 ### Frontend
 - **UI Framework**: Bootstrap 5 with custom CSS
-- **JavaScript**: Vanilla JS with modern ES6+ features
+- **React Components**: Vite-bundled React for interactive UI elements
+- **JavaScript**: Modern ES6+ with React for dynamic components
 - **Visualizations**: Chart.js for interactive charts
 - **Word Clouds**: Custom canvas-based implementation
 
@@ -69,23 +70,21 @@ cd sentiment_analyzer
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 
-# 3. Install dependencies
+# 3. Install Python dependencies
 pip install -r requirements.txt
 
-# 4. Set up environment variables
-cp .env.example .env
-# Edit .env with your credentials (see Environment Variables section)
-
-# 5. Set up the database
+# 4. Install JavaScript dependencies and build frontend
+npm install
+npm run web:install  # Install frontend dependencie# 6. Set up the database
 flask db upgrade
 
-# 6. Start Redis (in a separate terminal)
+# 7. Start Redis (in a separate terminal)
 redis-server
 
-# 7. Start the worker (in another terminal)
+# 8. Start the worker (in another terminal)
 python analysis_worker.py
 
-# 8. Run the application
+# 9. Run the application
 python run.py
 ```
 

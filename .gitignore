@@ -214,6 +214,10 @@ backups/
 *.gz
 *.sql
 
+# React/Vite build output
+app/static/react/
+frontend/dist/
+
 # Database files
 *.db
 *.sqlite
