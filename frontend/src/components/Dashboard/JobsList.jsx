@@ -122,8 +122,9 @@ const JobsList = ({ jobs, isLoading, onCancelJob }) => {
         <div className="loading-overlay">
           <div className="text-center">
             <div className="spinner-border spinner-border-sm text-primary" role="status">
-              <span className="visually-hidden">Loading jobs...</span>
+              <span className="visually-hidden">Loading...</span>
             </div>
+            <p className="text-muted">Loading...</p>
           </div>
         </div>
       </div>
@@ -143,7 +144,7 @@ const JobsList = ({ jobs, isLoading, onCancelJob }) => {
     <div id="jobsContainer">
       {jobs.map(job => (
         <JobItem 
-          key={job.job_id} 
+          key={job.job_id || job.id} 
           job={job} 
           onCancel={onCancelJob}
         />
@@ -152,4 +153,4 @@ const JobsList = ({ jobs, isLoading, onCancelJob }) => {
   );
 };
 
-export default JobsList;
+export { JobsList };

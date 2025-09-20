@@ -38,13 +38,16 @@ const variantConfig = {
  */
 const Toast = ({ toast, onClose }) => {
   const config = variantConfig[toast.variant] || variantConfig.info;
+  // Map variant to type for test compatibility
+  const toastType = toast.type || toast.variant || 'info';
   
   return (
     <div 
-      className={`toast align-items-center ${config.textColor} border-0 show`}
+      className={`toast toast-${toastType} align-items-center ${config.textColor} border-0 show`}
       role="alert"
       aria-live="assertive"
       aria-atomic="true"
+      data-testid="toast-item"
       style={{
         minWidth: '350px',
         background: config.gradient,
@@ -98,6 +101,7 @@ const ToastContainer = () => {
       <div 
         className="toast-container position-fixed top-0 end-0 p-3"
         style={{ zIndex: 1100 }}
+        data-testid="toast-container"
       >
         {toasts.map(toast => (
           <Toast 
@@ -111,4 +115,4 @@ const ToastContainer = () => {
   );
 };
 
-export default ToastContainer;
+export { ToastContainer };

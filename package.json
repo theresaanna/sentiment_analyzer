@@ -20,6 +20,8 @@
     "web:build": "npm --prefix frontend run build",
     "web:dev": "npm --prefix frontend run dev",
     "web:preview": "npm --prefix frontend run preview",
+    "web:test": "npm --prefix frontend run test",
+    "web:test:coverage": "npm --prefix frontend run test:coverage",
     "pre-push": "./run_pre_push_tests.sh"
   },
   "keywords": ["e2e", "testing", "playwright", "javascript", "flask"],

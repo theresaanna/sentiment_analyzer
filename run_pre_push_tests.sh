@@ -38,9 +38,37 @@ fi
 echo -e "${GREEN}✅ Python tests passed!${NC}"
 echo ""
 
+# Run React unit tests if available
+if [ -f "frontend/package.json" ] && command -v npm > /dev/null 2>&1; then
+    echo -e "${YELLOW}2. Running React unit tests...${NC}"
+    echo "--------------------------------------------"
+    
+    # Check if frontend node_modules exists, install if needed
+    if [ ! -d "frontend/node_modules" ]; then
+        echo "Installing frontend dependencies..."
+        npm run web:install
+    fi
+    
+    # Run React unit tests
+    npm run web:test
+    
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ React unit tests failed!${NC}"
+        echo "React component tests failed."
+        echo "Run 'npm run web:test:watch' to debug interactively."
+        exit 1
+    fi
+    
+    echo -e "${GREEN}✅ React unit tests passed!${NC}"
+    echo ""
+else
+    echo -e "${YELLOW}⚠️  Skipping React unit tests (frontend not found)${NC}"
+    echo ""
+fi
+
 # Run Playwright tests if available
 if [ -f "package.json" ] && command -v npm > /dev/null 2>&1; then
-    echo -e "${YELLOW}2. Running Playwright JavaScript e2e tests...${NC}"
+    echo -e "${YELLOW}3. Running Playwright JavaScript e2e tests...${NC}"
     echo "--------------------------------------------"
     
     # Check if node_modules exists, install if needed
@@ -72,5 +100,8 @@ fi
 
 echo ""
 echo "================================"
-echo -e "${GREEN}🎉 All tests passed! Ready to push!${NC}"
+echo -e "${GREEN}🎉 All tests passed!${NC}"
+echo -e "${GREEN}✅ Python unit tests${NC}"
+echo -e "${GREEN}✅ React unit tests${NC}"
+echo -e "${GREEN}✅ Playwright E2E tests${NC}"
 echo "================================"

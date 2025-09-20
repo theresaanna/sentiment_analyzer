@@ -27,12 +27,15 @@ export const useToast = () => {
 export const ToastProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
 
-  const showToast = useCallback((message, variant = TOAST_VARIANTS.INFO, duration = DASHBOARD_CONFIG.TOAST_DURATION) => {
+  const showToast = useCallback((message, variantOrType = TOAST_VARIANTS.INFO, duration = DASHBOARD_CONFIG.TOAST_DURATION) => {
     const id = Date.now() + Math.random();
+    // Support both 'variant' and 'type' for compatibility
+    const variant = variantOrType === 'error' ? 'danger' : variantOrType;
     const newToast = {
       id,
       message,
       variant,
+      type: variant, // Also set type for test compatibility
       duration,
     };
 

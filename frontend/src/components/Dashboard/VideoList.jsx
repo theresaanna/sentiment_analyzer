@@ -95,7 +95,7 @@ const VideoItem = ({ video, isPreloaded, onPreload, index }) => {
 /**
  * Video List Component
  */
-const VideoList = ({ videos, preloadedVideos, isLoading }) => {
+const VideoList = ({ videos, preloadedVideos = new Set(), isLoading }) => {
   const { showToast } = useToast();
   
   const handlePreload = async (videoId) => {
@@ -113,9 +113,9 @@ const VideoList = ({ videos, preloadedVideos, isLoading }) => {
         <div className="loading-overlay">
           <div className="text-center">
             <div className="spinner-border text-primary mb-3" role="status">
-              <span className="visually-hidden">Loading videos...</span>
+              <span className="visually-hidden">Loading...</span>
             </div>
-            <p className="text-muted">Loading videos...</p>
+            <p className="text-muted">Loading...</p>
           </div>
         </div>
       </div>
@@ -148,4 +148,4 @@ const VideoList = ({ videos, preloadedVideos, isLoading }) => {
   );
 };
 
-export default VideoList;
+export { VideoList };

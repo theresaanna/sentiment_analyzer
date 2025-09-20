@@ -1,0 +1,23 @@
+/* JobsList Component Styles */
+.jobs-list-container {
+  padding: 20px;
+}
+
+.job-item {
+  padding: 15px;
+  margin-bottom: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.job-status {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.status-completed { background-color: #d4edda; color: #155724; }
+.status-processing { background-color: #cce5ff; color: #004085; }
+.status-queued { background-color: #fff3cd; color: #856404; }
+.status-failed { background-color: #f8d7da; color: #721c24; }

@@ -57,9 +57,23 @@ if (typeof window !== 'undefined') {
 
 function AnalyzeApp() {
   useEffect(() => {
-    try {
-      console.log('[AnalyzeApp] Starting initialization for comment analysis...');
-      const rootEl = document.getElementById('react-analyze-root');
+  // Safe scrollIntoView wrapper that works in jsdom
+  function safeScrollIntoView(element) {
+    if (!element) return;
+    if (typeof element.scrollIntoView === 'function') {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // Fallback for jsdom - just ensure element is visible
+      element.style.display = 'block';
+      if (typeof window !== 'undefined' && window.scrollTo) {
+        window.scrollTo(0, element.offsetTop || 0);
+      }
+    }
+  }
+
+  try {
+    console.log('[AnalyzeApp] Starting initialization for comment analysis...');
+    const commentAnalysisMount = document.querySelector('#analysis-controls-root');
       if (!rootEl) { showFatalError('React analyze root element is missing.'); return; }
 
     // Parse server-provided context from data attributes
@@ -108,7 +122,7 @@ function AnalyzeApp() {
         
         // Smooth scroll to the section
         setTimeout(() => {
-          sentimentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          safeScrollIntoView(sentimentSection);
         }, 100);
         
         // Start the analysis after a brief delay for visual effect
@@ -132,7 +146,7 @@ function AnalyzeApp() {
     
     // Add manual scroll test function
     window.testScroll = function() {
-      document.getElementById('analysisProgress').scrollIntoView();
+      safeScrollIntoView(document.getElementById('analysisProgress'));
     };
 
     // Initialize totals
@@ -181,7 +195,7 @@ function AnalyzeApp() {
             // Start analysis immediately
             if (typeof startSentimentAnalysis === 'function') {
                 startSentimentAnalysis();
-                document.getElementById('sentimentAnalysisSection').scrollIntoView();
+                safeScrollIntoView(document.getElementById('sentimentAnalysisSection'));
             }
           }
         };
@@ -207,7 +221,7 @@ function AnalyzeApp() {
       const pr = createRoot(mount);
       let progressScrolled = 0;
       if (progressScrolled === 0) {
-        document.getElementById('analysisProgress').scrollIntoView();
+        safeScrollIntoView(document.getElementById('analysisProgress'));
         progressScrolled = 1;
       }
 
@@ -866,7 +880,7 @@ function AnalyzeApp() {
         function onInstantAnalyze() {
           currentAnalysisMode = 'instant';
           startAnalysisWithMode('instant', instantValue);
-          document.getElementById('analysisProgress').scrollIntoView();
+          safeScrollIntoView(document.getElementById('analysisProgress'));
         }
         function onQueueAnalyze() {
           currentAnalysisMode = 'queue';
@@ -1043,7 +1057,7 @@ function AnalyzeApp() {
       const funFactText = document.getElementById('funFactText');
       if (funFactText) funFactText.textContent = funFacts[0];
       if (analysisActionButton) { analysisActionButton.disabled = true; analysisActionButton.innerHTML = '<i class=\"fas fa-spinner fa-spin\"></i> Analyzing...'; }
-      section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      safeScrollIntoView(section);
 
       const selectedPercentage = Math.round((commentsToAnalyze / (window.currentTotalComments || 5000)) * 100);
       analysisStartTs = Date.now();
