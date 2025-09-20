@@ -1,4 +1,4 @@
-import{c as h,j as a,r as c}from"./chunks/client-DXcH-vAE.js";/**
+import{c as h,j as a,r as c}from"./chunks/client-DhEz86-d.js";/**
  * SparkleFall - Beautiful falling sparkle animations for your website
  * @version 1.0.0
  * @author Your Name

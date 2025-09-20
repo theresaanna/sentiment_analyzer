@@ -26,6 +26,39 @@
     .sentiment-negative { color: #dc3545; }
     .sentiment-neutral { color: #6c757d; }
     
+    /* Vibe Card styling */
+    .vibe-card {
+        background: white;
+        border-radius: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+    
+    .card-header-vibe {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.25rem 1.5rem;
+        border-bottom: none;
+        font-weight: 600;
+    }
+    
+    .card-header-vibe h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .emoji-icon {
+        margin-right: 0.5rem;
+    }
+    
+    /* Analyze button hover effect */
+    .analyze-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5) !important;
+    }
+    
     /* Pulse animation for analyze button */
     .pulse-animation {
         animation: pulse 2s infinite;
@@ -395,20 +428,14 @@
     .vibe-progress-text {
         margin-top: 0.75rem;
         display: flex;
-        justify-content: space-between;
+        justify-content: center;
         align-items: center;
     }
     
     .vibe-progress-text #progressText {
         font-weight: 600;
         color: #667eea;
-        font-size: 1.1rem;
-    }
-    
-    .progress-detail {
-        color: #718096;
-        font-size: 0.85rem;
-        font-style: italic;
+        font-size: 1.2rem;
     }
     
     /* Fun Facts Section */
@@ -1373,6 +1400,72 @@
     .comment-sample-item.removing {
         animation: fadeOutUp 0.5s ease-out;
     }
+    
+    /* Sentiment correction styles */
+    .comment-sample-item.manually-corrected {
+        background: linear-gradient(135deg, #fef3c7 0%, #fef9e5 100%);
+        border-color: #f59e0b;
+        position: relative;
+    }
+    
+    .manually-corrected::before {
+        content: '✓';
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #10b981;
+        color: white;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    
+    .correction-info {
+        background: #f0f9ff;
+        border-radius: 6px;
+        padding: 10px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+        font-size: 0.85rem;
+        border: 1px solid #bfdbfe;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    
+    .vibe-button.highlighted-correction {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        border-color: #10b981 !important;
+        color: white !important;
+        font-weight: 600;
+        position: relative;
+        padding-right: 28px;
+    }
+    
+    .vibe-button.highlighted-correction::after {
+        content: '✓';
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 14px;
+    }
+    
+    .vibe-button.small:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .vibe-button.small.current-sentiment {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: #667eea;
+    }
 </style>
 {% endblock %}
 
@@ -1386,75 +1479,93 @@
              data-precomputed-results='{{ precomputed_results|tojson if precomputed_results is defined else "null" }}'
              data-updated-stats='{{ updated_stats|tojson if updated_stats is defined else "null" }}'
              data-video-comments="{{ (video_info.statistics.comments if video_info else 0)|default(0) }}"
+             data-video-views="{{ (video_info.statistics.views if video_info else 0)|default(0) }}"
+             data-video-likes="{{ (video_info.statistics.likes if video_info else 0)|default(0) }}"
+             data-video-title="{{ (video_info.title if video_info else '')|e }}"
+             data-video-channel="{{ (video_info.channel if video_info else '')|e }}"
+             data-video-published="{{ (video_info.published_at[:10] if video_info else '')|e }}"
+             data-video-duration="{{ (video_info.duration | format_duration if video_info else '')|e }}"
+             data-video-url="{{ (video_url if video_url else '')|e }}"
              data-is-auth="{{ 'true' if current_user.is_authenticated else 'false' }}"
              data-is-pro="{{ 'true' if current_user.is_authenticated and current_user.is_subscribed else 'false' }}">
         </div>
 
+        <!-- Debug: success = {{ success }} -->
         {% if success %}
-        <!-- Video Embed and Info -->
+        
+        <!-- Video Info Card - Server rendered -->
+        {% if video_info %}
         <div class="vibe-card mb-4">
             <div class="card-header-vibe">
                 <h3 class="mb-0">
-                    <span class="emoji-icon">📺</span> {{ video_info.title }}
+                    <span class="emoji-icon">📺</span> {{ video_info.title | default('Video', true) }}
                 </h3>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <!-- Video Player Column -->
                     <div class="col-xl-8 col-lg-7 col-md-12">
-                        <div class="embed-responsive embed-responsive-16by9">
-                            <iframe class="embed-responsive-item" 
-                                    src="https://www.youtube.com/embed/{{ video_id }}"
-                                    allowfullscreen></iframe>
+                        {% if video_id %}
+                        <div style="position: relative; width: 100%; padding-bottom: 56.25%; background: #000; border-radius: 12px; overflow: hidden;">
+                            <iframe
+                                src="https://www.youtube.com/embed/{{ video_id }}"
+                                title="{{ video_info.title | default('YouTube video', true) }}"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowfullscreen
+                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;">
+                            </iframe>
                         </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            Unable to render the video player because the video ID is missing.
+                        </div>
+                        {% endif %}
                     </div>
-                    
-                    <!-- Video Info Column -->
                     <div class="col-xl-4 col-lg-5 col-md-12">
-                        <!-- Video Metadata -->
                         <div class="video-metadata mb-3">
                             <div class="metadata-item">
                                 <i class="fas fa-tv text-muted"></i>
                                 <span class="metadata-label">Channel</span>
-                                <span class="metadata-value">{{ video_info.channel }}</span>
+                                <span class="metadata-value">{{ video_info.channel | default('Unknown', true) }}</span>
                             </div>
                             <div class="metadata-item">
                                 <i class="fas fa-calendar text-muted"></i>
                                 <span class="metadata-label">Published</span>
-                                <span class="metadata-value">{{ video_info.published_at[:10] }}</span>
+                                <span class="metadata-value">{{ video_info.published_at[:10] if video_info.published_at else 'Unknown' }}</span>
                             </div>
                             <div class="metadata-item">
                                 <i class="fas fa-clock text-muted"></i>
                                 <span class="metadata-label">Duration</span>
-                                <span class="metadata-value">{{ video_info.duration | format_duration }}</span>
+                                <span class="metadata-value">{{ video_info.duration | format_duration if video_info.duration else 'Unknown' }}</span>
                             </div>
                             <div class="metadata-item">
                                 <i class="fas fa-link text-muted"></i>
                                 <span class="metadata-label">URL</span>
-                                <span class="metadata-value"><a href="{{ video_url }}" target="_blank" rel="noopener">Watch <i class="fas fa-external-link-alt" style="font-size: 0.7rem;"></i></a></span>
+                                <span class="metadata-value">
+                                    <a href="{{ video_url | default('https://www.youtube.com/watch?v=' + video_id, true) }}" target="_blank" rel="noopener">
+                                        Watch <i class="fas fa-external-link-alt" style="font-size: 0.7rem;"></i>
+                                    </a>
+                                </span>
                             </div>
                         </div>
-                        
-                        <!-- Compact Statistics Grid -->
                         <div class="stats-grid">
                             <div class="stat-item">
                                 <div class="stat-icon"><i class="fas fa-eye"></i></div>
                                 <div class="stat-content">
-                                    <div class="stat-value">{{ "{:,}".format(video_info.statistics.views) }}</div>
+                                    <div class="stat-value">{{ '{:,}'.format(video_info.statistics.views | default(0) | int) }}</div>
                                     <div class="stat-label">Views</div>
                                 </div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-icon text-success"><i class="fas fa-thumbs-up"></i></div>
                                 <div class="stat-content">
-                                    <div class="stat-value">{{ "{:,}".format(video_info.statistics.likes) }}</div>
+                                    <div class="stat-value">{{ '{:,}'.format(video_info.statistics.likes | default(0) | int) }}</div>
                                     <div class="stat-label">Likes</div>
                                 </div>
                             </div>
                             <div class="stat-item">
                                 <div class="stat-icon text-info"><i class="fas fa-comment"></i></div>
                                 <div class="stat-content">
-                                    <div class="stat-value">{{ "{:,}".format(video_info.statistics.comments) }}</div>
+                                    <div class="stat-value">{{ '{:,}'.format(video_info.statistics.comments | default(0) | int) }}</div>
                                     <div class="stat-label">Comments</div>
                                 </div>
                             </div>
@@ -1463,6 +1574,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         
         <!-- Comment Analysis -->
         <div class="vibe-card mb-4">
@@ -1472,235 +1584,8 @@
                 </h3>
             </div>
             <div class="card-body">
-                <!-- Compact Comment Coverage Info -->
-                <div class="comment-coverage-info mb-3">
-                    <div class="coverage-summary">
-                    <div class="coverage-main">
-                        <span class="coverage-number comment-count-value" data-comment-total="true">{{ "{:,}".format(comment_stats.get('top_level_count', 0)) }}</span>
-                        <span class="coverage-text">comments analyzed</span>
-                            {% if comment_stats.fetch_percentage >= 99.9 %}
-                                <span class="badge badge-success ml-2 fetch-percentage-badge">100% coverage</span>
-                            {% elif comment_stats.fetch_percentage > 0 %}
-                                <span class="badge badge-info ml-2 fetch-percentage-badge">{{ "%.1f"|format(comment_stats.fetch_percentage) }}% coverage</span>
-                            {% endif %}
-                        </div>
-                        <div class="coverage-details">
-                            {% if comment_stats.get('threads_fetched', 0) > 0 %}
-                            <span class="detail-item">
-                                <i class="fas fa-comments"></i> {{ "{:,}".format(comment_stats.get('threads_fetched', 0)) }} threads
-                            </span>
-                            {% endif %}
-                            <span class="detail-item">
-                                <i class="fas fa-clock"></i> {{ comment_stats.get('fetch_time', 0) | format_fetch_time }}
-                            </span>
-                            <span class="detail-item">
-                                <i class="fas fa-tachometer-alt"></i> {{ "%.0f"|format(comment_stats.get('comments_per_second', 0)) }} /sec
-                            </span>
-                        </div>
-                    </div>
-                    
-                </div>
-                
-                <!-- Comment Statistics Grid -->
-                <div class="comment-stats-grid mb-4">
-                    <div class="stat-item">
-                        <div class="stat-icon text-primary"><i class="fas fa-users"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">{{ comment_stats.get('unique_commenters', 0) }}</div>
-                            <div class="stat-label">Unique Users</div>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon text-success"><i class="fas fa-text-width"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">{{ comment_stats.get('avg_comment_length', 0) }}</div>
-                            <div class="stat-label">Avg Length</div>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon text-info"><i class="fas fa-comment-dots"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">{{ comment_stats.get('top_level_count', 0) }}</div>
-                            <div class="stat-label">Comments</div>
-                        </div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-icon text-warning"><i class="fas fa-percentage"></i></div>
-                        <div class="stat-content">
-                            <div class="stat-value">{{ "%.1f%%"|format((video_info.statistics.likes / video_info.statistics.views * 100) if video_info.statistics.views > 0 else 0) }}</div>
-                            <div class="stat-label">Engagement</div>
-                        </div>
-                    </div>
-                </div>
-                
-                {% if not current_user.is_authenticated or not current_user.is_subscribed %}
-                <div class="pro-upgrade-banner mb-3">
-                    <div class="pro-banner-content">
-                        <i class="fas fa-star pro-star"></i>
-                        <div class="pro-text">
-                            <strong>Unlock Pro Analysis</strong>
-                            <span>Get 100% comment coverage with advanced filtering</span>
-                        </div>
-                        {% if not current_user.is_authenticated %}
-                            <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Sign In</a>
-                        {% else %}
-                            <a href="{{ url_for('auth.subscribe') }}" class="btn btn-sm btn-primary">Upgrade</a>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Top Commenters -->
-                {% if comment_stats.get('top_commenters') %}
-                <div class="card bg-light mb-3">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-trophy"></i> Most Active Commenters</h5>
-                    </div>
-                    <div class="card-body">
-                        <ol class="list-group list-group-flush">
-                            {% for author, count in comment_stats.get('top_commenters', []) %}
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span><strong>#{{ loop.index }}</strong> {{ author }}</span>
-                                <span class="badge badge-primary badge-pill">{{ count }} comments</span>
-                            </li>
-                            {% endfor %}
-                        </ol>
-                    </div>
-                </div>
-                {% endif %}
-                
-                <!-- Sentiment Analysis CTA -->
-                <div class="text-center">
-                    <!-- Analysis Coverage Section -->
-                    <div class="coverage-card mb-4">
-                        <div class="coverage-header">
-                            <h5 class="coverage-title">
-                                <span class="coverage-icon">📊</span>
-                                Analysis Coverage
-                            </h5>
-                        </div>
-                        
-                        <div class="coverage-body">
-                            <!-- Tab Navigation -->
-                            <ul class="nav nav-tabs analysis-tabs" role="tablist">
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="instant-tab" data-bs-toggle="tab" data-bs-target="#instant" type="button" role="tab" aria-controls="instant" aria-selected="true">
-                                        <i class="fas fa-bolt"></i> Instant
-                                    </button>
-                                </li>
-                                <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="queue-tab" data-bs-toggle="tab" data-bs-target="#queue" type="button" role="tab" aria-controls="queue" aria-selected="false">
-                                        <i class="fas fa-clock"></i> Queue
-                                    </button>
-                                </li>
-                            </ul>
-                            
-                            <!-- Tab Content -->
-                            <div class="tab-content mt-4">
-                                <!-- Instant Tab -->
-                                <div class="tab-pane fade show active" id="instant" role="tabpanel" aria-labelledby="instant-tab">
-                                    <div class="analysis-form">
-                                        <h6 class="text-muted mb-3" id="analysisTypeHeader">Instant Analysis</h6>
-                                        
-                                        <!-- Instant Slider -->
-                                        <div class="slider-container mb-3">
-                                            <label for="instantSlider" class="slider-label">Comments: <span id="instantValue">100</span></label>
-                                            <input type="range" 
-                                                   class="form-range coverage-slider" 
-                                                   id="instantSlider"
-                                                   min="1" 
-                                                   max="500" 
-                                                   step="1" 
-                                                   value="100">
-                                            <div class="slider-limits">
-                                                <small>1</small>
-                                                <small id="instantMax">500</small>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Instant Stats -->
-                                        <div class="analysis-stats mb-3">
-                                            <span class="stat-item">
-                                                <i class="fas fa-percentage"></i>
-                                                Coverage: <strong id="instantCoverage">2%</strong>
-                                            </span>
-                                            <span class="stat-item">
-                                                <i class="fas fa-clock"></i>
-                                                Time: <strong>~5s</strong>
-                                            </span>
-                                        </div>
-                                        
-                                        <!-- Instant Button -->
-                                        <button class="btn btn-primary btn-lg btn-block" id="instantAnalyzeBtn">
-                                            <i class="fas fa-bolt"></i> Analyze
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Queue Tab -->
-                                <div class="tab-pane fade" id="queue" role="tabpanel" aria-labelledby="queue-tab">
-                                    <div class="analysis-form">
-                                        <h6 class="text-muted mb-3" id="queueAnalysisHeader">Queue Analysis</h6>
-                                        
-                                        {% if not current_user.is_authenticated %}
-                                            <!-- Not logged in -->
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-lock"></i> Sign in to queue analysis
-                                                <div class="mt-3">
-                                                    <a href="{{ url_for('auth.login') }}" class="btn btn-sm btn-primary">Sign In</a>
-                                                    <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-primary">Create Account</a>
-                                                </div>
-                                            </div>
-                                        {% else %}
-                                            <!-- Queue Slider -->
-                                            <div class="slider-container mb-3">
-                                                <label for="queueSlider" class="slider-label">Comments: <span id="queueValue">1000</span></label>
-                                                <input type="range" 
-                                                       class="form-range coverage-slider" 
-                                                       id="queueSlider"
-                                                       min="1" 
-                                                       max="{{ [comment_stats.get('top_level_count', 2500), 2500 if not current_user.is_subscribed else 5000]|min }}"
-                                                       step="{% if comment_stats.get('top_level_count', 2500) < 100 %}1{% else %}10{% endif %}" 
-                                                       value="{% if comment_stats.get('top_level_count', 2500) < 100 %}{{ [comment_stats.get('top_level_count', 10), 10]|min }}{% elif comment_stats.get('top_level_count', 2500) < 1000 %}100{% else %}1000{% endif %}">
-                                            <div class="slider-limits">
-                                                <small>1</small>
-                                                <small id="queueMax">{% if comment_stats.get('top_level_count', 0) < 1000 %}{{ comment_stats.get('top_level_count', 2500) }}{% else %}{{ '2.5k' if not current_user.is_subscribed else '5k' }}{% endif %}</small>
-                                            </div>
-                                            </div>
-                                            
-                                            <!-- Queue Stats -->
-                                            <div class="analysis-stats mb-3">
-                                                <span class="stat-item">
-                                                    <i class="fas fa-percentage"></i>
-                                                    Coverage: <strong id="queueCoverage">20%</strong>
-                                                </span>
-                                                <span class="stat-item">
-                                                    <i class="fas fa-clock"></i>
-                                                    Time: <strong>~2 min</strong>
-                                                </span>
-                                            </div>
-                                            
-                                            <!-- Queue Button -->
-                                            <button class="btn btn-warning btn-lg btn-block" id="queueAnalyzeBtn">
-                                                <i class="fas fa-clock"></i> Queue Analysis
-                                            </button>
-                                            
-                                            {% if not current_user.is_subscribed %}
-                                                <div class="mt-3 text-center">
-                                                <small class="text-muted">
-                                                    <i class="fas fa-crown"></i> Upgrade to Pro for up to 5,000 comments (currently 2,500 limit)
-                                                        <br>
-                                                        <a href="{{ url_for('auth.subscribe') }}">Learn More</a>
-                                                    </small>
-                                                </div>
-                                            {% endif %}
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- React Controls Mount -->
+                <div id="analysis-controls-root"></div>
             </div>
         </div>
         
@@ -1764,7 +1649,13 @@
                             </div>
                         </div>
                     </div>
-                    
+
+                    <!-- React metrics mount -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div id="react-comment-metrics"></div>
+                        </div>
+                    </div>
                     
                     <!-- Charts Row -->
                     <div class="row mb-4">
@@ -1869,7 +1760,7 @@
         {% endif %}
         
         <div class="text-center mt-4">
-            <a href="{{ url_for('main.index') }}" class="vibe-button secondary">
+            <a href="{{ url_for('main.index') }}" class="vibe-button">
                 <span class="button-icon">⬅</span> Analyze Another Video
             </a>
         </div>
@@ -1884,1827 +1775,4 @@
 <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.min.js"></script>
 <!-- React bundle for analyze page -->
 <script type="module" src="{{ url_for('static', filename='react/vibe-analyze.js') }}"></script>
-    console.log('startSentimentAnalysis called');
-    
-    // Clear any existing loading intervals
-    if (messageRotationInterval) {
-        clearInterval(messageRotationInterval);
-        messageRotationInterval = null;
-    }
-    if (factRotationInterval) {
-        clearInterval(factRotationInterval);
-        factRotationInterval = null;
-    }
-    if (progressAnimationFrame) {
-        cancelAnimationFrame(progressAnimationFrame);
-        progressAnimationFrame = null;
-    }
-    
-    // Reset progress values
-    lastProgressValue = 0;
-    targetProgress = 0;
-    currentMessageIndex = 0;
-    currentFactIndex = 0;
-    
-    const videoId = '{{ video_id }}';
-    const section = document.getElementById('sentimentAnalysisSection');
-    const progressDiv = document.getElementById('analysisProgress');
-    const resultsDiv = document.getElementById('analysisResults');
-    const analysisActionButton = document.getElementById('analysisActionButton');
-    
-    // Use total available comments from video statistics
-    const totalAvailable = {{ comment_stats.total_available|default(0) }};
-    const videoStatsComments = {{ (video_info.statistics.comments if video_info else 0)|default(0) }};
-    const fetchedCommentsCount = {{ comment_stats.total_comments|default(0) }};
-    const totalAvailableComments = totalAvailable || videoStatsComments || fetchedCommentsCount;
-    const fetchedComments = {{ comment_stats.fetched_comments|default(0) }};
-    
-    // Get value based on current mode
-    let commentsToAnalyze;
-    if (currentAnalysisMode === 'instant') {
-        commentsToAnalyze = parseInt(instantSlider ? instantSlider.value : 100) || 100;
-        } else {
-            // For backward compatibility with old button
-            commentCountInput = document.getElementById('commentCountInput');
-            commentsToAnalyze = parseInt(commentCountInput ? commentCountInput.value : 1000) || 1000;
-    }
-    let selectedPercentage = Math.round((commentsToAnalyze / totalAvailableComments) * 100);
-    
-    // Determine if we're in queue mode based on the current analysis mode
-    const isQueueMode = currentAnalysisMode && (currentAnalysisMode === 'queue' || 
-                                                currentAnalysisMode === 'pro-queue' || 
-                                                currentAnalysisMode === 'all');
-    
-    console.log('Analysis configuration:', {
-        mode: currentAnalysisMode,
-        commentsToAnalyze: commentsToAnalyze,
-        isQueueMode: isQueueMode,
-        isAuthenticated: isAuthenticated,  // Using global
-        isProUser: isProUser  // Using global
-    });
-    
-    // Apply appropriate limits based on user status
-    if (!isAuthenticated) {
-        commentsToAnalyze = Math.min(commentsToAnalyze, 500);  // Non-authenticated: instant only up to 500
-        commentsToAnalyze = Math.max(commentsToAnalyze, 5);
-    } else if (!isProUser) {
-        commentsToAnalyze = Math.min(commentsToAnalyze, 2500);  // Free users: up to 2500
-        commentsToAnalyze = Math.max(commentsToAnalyze, 5);
-    } else {
-        // Pro users can go up to 5000
-        if (currentAnalysisMode === 'all') {
-            commentsToAnalyze = Math.min(totalAvailableComments, 5000);
-        } else {
-            commentsToAnalyze = Math.min(commentsToAnalyze, 5000);
-        }
-        commentsToAnalyze = Math.max(commentsToAnalyze, 5);
-    }
-    
-    // Handle authentication for queue mode
-    if (isQueueMode && !isAuthenticated) {
-        // Non-authenticated user trying to queue - show login prompt
-        showLoginPrompt();
-        return;
-    } else if (isQueueMode && !isProUser && commentsToAnalyze > 2500) {
-        // Regular user trying to analyze more than 2.5k comments - show upgrade prompt
-        showProUpgradePrompt();
-        return;
-    } else if (isQueueMode && isAuthenticated) {
-        // Queue mode - create a background job
-        console.log('Queueing job for', commentsToAnalyze, 'comments');
-        
-        // Calculate estimated time
-        const estimatedMinutes = Math.round((commentsToAnalyze / 100) * 1.5 / 60);
-        const timeText = estimatedMinutes > 1 ? `${estimatedMinutes} minutes` : '1 minute';
-        
-        // Disable button with loading state
-        if (analysisActionButton) {
-            analysisActionButton.disabled = true;
-            analysisActionButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Queueing...';
-        }
-        
-        fetch('/api/analyze/queue', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                video_id: videoId,
-                comment_count: commentsToAnalyze,
-                include_replies: false  // Never include replies
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast(`Analysis queued! Estimated time: ~${timeText}`, 'success');
-                // Redirect to the analysis status page
-                setTimeout(() => {
-                    window.location.href = `/analysis/${data.job_id}`;
-                }, 1500);
-            } else {
-                // Check for specific auth errors
-                if (data.redirect_to_login) {
-                    // Show the login prompt modal
-                    showLoginPrompt();
-                } else if (data.redirect_to_upgrade) {
-                    // Show the upgrade modal
-                    showProUpgradePrompt();
-                } else {
-                    // Show regular error
-                    showToast(`Error: ${data.error}`, 'error');
-                }
-                
-                // Re-enable button
-                if (analysisActionButton) {
-                    analysisActionButton.disabled = false;
-                    const buttonIcon = document.getElementById('buttonIcon');
-                    const buttonText = document.getElementById('buttonText');
-                    if (buttonIcon) buttonIcon.textContent = '⏰';
-                    if (buttonText) buttonText.textContent = 'Queue Analysis';
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Error queueing analysis:', error);
-            
-            // Check if it's an authentication error (401)
-            if (error.message && error.message.includes('401')) {
-                showLoginPrompt();
-            } else {
-                showToast('Failed to queue analysis', 'error');
-            }
-            
-            // Re-enable button
-            if (analysisActionButton) {
-                analysisActionButton.disabled = false;
-                const buttonIcon = document.getElementById('buttonIcon');
-                const buttonText = document.getElementById('buttonText');
-                if (buttonIcon) buttonIcon.textContent = '⏰';
-                if (buttonText) buttonText.textContent = 'Queue Analysis';
-            }
-        });
-        
-        return;
-    }
-    
-    // Check if we can use already loaded comments
-    const usePreloaded = fetchedComments > 0 && 
-                         Math.abs(commentsToAnalyze - fetchedComments) <= 5; // Allow small margin
-    
-    // Show section and hide results
-    section.style.display = 'block';
-    section.classList.add('active');
-    progressDiv.style.display = 'flex';
-    resultsDiv.style.display = 'none';
-    
-    // Initialize fun fact
-    const funFactText = document.getElementById('funFactText');
-    if (funFactText) {
-        funFactText.textContent = funFacts[0];
-    }
-    
-    // Disable unified button with loading text
-    const loadingText = usePreloaded ? 'Loading Cached Results...' : 'Analyzing...';
-    
-    if (analysisActionButton) {
-        analysisActionButton.disabled = true;
-        analysisActionButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
-    }
-    
-    // Scroll to sentiment analysis section
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    
-    // If we have preloaded comments, check for cached results first
-    if (usePreloaded && analysisActionButton) {
-        // Generate the expected analysis ID for cached results
-        const expectedAnalysisId = `sentiment_${videoId}_${selectedPercentage}pct_${commentsToAnalyze}`;
-        
-        // Try to fetch cached results directly
-        fetch(`/api/analyze/results/${expectedAnalysisId}`)
-            .then(response => {
-                // Check status code to determine what happened
-                if (response.status === 202) {
-                    // Analysis exists but not yet completed - wait for it
-                    return response.json().then(data => {
-                        console.log('Analysis in progress, waiting for completion...');
-                        analysisId = expectedAnalysisId;
-                        // Update progress status  
-                        if (data.status) {
-                            updateProgress(data.status);
-                        }
-                        // Start polling for completion
-                        statusCheckInterval = setInterval(checkAnalysisStatus, 1000);
-                        return null; // Signal that we're waiting
-                    });
-                } else if (response.ok) {
-                    return response.json();
-                } else {
-                    // Handle error responses
-                    return response.json().then(data => {
-                        throw new Error(data.error || 'Failed to fetch results');
-                    });
-                }
-            })
-            .then(data => {
-                if (data === null) {
-                    // We're waiting for in-progress analysis
-                    return;
-                }
-                if (data && data.success && data.results) {
-                    // Cached results found! Display them immediately
-                    analysisId = expectedAnalysisId;
-                    displayResults(data.results);
-                    return; // Exit early, no need to start new analysis
-                } else {
-                    // No cached results, proceed with analysis
-                    initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage);
-                }
-            })
-            .catch(error => {
-                // Error fetching cached results, proceed with analysis
-                console.log('No cached results available, starting analysis:', error.message);
-                initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage);
-            });
-    } else {
-        // Not using preloaded or different comment count, start fresh analysis
-        initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage);
-    }
-}
-
-function initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage) {
-    // Always exclude replies
-    const includeReplies = false;
-    
-    console.log('Initiating analysis with:', JSON.stringify({
-        videoId: videoId,
-        commentsToAnalyze: commentsToAnalyze,
-        selectedPercentage: selectedPercentage,
-        includeReplies: includeReplies
-    }, null, 2));
-    
-    // Start analysis with selected number of comments
-    fetch(`/api/analyze/sentiment/${videoId}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            max_comments: commentsToAnalyze,  // Use calculated count based on percentage
-            percentage_selected: selectedPercentage,  // Send percentage for logging
-            include_replies: includeReplies  // Send reply toggle state
-        })
-    })
-    .then(response => {
-        if (response.status === 507) {
-            // Insufficient Storage - cache memory full
-            showError('The analysis cache is currently full. Please wait a moment while we clear some space and try again.');
-            // Automatically retry after 3 seconds
-            setTimeout(() => {
-                showError('Retrying analysis...');
-                startSentimentAnalysis();
-            }, 3000);
-            return null;
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data === null) return; // Handled above
-        
-        if (data.success) {
-            analysisId = data.analysis_id;
-            if (data.cached) {
-                // If cached, fetch results immediately
-                fetchAnalysisResults();
-            } else {
-                // Start polling for status
-                statusCheckInterval = setInterval(checkAnalysisStatus, 1000);
-            }
-        } else {
-            if (data.error && data.error.includes('memory')) {
-                showError('Cache memory issue detected. Clearing space and retrying...');
-                setTimeout(() => startSentimentAnalysis(), 2000);
-            } else {
-                showError(data.error);
-            }
-        }
-    })
-    .catch(error => {
-        showError('Failed to start analysis: ' + error);
-    });
-}
-
-function checkAnalysisStatus() {
-    if (!analysisId) return;
-    
-    fetch(`/api/analyze/status/${analysisId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                updateProgress(data.status);
-                
-                if (data.status.status === 'completed') {
-                    clearInterval(statusCheckInterval);
-                    fetchAnalysisResults();
-                } else if (data.status.status === 'error') {
-                    clearInterval(statusCheckInterval);
-                    showError(data.status.error);
-                }
-            } else if (!data.success && data.error === 'Analysis not found') {
-                // Analysis was lost, restart automatically
-                clearInterval(statusCheckInterval);
-                console.log('Analysis not found during status check, restarting...');
-                showError('Analysis data was cleared. Restarting...');
-                analysisId = null;
-                setTimeout(() => {
-                    startSentimentAnalysis();
-                }, 1500);
-            }
-        })
-        .catch(error => {
-            console.error('Status check error:', error);
-        });
-}
-
-// currentAnalysisMode is already declared at line 1880, removing duplicate
-
-// Fun loading messages
-const loadingMessages = {
-    fetching_comments: [
-        "Reticulating comment splines...",
-        "Downloading hot takes from the cloud...",
-        "Harvesting fresh opinions...",
-        "Summoning the comment spirits...",
-        "Deploying YouTube API ninjas...",
-        "Gathering digital discourse...",
-        "Extracting text vibes from the matrix..."
-    ],
-    analyzing_sentiment: [
-        "Calibrating emotional sensors...",
-        "Teaching AI about human feelings...",
-        "Decoding sentiment wavelengths...",
-        "Consulting the vibe oracle...",
-        "Computing emotional algorithms...",
-        "Analyzing the mood spectrum...",
-        "Processing digital emotions...",
-        "Calculating happiness quotients...",
-        "Measuring sentiment particles..."
-    ],
-    generating_summary: [
-        "Crafting wisdom from chaos...",
-        "Distilling comment essence...",
-        "Generating insight crystals...",
-        "Compiling the final verdict...",
-        "Preparing your custom report...",
-        "Assembling thought molecules...",
-        "Weaving the narrative tapestry..."
-    ]
-};
-
-const funFacts = [
-    "Did you know? The average YouTube comment is 27 words long!",
-    "Fun fact: 70% of YouTube comments are positive or neutral!",
-    "YouTube gets over 500 hours of video uploaded every minute!",
-    "The first YouTube comment ever was 'Interesting...' in 2005!",
-    "Comments with emojis get 33% more engagement! 😊",
-    "YouTube comments support over 75 languages worldwide!",
-    "The most liked YouTube comment has over 4 million likes!",
-    "Did you know? Comments peak within the first 2 hours of upload!",
-    "YouTube's algorithm considers comment sentiment for recommendations!"
-];
-
-let messageRotationInterval = null;
-let currentMessageIndex = 0;
-let factRotationInterval = null;
-let currentFactIndex = 0;
-let lastProgressValue = 0;
-let targetProgress = 0;
-let progressAnimationFrame = null;
-
-function updateProgress(status) {
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-    const progressStatus = document.getElementById('progressStatus');
-    const progressSubStatus = document.getElementById('progressSubStatus');
-    const progressDetail = document.getElementById('progressDetail');
-    const funFactText = document.getElementById('funFactText');
-    
-    // Set target progress for smooth animation
-    targetProgress = status.progress || 0;
-    
-    // Smooth progress bar animation
-    function animateProgress() {
-        if (Math.abs(lastProgressValue - targetProgress) > 0.5) {
-            lastProgressValue += (targetProgress - lastProgressValue) * 0.1;
-            progressBar.style.width = lastProgressValue + '%';
-            progressText.textContent = Math.round(lastProgressValue) + '%';
-            progressAnimationFrame = requestAnimationFrame(animateProgress);
-        } else {
-            lastProgressValue = targetProgress;
-            progressBar.style.width = targetProgress + '%';
-            progressText.textContent = Math.round(targetProgress) + '%';
-        }
-    }
-    
-    if (progressAnimationFrame) {
-        cancelAnimationFrame(progressAnimationFrame);
-    }
-    animateProgress();
-    
-    // Main status messages
-    let mainStatus = 'Initializing vibe check...';
-    let subStatus = '';
-    let messagePool = [];
-    
-    switch(status.status) {
-        case 'fetching_comments':
-            mainStatus = 'Downloading Comments';
-            subStatus = loadingMessages.fetching_comments[0];
-            messagePool = loadingMessages.fetching_comments;
-            progressDetail.textContent = `${status.current || 0} fetched`;
-            break;
-        case 'using_cached':
-            mainStatus = 'Loading Cached Data';
-            subStatus = 'Retrieving pre-analyzed vibes...';
-            progressDetail.textContent = 'Fast mode activated';
-            break;
-        case 'analyzing_sentiment':
-            mainStatus = 'Analyzing Sentiment';
-            subStatus = loadingMessages.analyzing_sentiment[0];
-            messagePool = loadingMessages.analyzing_sentiment;
-            progressDetail.textContent = `${status.current || 0}/${status.total || 0} comments`;
-            break;
-        case 'generating_summary':
-            mainStatus = 'Generating Insights';
-            subStatus = loadingMessages.generating_summary[0];
-            messagePool = loadingMessages.generating_summary;
-            progressDetail.textContent = 'Almost there!';
-            break;
-        case 'completed':
-            mainStatus = '✨ Analysis Complete!';
-            subStatus = 'Your results are ready!';
-            progressDetail.textContent = '';
-            // Clear intervals when complete
-            if (messageRotationInterval) {
-                clearInterval(messageRotationInterval);
-            }
-            if (factRotationInterval) {
-                clearInterval(factRotationInterval);
-            }
-            break;
-    }
-    
-    progressStatus.textContent = mainStatus;
-    progressSubStatus.textContent = subStatus;
-    
-    // Start rotating messages for this status
-    if (messagePool.length > 0 && status.status !== 'completed') {
-        if (messageRotationInterval) {
-            clearInterval(messageRotationInterval);
-        }
-        currentMessageIndex = 0;
-        
-        messageRotationInterval = setInterval(() => {
-            currentMessageIndex = (currentMessageIndex + 1) % messagePool.length;
-            progressSubStatus.textContent = messagePool[currentMessageIndex];
-            progressSubStatus.style.animation = 'none';
-            setTimeout(() => {
-                progressSubStatus.style.animation = 'fadeInOut 4s ease-in-out infinite';
-            }, 10);
-        }, 3000);
-    }
-    
-    // Rotate fun facts
-    if (!factRotationInterval && status.status !== 'completed') {
-        factRotationInterval = setInterval(() => {
-            currentFactIndex = (currentFactIndex + 1) % funFacts.length;
-            funFactText.style.opacity = '0';
-            setTimeout(() => {
-                funFactText.textContent = funFacts[currentFactIndex];
-                funFactText.style.opacity = '1';
-            }, 300);
-        }, 5000);
-    }
-}
-
-function fetchAnalysisResults() {
-    if (!analysisId) return;
-    
-    fetch(`/api/analyze/results/${analysisId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                displayResults(data.results);
-            } else {
-                if (data.restart_needed) {
-                    // Results are missing, restart the analysis
-                    console.error('Results missing, restarting analysis...');
-                    showError('Previous analysis expired. Starting fresh analysis...');
-                    // Clear the current analysis ID and restart
-                    analysisId = null;
-                    setTimeout(() => {
-                        startSentimentAnalysis();
-                    }, 2000);
-                } else if (data.error && data.error.includes('Analysis not found')) {
-                    // Analysis was cleared or expired
-                    showError('This analysis has expired or been cleared. Starting a new analysis...');
-                    analysisId = null;
-                    // Automatically restart the analysis
-                    setTimeout(() => {
-                        // Reset UI
-                        const progressDiv = document.getElementById('analysisProgress');
-                        const resultsDiv = document.getElementById('analysisResults');
-                        if (progressDiv) progressDiv.style.display = 'flex';
-                        if (resultsDiv) resultsDiv.style.display = 'none';
-                        // Start fresh analysis
-                        startSentimentAnalysis();
-                    }, 1500);
-                } else {
-                    showError(data.error + (data.details ? ': ' + data.details : ''));
-                }
-            }
-        })
-        .catch(error => {
-            showError('Failed to fetch results: ' + error);
-        });
-}
-
-function retrySummary() {
-    if (!analysisId) return;
-    const aiSummaryEl = document.getElementById('aiSummary');
-    if (aiSummaryEl) {
-        aiSummaryEl.innerHTML = '<p>Retrying summary... <i class="fas fa-spinner fa-spin"></i></p>';
-    }
-    fetch(`/api/analyze/retry-summary/${analysisId}`, {
-        method: 'POST'
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.summary && data.summary.summary) {
-                // Refresh the results to pick up the new summary
-                fetchAnalysisResults();
-            } else {
-                if (aiSummaryEl) {
-                    aiSummaryEl.innerHTML = `<p>Summary retry failed: ${data.error || 'Unknown error'}</p>`;
-                }
-            }
-        })
-        .catch(error => {
-            if (aiSummaryEl) {
-                aiSummaryEl.innerHTML = `<p>Summary retry failed: ${error}</p>`;
-            }
-        });
-}
-
-function displayResults(results) {
-    console.log('displayResults called with results:', JSON.stringify(results ? Object.keys(results) : 'null', null, 2));
-    if (results) {
-        console.log('Results sentiment data:', JSON.stringify(results.sentiment, null, 2));
-        console.log('Results summary data:', JSON.stringify(results.summary ? Object.keys(results.summary) : 'no summary', null, 2));
-    }
-    const progressDiv = document.getElementById('analysisProgress');
-    const resultsDiv = document.getElementById('analysisResults');
-    const samplesSection = document.getElementById('sampleCommentsSection');
-    const startButton = document.getElementById('startSentimentAnalysis');
-    const startButtonMain = document.getElementById('startSentimentAnalysisMain');
-    const videoId = '{{ video_id }}';
-    
-    console.log('Element check:', {
-        progressDiv: progressDiv ? 'found' : 'not found',
-        resultsDiv: resultsDiv ? 'found' : 'not found',
-        samplesSection: samplesSection ? 'found' : 'not found'
-    });
-    
-    // Guard: ensure results have sentiment payload
-    if (!results || !results.sentiment) {
-        console.error('No sentiment results returned:', results);
-        showError('No results returned. Please try again.');
-        return;
-    }
-
-    // Update comment statistics if Pro user analyzed more comments
-    if (results.updated_stats) {
-        updateCommentStatistics(results.updated_stats);
-    }
-    
-    // Hide progress, show results
-    console.log('Hiding progress, showing results');
-    progressDiv.style.display = 'none';
-    resultsDiv.style.display = 'block';
-    console.log('Results div display style:', resultsDiv.style.display);
-    
-    // Show sample comments section
-    if (samplesSection) {
-        samplesSection.style.display = 'block';
-    }
-    
-    // Re-enable appropriate buttons
-    if (startButton) {
-        startButton.innerHTML = '<i class="fas fa-sync"></i> Re-analyze';
-        startButton.disabled = false;
-    }
-    
-    // Re-enable unified action button and restore appropriate text
-    const analysisActionButton = document.getElementById('analysisActionButton');
-    const buttonIcon = document.getElementById('buttonIcon');
-    const buttonText = document.getElementById('buttonText');
-    commentCountInput = document.getElementById('commentCountInput');
-    
-    if (analysisActionButton) {
-        analysisActionButton.disabled = false;
-        
-        // Get current slider value to determine proper button text
-        const currentValue = parseInt(commentCountInput ? commentCountInput.value : 1000) || 1000;
-        
-        // Update button based on current mode/value
-        if (!isAuthenticated) {
-            if (buttonIcon) buttonIcon.textContent = '🧠';
-            if (buttonText) buttonText.textContent = 'Analyze Again';
-        } else if (currentValue <= 2500) {
-            if (buttonIcon) buttonIcon.textContent = '🧠';
-            if (buttonText) buttonText.textContent = 'Analyze Again';
-        } else if (currentValue <= 5000) {
-            if (buttonIcon) buttonIcon.textContent = '⏰';
-            if (buttonText) buttonText.textContent = 'Queue Again';
-        } else {
-            if (buttonIcon) buttonIcon.textContent = '👑';
-            if (buttonText) buttonText.textContent = 'Queue Pro Analysis Again';
-        }
-    }
-    
-    // Get sentiment data
-    const sentiment = results.sentiment;
-    
-    // Overall sentiment
-    const overallEl = document.getElementById('overallSentiment');
-    console.log('Overall sentiment element:', overallEl ? 'found' : 'not found');
-    
-    // Determine overall sentiment from distribution
-    let overallSentiment = 'neutral';
-    let sentimentScore = 50; // Default neutral score
-    
-    if (sentiment.distribution) {
-        const pos = sentiment.distribution.positive || 0;
-        const neg = sentiment.distribution.negative || 0;
-        const neu = sentiment.distribution.neutral || 0;
-        const total = pos + neg + neu;
-        
-        if (total > 0) {
-            // Calculate sentiment score: 0 = very negative, 50 = neutral, 100 = very positive
-            sentimentScore = ((pos - neg) / total * 50) + 50;
-            
-            // Determine overall sentiment based on distribution
-            if (pos > neg && pos > neu) {
-                overallSentiment = 'positive';
-            } else if (neg > pos && neg > neu) {
-                overallSentiment = 'negative';
-            } else {
-                overallSentiment = 'neutral';
-            }
-        }
-    }
-    
-    const rawConf = (typeof sentiment.average_confidence === 'number') ? sentiment.average_confidence : 0;
-    const confPercent = rawConf > 1 ? rawConf.toFixed(1) : (rawConf * 100).toFixed(1);
-    const totalAnalyzed = sentiment.total_analyzed || (Array.isArray(sentiment.individual_results) ? sentiment.individual_results.length : 0);
-    
-    if (overallEl) {
-        const htmlContent = `
-            <strong>${overallSentiment.charAt(0).toUpperCase() + overallSentiment.slice(1)}</strong> 
-            (Score: ${sentimentScore.toFixed(1)}%, 
-            Confidence: ${confPercent}%)
-            <br>
-            <small>Analyzed ${totalAnalyzed} comments using advanced sentiment analysis</small>
-        `;
-        console.log('Setting overall sentiment HTML:', htmlContent);
-        overallEl.innerHTML = htmlContent;
-    } else {
-        console.error('overallSentiment element not found!');
-    }
-    
-    // AI Summary with Enhanced Details
-    const summary = results.summary;
-    const aiSummaryEl = document.getElementById('aiSummary');
-    console.log('AI Summary element:', aiSummaryEl ? 'found' : 'not found');
-    console.log('Summary data:', summary);
-    
-    // Display the summary
-        if (aiSummaryEl && summary) {
-            if (summary.summary) {
-                aiSummaryEl.innerHTML = `<p>${summary.summary}</p>`;
-                console.log('Set summary text:', summary.summary);
-            } else {
-                aiSummaryEl.innerHTML = '<p>Summary not available. <a href="#" id="retrySummaryLink">Try again</a></p>';
-                const retryLink = document.getElementById('retrySummaryLink');
-                if (retryLink) {
-                    retryLink.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        retryLink.innerHTML = 'Retrying... <i class="fas fa-spinner fa-spin"></i>';
-                        retryLink.classList.add('disabled');
-                        retrySummary();
-                    });
-                }
-            }
-            
-            // Skip complex processing for now - just display basic summary
-            /*
-        // Check for any reception type sections
-        const receptionTypes = [
-            { marker: '⚡ CONTROVERSY DETECTED:', type: 'controversy', icon: 'fas fa-bolt', alertClass: 'alert-warning' },
-            { marker: '🎆 OVERWHELMINGLY POSITIVE RECEPTION:', type: 'positive', icon: 'fas fa-star', alertClass: 'alert-success' },
-            { marker: '✅ POSITIVE RECEPTION:', type: 'positive', icon: 'fas fa-check-circle', alertClass: 'alert-success' },
-            { marker: '🤔 MIXED RECEPTION:', type: 'mixed', icon: 'fas fa-balance-scale', alertClass: 'alert-info' },
-            { marker: '⚠️ CRITICAL RECEPTION:', type: 'critical', icon: 'fas fa-exclamation-triangle', alertClass: 'alert-danger' }
-        ];
-        
-        let mainInsights = insights;
-        let receptionContent = null;
-        let receptionType = null;
-        
-        // Find which reception type is in the insights
-        for (const reception of receptionTypes) {
-            const index = insights.indexOf(reception.marker);
-            if (index > -1) {
-                mainInsights = insights.substring(0, index).trim();
-                const receptionSection = insights.substring(index);
-                receptionType = reception;
-                
-                // Extract reception details
-                const lines = receptionSection.split('\n');
-                let receptionHtml = '';
-                for (let i = 1; i < lines.length && i < 5; i++) {
-                    if (lines[i].trim()) {
-                        receptionHtml += `<p class="mb-2">${lines[i].trim()}</p>`;
-                    }
-                }
-                
-                // Add controversial topics with enhanced details if it's controversy type
-                if (reception.type === 'controversy' && summary.controversy_analysis && 
-                    summary.controversy_analysis.topics && summary.controversy_analysis.topics.length > 0) {
-                    
-                    // Get up to 6 controversial comments with sentiment data
-                    const controversialComments = summary.controversy_analysis.topics
-                        .filter(topic => topic.comment_id)
-                        .slice(0, 6);
-                    
-                    if (controversialComments.length > 0) {
-                        receptionHtml += '<div class="mt-4"><strong>Examples of divisive comments:</strong></div>';
-                        controversialComments.forEach((topic, idx) => {
-                            // Get sentiment data for this comment if available
-                            const sentimentData = sentiment.individual_results ? 
-                                sentiment.individual_results.find(r => 
-                                    (r.comment_id === topic.comment_id) || 
-                                    (r.text && r.text.substring(0, 50) === topic.text.substring(0, 50))
-                                ) : null;
-                            
-                            const aiSentiment = sentimentData ? 
-                                (sentimentData.predicted_sentiment || sentimentData.sentiment || 'unknown') : 
-                                'unknown';
-                            
-                            const confidence = sentimentData && sentimentData.confidence ? 
-                                (sentimentData.confidence * 100).toFixed(0) : 'N/A';
-                            
-                            // Determine sentiment emoji and color
-                            let sentimentEmoji = '🤷';
-                            let sentimentColor = 'secondary';
-                            let sentimentLabel = 'Unknown';
-                            
-                            if (aiSentiment === 'positive') {
-                                sentimentEmoji = '😊';
-                                sentimentColor = 'success';
-                                sentimentLabel = 'Positive';
-                            } else if (aiSentiment === 'negative') {
-                                sentimentEmoji = '😔';
-                                sentimentColor = 'danger';
-                                sentimentLabel = 'Negative';
-                            } else if (aiSentiment === 'neutral') {
-                                sentimentEmoji = '😐';
-                                sentimentColor = 'secondary';
-                                sentimentLabel = 'Neutral';
-                            }
-                            
-                            const commentSnippet = topic.text.length > 200 ? 
-                                topic.text.substring(0, 200) + '...' : topic.text;
-                            
-                            // Determine why it's controversial
-                            let controversyReason = '';
-                            if (topic.controversy_score && topic.controversy_score > 0.7) {
-                                controversyReason = 'This comment has highly polarized reactions.';
-                            } else if (aiSentiment === 'positive' && topic.text.toLowerCase().includes('but')) {
-                                controversyReason = 'Mixed signals: Contains both praise and criticism.';
-                            } else if (aiSentiment === 'negative') {
-                                controversyReason = 'Critical viewpoint that sparked debate.';
-                            } else if (aiSentiment === 'neutral') {
-                                controversyReason = 'Balanced perspective that divided opinions.';
-                            } else {
-                                controversyReason = 'This comment generated significant discussion.';
-                            }
-                            
-                            // Set colors based on sentiment
-                            let badgeStyle = '';
-                            if (aiSentiment === 'positive') {
-                                badgeStyle = 'background: #28a745; color: white;';
-                            } else if (aiSentiment === 'negative') {
-                                badgeStyle = 'background: #dc3545; color: white;';
-                            } else if (aiSentiment === 'neutral') {
-                                badgeStyle = 'background: #6c757d; color: white;';
-                            } else {
-                                badgeStyle = 'background: #6c757d; color: white;';
-                            }
-                            
-                            receptionHtml += `
-                                <div class="mt-3 p-3 border rounded" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-left: 4px solid var(--bs-${sentimentColor}) !important;">
-                                    <div class="d-flex justify-content-between align-items-start mb-2">
-                                        <span class="badge" style="${badgeStyle}">
-                                            ${sentimentEmoji} AI: ${sentimentLabel} (${confidence}% confident)
-                                        </span>
-                                        <small class="text-muted">#${idx + 1}</small>
-                                    </div>
-                                    <p class="mb-2" style="font-style: italic; color: #495057;">
-                                        "${commentSnippet}"
-                                    </p>
-                                    <div class="alert alert-sm alert-info py-1 px-2 mb-0" style="font-size: 0.85rem;">
-                                        <i class="fas fa-info-circle"></i> <strong>Why controversial:</strong> ${controversyReason}
-                                    </div>
-                                    ${topic.replies_count ? `
-                                        <small class="text-muted mt-2 d-block">
-                                            <i class="fas fa-comments"></i> Generated ${topic.replies_count} replies
-                                        </small>
-                                    ` : ''}
-                                </div>
-                            `;
-                        });
-                    }
-                }
-                
-                if (receptionHtml) {
-                    // Create reception alert box with appropriate styling
-                    const heading = reception.marker.replace(/[:]/g, '').replace(/[\u{1F300}-\u{1F9FF}]/gu, '').trim();
-                    receptionContent = `
-                        <div class="alert ${reception.alertClass} mb-4">
-                            <h5 class="alert-heading"><i class="${reception.icon}"></i> ${heading}</h5>
-                            ${receptionHtml}
-                        </div>
-                    `;
-                }
-                break;
-            }
-        }
-        
-        // Display main insights
-        aiSummaryEl.innerHTML = formatEnhancedSummary(mainInsights);
-
-        // Append Most Mentioned Concepts box (green) using available data
-        const conceptsHTML = buildMostMentionedConceptsHTML(summary);
-        if (conceptsHTML) {
-            aiSummaryEl.innerHTML += conceptsHTML;
-        }
-        
-            // Add reception box after main summary if it exists
-            if (receptionContent) {
-                aiSummaryEl.innerHTML += receptionContent;
-            }
-        }
-        */
-    }
-    
-    // Create charts (with delay to ensure elements are visible and properly sized)
-    console.log('Attempting to create charts...');
-    setTimeout(() => {
-        try {
-            console.log('Creating sentiment pie chart...');
-            createSentimentPieChart(sentiment);
-        } catch (error) {
-            console.error('Error creating pie chart:', error);
-        }
-        
-        try {
-            console.log('Creating timeline chart...');
-            console.log('Timeline data:', results.timeline);
-            
-            // Use timeline data if available, otherwise create from individual results
-            let timelineData = results.timeline;
-            
-            // If no timeline data, try to create it from individual results
-            if (!timelineData || timelineData.length === 0) {
-                console.log('No timeline data provided, generating from individual results...');
-                if (sentiment.individual_results && sentiment.individual_results.length > 0) {
-                    timelineData = sentiment.individual_results.map((item, index) => ({
-                        sentiment: item.predicted_sentiment || item.sentiment || 'neutral',
-                        score: item.sentiment_scores || {
-                            positive: item.predicted_sentiment === 'positive' ? 0.8 : 0.1,
-                            neutral: item.predicted_sentiment === 'neutral' ? 0.8 : 0.1,
-                            negative: item.predicted_sentiment === 'negative' ? 0.8 : 0.1
-                        },
-                        text_preview: (item.text || '').substring(0, 100),
-                        index: index
-                    }));
-                    console.log('Generated timeline data from individual results:', timelineData.length, 'items');
-                }
-            }
-            
-            if (timelineData && timelineData.length > 0) {
-                createTimelineChart(timelineData);
-            } else {
-                console.log('No timeline data available to display');
-                // Hide the timeline chart section if no data
-                const timelineCard = document.querySelector('#sentimentTimelineChart').closest('.card');
-                if (timelineCard) {
-                    timelineCard.style.display = 'none';
-                }
-            }
-        } catch (error) {
-            console.error('Error creating timeline chart:', error);
-        }
-    }, 500);
-    
-    // Display sample comments
-    console.log('Displaying sample comments...');
-    try {
-        displaySampleComments(sentiment.individual_results);
-    } catch (error) {
-        console.error('Error displaying sample comments:', error);
-    }
-}
-
-function createSentimentPieChart(sentiment) {
-    try {
-        console.log('Creating sentiment pie chart with data:', sentiment);
-        const canvas = document.getElementById('sentimentPieChart');
-        if (!canvas) {
-            console.error('Canvas element sentimentPieChart not found');
-            return;
-        }
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            console.error('Could not get 2D context from canvas');
-            return;
-        }
-        
-        if (charts.pie) charts.pie.destroy();
-        
-        // Use counts from either sentiment_counts or distribution
-        const counts = (sentiment.sentiment_counts || sentiment.distribution || {positive: 0, neutral: 0, negative: 0});
-        console.log('Using sentiment counts:', counts);
-        
-        charts.pie = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Positive', 'Neutral', 'Negative'],
-                datasets: [{
-                    data: [
-                        (counts.positive || 0),
-                        (counts.neutral || 0),
-                        (counts.negative || 0)
-                    ],
-                    backgroundColor: [
-                        // Positive: match the green background used by Most Mentioned Concepts (Bootstrap alert-success bg)
-                        'rgba(209, 231, 221, 0.9)',
-                        // Neutral: lighter gray
-                        'rgba(206, 212, 218, 0.9)',
-                        // Negative: complementary red to the green above
-                        'rgba(227, 93, 106, 0.85)'
-                    ],
-                    borderColor: [
-                        // Positive border: Bootstrap success
-                        'rgba(25, 135, 84, 1)',
-                        'rgba(160, 165, 170, 1)',
-                        // Negative border: deeper complementary red
-                        'rgba(176, 42, 55, 1)'
-                    ],
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                const label = context.label || '';
-                                const value = context.parsed || 0;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${label}: ${value} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Error creating pie chart:', error);
-    }
-}
-
-function buildMostMentionedConceptsHTML(summary) {
-    try {
-        if (!summary) return '';
-
-        // Prefer social_media_themes if available
-        let items = [];
-        if (summary.social_media_themes && Array.isArray(summary.social_media_themes.themes)) {
-            items = summary.social_media_themes.themes.map(t => ({
-                word: t.word || t.term || t.key || '',
-                percent: typeof t.percentage === 'number' ? t.percentage : (typeof t.score === 'number' ? t.score * 100 : 0)
-            }));
-        } else if (Array.isArray(summary.intelligent_themes)) {
-            // intelligent_themes is typically [ [word, score], ... ]
-            items = summary.intelligent_themes.map(t => ({
-                word: Array.isArray(t) ? t[0] : (t.word || t || ''),
-                percent: Array.isArray(t) && typeof t[1] === 'number' ? t[1] * 100 : (typeof t.score === 'number' ? t.score * 100 : 0)
-            }));
-        }
-
-        // Clean and sort
-        items = items
-            .filter(i => i.word && typeof i.percent === 'number')
-            .sort((a, b) => b.percent - a.percent)
-            .slice(0, 10);
-
-        if (items.length === 0) return '';
-
-        // Build green alert styled like Sentiment Landscape
-        let html = '';
-        html += '<div class="alert alert-success mb-3">';
-        html += '<h6 class="alert-heading"><i class="fas fa-tags"></i> Most Mentioned Concepts</h6>';
-        html += '<ul class="mb-0">';
-        items.forEach((it, idx) => {
-            const pct = Math.round(it.percent);
-            html += `<li class="small">${idx + 1}. <strong>${it.word}</strong> — ${pct}%</li>`;
-        });
-        html += '</ul>';
-        html += '</div>';
-        return html;
-    } catch (e) {
-        console.error('Error building Most Mentioned Concepts:', e);
-        return '';
-    }
-}
-
-function createTimelineChart(timeline) {
-    try {
-        console.log('Creating timeline chart with data:', timeline ? timeline.length : 'no timeline');
-        const canvas = document.getElementById('sentimentTimelineChart');
-        if (!canvas) {
-            console.error('Canvas element sentimentTimelineChart not found');
-            return;
-        }
-        
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-            console.error('Could not get 2D context from timeline canvas');
-            return;
-        }
-        
-        if (charts.timeline) charts.timeline.destroy();
-        
-        if (!timeline || timeline.length === 0) {
-            console.log('No timeline data available');
-            // Show a message instead of an empty chart
-            const timelineCard = canvas.closest('.card');
-            if (timelineCard) {
-                const cardBody = timelineCard.querySelector('.card-body');
-                if (cardBody) {
-                    cardBody.innerHTML = '<p class="text-muted text-center py-3">Timeline data not available for this analysis</p>';
-                }
-            }
-            return;
-        }
-        
-        // Process timeline data with smoothing and grouping
-        const labels = [];
-        const positiveData = [];
-        const neutralData = [];
-        const negativeData = [];
-        
-        console.log('Processing timeline data, sample item:', timeline[0]);
-        
-        // Group comments for smoother visualization
-        const groupSize = Math.max(1, Math.ceil(timeline.length / 20)); // Create ~20 groups max
-        const groups = [];
-        
-        for (let i = 0; i < timeline.length; i += groupSize) {
-            const group = timeline.slice(i, Math.min(i + groupSize, timeline.length));
-            
-            // Calculate average sentiment for the group
-            let avgPositive = 0, avgNeutral = 0, avgNegative = 0;
-            let validItems = 0;
-            
-            group.forEach(item => {
-                const sc = item.score || item.sentiment_scores || {};
-                
-                // Handle case where scores might not exist - use sentiment label as fallback
-                if (Object.keys(sc).length === 0) {
-                    const sentiment = item.sentiment || item.predicted_sentiment || 'neutral';
-                    if (sentiment === 'positive') {
-                        sc.positive = 0.8;
-                        sc.neutral = 0.15;
-                        sc.negative = 0.05;
-                    } else if (sentiment === 'negative') {
-                        sc.positive = 0.05;
-                        sc.neutral = 0.15;
-                        sc.negative = 0.8;
-                    } else {
-                        sc.positive = 0.1;
-                        sc.neutral = 0.8;
-                        sc.negative = 0.1;
-                    }
-                }
-                
-                avgPositive += (sc.positive || 0);
-                avgNeutral += (sc.neutral || 0);
-                avgNegative += (sc.negative || 0);
-                validItems++;
-            });
-            
-            const groupCount = validItems || 1;
-            groups.push({
-                positive: (avgPositive / groupCount) * 100,
-                neutral: (avgNeutral / groupCount) * 100,
-                negative: (avgNegative / groupCount) * 100,
-                index: i
-            });
-        }
-        
-        console.log('Created', groups.length, 'groups from timeline data');
-        
-        // Create labels and data from groups
-        groups.forEach((group, idx) => {
-            const position = (group.index / timeline.length) * 100;
-            
-            if (idx === 0) {
-                labels.push('Early');
-            } else if (idx === groups.length - 1) {
-                labels.push('Recent');
-            } else if (Math.abs(position - 25) < 5) {
-                labels.push('25%');
-            } else if (Math.abs(position - 50) < 5) {
-                labels.push('Midpoint');
-            } else if (Math.abs(position - 75) < 5) {
-                labels.push('75%');
-            } else {
-                labels.push(`${Math.round(position)}%`);
-            }
-            
-            positiveData.push(group.positive);
-            neutralData.push(group.neutral);
-            negativeData.push(group.negative);
-        });
-        
-        charts.timeline = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [
-                    {
-label: 'Positive',
-                        data: positiveData,
-                        borderColor: 'rgba(25, 135, 84, 1)',
-                        backgroundColor: 'rgba(209, 231, 221, 0.35)',
-                        tension: 0.4
-                    },
-                    {
-label: 'Neutral',
-                        data: neutralData,
-                        borderColor: 'rgba(160, 165, 170, 1)',
-                        backgroundColor: 'rgba(206, 212, 218, 0.35)',
-                        tension: 0.4
-                    },
-                    {
-label: 'Negative',
-                        data: negativeData,
-                        borderColor: 'rgba(176, 42, 55, 1)',
-                        backgroundColor: 'rgba(227, 93, 106, 0.25)',
-                        tension: 0.4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: 'Comment Timeline (Early → Recent)',
-                            font: {
-                                size: 12
-                            }
-                        },
-                        ticks: {
-                            autoSkip: false,
-                            maxRotation: 0,
-                            font: {
-                                size: 11
-                            }
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        title: {
-                            display: true,
-                            text: 'Sentiment Score',
-                            font: {
-                                size: 12
-                            }
-                        },
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        }
-                    }
-                },
-                interaction: {
-                    mode: 'index',
-                    intersect: false
-                },
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        callbacks: {
-                            title: function(tooltipItems) {
-                                const index = tooltipItems[0].dataIndex;
-                                const total = tooltipItems[0].chart.data.labels.length;
-                                const position = tooltipItems[0].label || `Position ${index + 1}/${total}`;
-                                return `Timeline: ${position}`;
-                            },
-                            label: function(context) {
-                                const label = context.dataset.label;
-                                const value = context.parsed.y.toFixed(1);
-                                const emoji = label === 'Positive' ? '😊' : label === 'Negative' ? '😔' : '😐';
-                                return `${emoji} ${label}: ${value}%`;
-                            },
-                            afterLabel: function(context) {
-                                // Show dominant sentiment at this point
-                                if (context.datasetIndex === 0) { // Only show once
-                                    const datasets = context.chart.data.datasets;
-                                    const index = context.dataIndex;
-                                    const positive = datasets[0].data[index];
-                                    const neutral = datasets[1].data[index];
-                                    const negative = datasets[2].data[index];
-                                    
-                                    let dominant = 'Neutral';
-                                    if (positive > neutral && positive > negative) dominant = 'Positive';
-                                    else if (negative > neutral && negative > positive) dominant = 'Negative';
-                                    
-                                    return `\nDominant: ${dominant}`;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Error creating timeline chart:', error);
-    }
-}
-
-
-function displaySampleComments(results) {
-    try {
-        if (!results || !Array.isArray(results)) {
-            console.error('Invalid results data for sample comments:', results);
-            return;
-        }
-        
-        const videoId = '{{ video_id }}';
-        const positive = [];
-        const neutral = [];
-        const negative = [];
-        
-        // Categorize ALL comments (not just 3)
-        results.forEach(result => {
-            const comment = {
-                text: result.text,
-                confidence: ((typeof result.confidence === 'number' ? (result.confidence > 1 ? result.confidence : result.confidence * 100) : 0)).toFixed(1),
-                commentId: (result.commentId || result.comment_id || null),
-                author: result.author || 'Anonymous'
-            };
-            
-            // Check for both 'predicted_sentiment' and 'sentiment' fields for compatibility
-            const sentiment = result.predicted_sentiment || result.sentiment;
-            
-            if (sentiment === 'positive') {
-                positive.push(comment);
-            } else if (sentiment === 'neutral') {
-                neutral.push(comment);
-            } else if (sentiment === 'negative') {
-                negative.push(comment);
-            }
-        });
-        
-        // Sort by confidence (highest first)
-        positive.sort((a, b) => parseFloat(b.confidence) - parseFloat(a.confidence));
-        neutral.sort((a, b) => parseFloat(b.confidence) - parseFloat(a.confidence));
-        negative.sort((a, b) => parseFloat(b.confidence) - parseFloat(a.confidence));
-        
-        // Update counts
-        document.getElementById('positiveCount').textContent = positive.length;
-        document.getElementById('neutralCount').textContent = neutral.length;
-        document.getElementById('negativeCount').textContent = negative.length;
-        
-        // Display samples with enhanced formatting
-        const displaySamples = (samples, elementId, sentimentClass) => {
-            const el = document.getElementById(elementId);
-            if (samples.length === 0) {
-                el.innerHTML = '<p class="text-muted text-center py-3">No samples available</p>';
-            } else {
-                // Show up to 50 comments per category for better overview
-                const displayLimit = Math.min(samples.length, 50);
-                const truncateText = (text, maxLength = 300) => {
-                    if (text.length <= maxLength) return text;
-                    return text.substring(0, maxLength) + '...';
-                };
-                
-                el.innerHTML = samples.slice(0, displayLimit).map((s, index) => {
-                    const truncated = truncateText(s.text);
-                    const confidenceColor = parseFloat(s.confidence) >= 80 ? 'success' : 
-                                           parseFloat(s.confidence) >= 60 ? 'warning' : 'secondary';
-                    const commentId = `comment-${sentimentClass}-${index}`;
-                    
-                    return `
-                        <div class="comment-sample-item ${sentimentClass}" id="${commentId}" data-comment-index="${index}">
-                            <div class="comment-sample-text">
-                                ${escapeHtml(truncated)}
-                            </div>
-                            <div class="comment-sample-meta">
-                                <span class="text-muted">
-                                    <i class="fas fa-user-circle"></i> ${escapeHtml((s.author || 'Anonymous').substring(0, 20))}
-                                </span>
-                                <span class="confidence-badge bg-${confidenceColor}">
-                                    ${s.confidence}%
-                                </span>
-                            </div>
-                            <div class="feedback-buttons">
-                                <span class="text-muted" style="font-size: 0.7rem; margin-right: 8px;">AI thinks:</span>
-                                <button class="feedback-btn positive ${sentimentClass === 'positive' ? 'current-sentiment' : ''}" 
-                                        ${sentimentClass === 'positive' ? 'disabled' : ''}
-                                        onclick="submitFeedback('${commentId}', '${sentimentClass}', 'positive', ${index})">
-                                    👍 Positive
-                                </button>
-                                <button class="feedback-btn neutral ${sentimentClass === 'neutral' ? 'current-sentiment' : ''}" 
-                                        ${sentimentClass === 'neutral' ? 'disabled' : ''}
-                                        onclick="submitFeedback('${commentId}', '${sentimentClass}', 'neutral', ${index})">
-                                    👐 Neutral
-                                </button>
-                                <button class="feedback-btn negative ${sentimentClass === 'negative' ? 'current-sentiment' : ''}" 
-                                        ${sentimentClass === 'negative' ? 'disabled' : ''}
-                                        onclick="submitFeedback('${commentId}', '${sentimentClass}', 'negative', ${index})">
-                                    👎 Negative
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                // Add a note if there are more comments
-                if (samples.length > displayLimit) {
-                    el.innerHTML += `
-                        <div class="text-center text-muted py-2">
-                            <small><i class="fas fa-info-circle"></i> Showing ${displayLimit} of ${samples.length} ${sentimentClass} comments</small>
-                        </div>
-                    `;
-                }
-            }
-        };
-        
-        // Helper function to escape HTML
-        function escapeHtml(text) {
-            const map = {
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#039;'
-            };
-            return text.replace(/[&<>"']/g, m => map[m]);
-        }
-        
-        // Store comment data globally for feedback
-        commentData.positive = positive;
-        commentData.neutral = neutral;
-        commentData.negative = negative;
-        
-        displaySamples(positive, 'positiveSamples', 'positive');
-        displaySamples(neutral, 'neutralSamples', 'neutral');
-        displaySamples(negative, 'negativeSamples', 'negative');
-        
-        // Apply stored corrections after comments are displayed
-        setTimeout(() => {
-            applyStoredCorrections();
-        }, 100);
-        
-    } catch (error) {
-        console.error('Error displaying sample comments:', error);
-    }
-}
-
-// Submit sentiment feedback
-async function submitFeedback(commentId, predictedSentiment, correctedSentiment, commentIndex) {
-    // Don't submit if it's the same sentiment
-    if (predictedSentiment === correctedSentiment) {
-        return;
-    }
-    
-    const videoId = '{{ video_id }}';
-    const commentElement = document.getElementById(commentId);
-    
-    // Get the comment data
-    const commentObj = commentData[predictedSentiment][commentIndex];
-    if (!commentObj) {
-        console.error('Comment data not found');
-        return;
-    }
-    
-    try {
-        // Disable all buttons in this comment
-        const buttons = commentElement.querySelectorAll('.feedback-btn');
-        buttons.forEach(btn => btn.disabled = true);
-        
-        // Send feedback to server
-        const response = await fetch('/api/sentiment-feedback', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                video_id: videoId,
-                comment_id: commentObj.commentId,
-                comment_text: commentObj.text,
-                comment_author: commentObj.author,
-                predicted_sentiment: predictedSentiment,
-                corrected_sentiment: correctedSentiment,
-                confidence_score: parseFloat(commentObj.confidence) / 100
-            })
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            // Show thank you message
-            showToast(data.message || 'Thank you for your feedback!', 'success', 3000);
-            
-            // Apply manual correction UI instead of removing the comment
-            applyManualCorrectionUI(commentElement, predictedSentiment, correctedSentiment);
-            
-            // Store the correction in session storage for persistence
-            storeCorrectionLocally(commentObj.text, predictedSentiment, correctedSentiment);
-            
-        } else {
-            // Re-enable buttons on error
-            buttons.forEach(btn => btn.disabled = false);
-            if (data.error && data.error.includes('already submitted')) {
-                showToast('You\'ve already provided feedback for this comment', 'info');
-            } else {
-                showToast(data.error || 'Failed to submit feedback', 'warning');
-            }
-        }
-        
-    } catch (error) {
-        console.error('Error submitting feedback:', error);
-        showToast('Failed to submit feedback. Please try again.', 'danger');
-        
-        // Re-enable buttons
-        const buttons = commentElement.querySelectorAll('.feedback-btn');
-        buttons.forEach(btn => btn.disabled = false);
-    }
-}
-
-// Apply manual correction UI to a comment
-function applyManualCorrectionUI(commentElement, originalSentiment, correctedSentiment) {
-    // Add manually corrected class
-    commentElement.classList.add('manually-corrected');
-    
-    // Add correction badge
-    if (!commentElement.querySelector('.manual-correction-badge')) {
-        const badge = document.createElement('div');
-        badge.className = 'manual-correction-badge';
-        badge.innerHTML = '<i class="fas fa-user-check"></i> Manually Corrected';
-        commentElement.appendChild(badge);
-    }
-    
-    // Update feedback buttons
-    const buttons = commentElement.querySelectorAll('.feedback-btn');
-    buttons.forEach(btn => {
-        btn.disabled = true;
-        btn.classList.remove('current-sentiment', 'highlighted-correction', 'disabled-original');
-        
-        // Check which button corresponds to what sentiment
-        if (btn.classList.contains(originalSentiment)) {
-            // This was the original (wrong) prediction
-            btn.classList.add('disabled-original');
-        } else if (btn.classList.contains(correctedSentiment)) {
-            // This is the user's correction
-            btn.classList.add('highlighted-correction');
-        }
-    });
-    
-    // Add correction info if not already present
-    if (!commentElement.querySelector('.correction-info')) {
-        const correctionInfo = document.createElement('div');
-        correctionInfo.className = 'correction-info';
-        correctionInfo.innerHTML = `
-            <i class="fas fa-info-circle"></i>
-            <span class="original-prediction">AI predicted: ${capitalizeFirst(originalSentiment)}</span>
-            <span class="user-correction">→ You corrected to: ${capitalizeFirst(correctedSentiment)}</span>
-        `;
-        commentElement.appendChild(correctionInfo);
-    }
-}
-
-// Store correction locally for persistence
-function storeCorrectionLocally(commentText, originalSentiment, correctedSentiment) {
-    const videoId = '{{ video_id }}';
-    const storageKey = `sentiment_corrections_${videoId}`;
-    
-    // Get existing corrections
-    let corrections = JSON.parse(localStorage.getItem(storageKey) || '{}');
-    
-    // Store the correction using comment text as key (truncated for efficiency)
-    const commentKey = commentText.substring(0, 100);
-    corrections[commentKey] = {
-        original: originalSentiment,
-        corrected: correctedSentiment,
-        timestamp: new Date().toISOString()
-    };
-    
-    // Save back to localStorage
-    localStorage.setItem(storageKey, JSON.stringify(corrections));
-}
-
-// Helper function to capitalize first letter
-function capitalizeFirst(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-
-function showError(error) {
-    const progressDiv = document.getElementById('analysisProgress');
-    const startButton = document.getElementById('startSentimentAnalysis');
-    const startButtonMain = document.getElementById('startSentimentAnalysisMain');
-    
-    // Clear any loading intervals
-    if (messageRotationInterval) {
-        clearInterval(messageRotationInterval);
-        messageRotationInterval = null;
-    }
-    if (factRotationInterval) {
-        clearInterval(factRotationInterval);
-        factRotationInterval = null;
-    }
-    if (progressAnimationFrame) {
-        cancelAnimationFrame(progressAnimationFrame);
-        progressAnimationFrame = null;
-    }
-    
-    // Parse and improve error messages
-    let errorTitle = "Oops! Something went wrong";
-    let errorMessage = error;
-    let errorIcon = "fas fa-exclamation-triangle";
-    let suggestions = [];
-    
-    // Handle specific error patterns
-    if (error.includes("futures unfinished") || error.includes("timeout")) {
-        errorTitle = "Analysis Timeout";
-        errorIcon = "fas fa-clock";
-        errorMessage = "The analysis is taking longer than expected. This usually happens when processing many comments.";
-        suggestions = [
-            "Try analyzing fewer comments (reduce the slider value)",
-            "Wait a moment for the service to recover",
-            "If the problem persists, try again in a few minutes"
-        ];
-    } else if (error.includes("memory") || error.includes("cache")) {
-        errorTitle = "Service Temporarily Busy";
-        errorIcon = "fas fa-server";
-        errorMessage = "Our servers are experiencing high demand right now.";
-        suggestions = [
-            "Please wait a moment and try again",
-            "Consider analyzing fewer comments",
-            "Try during off-peak hours for better performance"
-        ];
-    } else if (error.includes("not found")) {
-        errorTitle = "Analysis Not Found";
-        errorIcon = "fas fa-search";
-        errorMessage = "The analysis results couldn't be found. They may have expired.";
-        suggestions = [
-            "Start a fresh analysis",
-            "Make sure you haven't waited too long"
-        ];
-    } else if (error.includes("network") || error.includes("fetch")) {
-        errorTitle = "Connection Issue";
-        errorIcon = "fas fa-wifi";
-        errorMessage = "There was a problem connecting to our analysis service.";
-        suggestions = [
-            "Check your internet connection",
-            "Refresh the page and try again",
-            "Disable any ad blockers or VPNs that might interfere"
-        ];
-    } else if (error.includes("high load") || error.includes("service")) {
-        errorTitle = "Service Under Load";
-        errorIcon = "fas fa-chart-line";
-        errorMessage = "Our sentiment analysis service is experiencing high demand.";
-        suggestions = [
-            "Try with a smaller number of comments",
-            "Wait a few minutes before retrying",
-            "Consider using the queue option if available"
-        ];
-    }
-    
-    // Build suggestions HTML
-    let suggestionsHtml = '';
-    if (suggestions.length > 0) {
-        suggestionsHtml = `
-            <div class="mt-3">
-                <h6 class="font-weight-bold">What you can try:</h6>
-                <ul class="mb-0">
-                    ${suggestions.map(s => `<li>${s}</li>`).join('')}
-                </ul>
-            </div>
-        `;
-    }
-    
-    progressDiv.innerHTML = `
-        <div class="error-container animated fadeIn">
-            <div class="alert alert-danger border-0 shadow-sm" style="border-radius: 12px; background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);">
-                <div class="d-flex align-items-start">
-                    <div class="error-icon-wrapper mr-3" style="font-size: 2rem; color: #dc2626;">
-                        <i class="${errorIcon}"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h5 class="alert-heading mb-2" style="color: #991b1b;">${errorTitle}</h5>
-                        <p class="mb-0" style="color: #7f1d1d;">${errorMessage}</p>
-                        ${suggestionsHtml}
-                        
-                        <!-- Debug info (hidden by default) -->
-                        <details class="mt-3">
-                            <summary style="cursor: pointer; color: #991b1b; font-size: 0.85rem;">
-                                <i class="fas fa-bug"></i> Technical details
-                            </summary>
-                            <pre class="mt-2 p-2 bg-white rounded" style="font-size: 0.75rem; color: #6b7280; max-height: 100px; overflow-y: auto;">${error}</pre>
-                        </details>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Retry button with animation -->
-            <div class="text-center mt-3">
-                <button class="btn btn-lg" onclick="location.reload()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 25px; padding: 12px 30px; border: none; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); transition: all 0.3s;" 
-                        onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(102, 126, 234, 0.5)'" 
-                        onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)'">
-                    <i class="fas fa-redo mr-2"></i> Refresh & Try Again
-                </button>
-            </div>
-        </div>
-    `;
-    
-    // Re-enable both buttons
-    if (startButton) {
-        startButton.innerHTML = '<i class="fas fa-brain"></i> Retry Analysis';
-        startButton.disabled = false;
-    }
-    if (startButtonMain) {
-        startButtonMain.innerHTML = '<i class="fas fa-brain"></i> Retry Analysis';
-        startButtonMain.disabled = false;
-    }
-    
-    if (statusCheckInterval) {
-        clearInterval(statusCheckInterval);
-    }
-}
-
-// Authentication prompt functions for slider
-function showLoginPrompt() {
-    // Create modal or use existing modal structure
-    const modalHtml = `
-        <div class="modal fade" id="loginPromptModal" tabindex="-1" role="dialog" aria-labelledby="loginPromptModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 15px 15px 0 0;">
-                        <h5 class="modal-title" id="loginPromptModalLabel">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In Required
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: brightness(0) invert(1); opacity: 0.8;"></button>
-                    </div>
-                    <div class="modal-body text-center" style="padding: 2rem;">
-                        <div class="mb-3">
-                            <i class="fas fa-lock" style="font-size: 3rem; color: #667eea; opacity: 0.7;"></i>
-                        </div>
-                        <h5 class="mb-3">Want to analyze more comments?</h5>
-                        <p class="text-muted mb-4">Sign in to queue analysis jobs and analyze up to 2,500 comments!</p>
-                        <div class="mb-3">
-                            <div class="alert alert-info" style="border-radius: 10px;">
-                                <strong>Free Account Benefits:</strong><br>
-                                <small>
-                                    ✓ Analyze up to 2,500 comments<br>
-                                    ✓ Queue background jobs<br>
-                                    ✓ Save analysis history<br>
-                                    ✓ Export results
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer" style="border-top: none; padding: 0 2rem 2rem 2rem;">
-                        <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg" style="border-radius: 25px; width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In for Free Analysis
-                        </a>
-                        <div class="text-center mt-2">
-                            <small class="text-muted">
-                                Don't have an account? 
-                                <a href="{{ url_for('auth.register') }}" class="text-primary">Create one free</a>
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing modal if any
-    const existingModal = document.getElementById('loginPromptModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Add modal to page
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal using Bootstrap 5
-    const loginModal = new bootstrap.Modal(document.getElementById('loginPromptModal'));
-    loginModal.show();
-}
-
-function showProUpgradePrompt() {
-    // Create modal for Pro upgrade
-    const modalHtml = `
-        <div class="modal fade" id="proUpgradePromptModal" tabindex="-1" role="dialog" aria-labelledby="proUpgradePromptModalLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
-                <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-                    <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; border-radius: 15px 15px 0 0;">
-                        <h5 class="modal-title" id="proUpgradePromptModalLabel">
-                            <i class="fas fa-crown mr-2"></i>Upgrade to Pro
-                        </h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="filter: brightness(0) invert(1); opacity: 0.8;"></button>
-                    </div>
-                    <div class="modal-body text-center" style="padding: 2rem;">
-                        <div class="mb-3">
-                            <i class="fas fa-star" style="font-size: 3rem; color: #f59e0b;"></i>
-                        </div>
-                        <h5 class="mb-3">Unlock Advanced Analysis</h5>
-                        <p class="text-muted mb-4">Upgrade to Pro to analyze up to 5,000 comments!</p>
-                        <div class="mb-3">
-                            <div class="alert alert-warning" style="border-radius: 10px; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: none;">
-                                <strong>Pro Account Benefits:</strong><br>
-                                <small style="color: #92400e;">
-                                    ✓ Analyze up to 5,000 comments<br>
-                                    ✓ Process entire videos<br>
-                                    ✓ Advanced filtering options<br>
-                                    ✓ Priority processing<br>
-                                    ✓ Detailed analytics reports
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer" style="border-top: none; padding: 0 2rem 2rem 2rem;">
-                        <a href="{{ url_for('auth.subscribe') }}" class="btn btn-warning btn-lg" style="border-radius: 25px; width: 100%; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white;">
-                            <i class="fas fa-crown mr-2"></i>Upgrade to Pro
-                        </a>
-                        <div class="text-center mt-2">
-                            <small class="text-muted">
-                                <a href="#" class="text-warning" data-dismiss="modal">Maybe later</a>
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    // Remove existing modal if any
-    const existingModal = document.getElementById('proUpgradePromptModal');
-    if (existingModal) {
-        existingModal.remove();
-    }
-    
-    // Add modal to page
-    document.body.insertAdjacentHTML('beforeend', modalHtml);
-    
-    // Show modal using Bootstrap 5
-    const proModal = new bootstrap.Modal(document.getElementById('proUpgradePromptModal'));
-    proModal.show();
-    $('#proUpgradePromptModal').modal('show');
-}
-</script>
 {% endblock %}

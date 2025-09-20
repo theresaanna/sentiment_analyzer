@@ -303,7 +303,7 @@ main {
 /* Main Card */
 .vibe-card {
     background: white;
-    border-radius: var(--border-radius-lg);
+    border-radius: 25px;
     padding: 40px;
     box-shadow: var(--shadow-xl);
     position: relative;

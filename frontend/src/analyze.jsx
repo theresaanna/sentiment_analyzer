@@ -1,19 +1,79 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 // Analyze page script ported from inline JS to a React-managed module
 // This file intentionally manipulates the DOM directly to work with existing Jinja markup.
 
+// --- Safety & diagnostics helpers ---
+function escapeHtml(str) {
+  try {
+    return String(str).replace(/[&<>"']/g, (s) => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+    }[s]));
+  } catch {
+    return String(str);
+  }
+}
+
+function showFatalError(message, error) {
+  try {
+    // Log for developers
+    // eslint-disable-next-line no-console
+    console.error('[Analyze Fatal]', message, error);
+    const container = document.querySelector('.analyze-page .container') || document.body;
+    const box = document.createElement('div');
+    box.className = 'vibe-card';
+    box.style.marginTop = '20px';
+    const details = error ? escapeHtml(error.stack || error.message || String(error)) : '';
+    box.innerHTML = `
+      <div class="card-header-vibe">
+        <h3 class="mb-0"><span class="emoji-icon">⚠️</span> Analyze UI Error</h3>
+      </div>
+      <div class="card-body">
+        <div class="alert alert-danger"><strong>${escapeHtml(message)}</strong></div>
+        ${details ? `<pre style="white-space:pre-wrap; background:#f8f9fa; padding:12px; border-radius:8px;">${details}</pre>` : ''}
+      </div>
+    `;
+    container.insertBefore(box, container.firstChild);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to render fatal error box', e);
+  }
+}
+
+// Global runtime guards
+if (typeof window !== 'undefined') {
+  // Only register once
+  if (!window.__ANALYZE_ERROR_GUARDS__) {
+    window.__ANALYZE_ERROR_GUARDS__ = true;
+    window.addEventListener('error', (e) => {
+      try { showFatalError('A runtime error occurred on the Analyze page.', e?.error || e?.message); } catch {}
+    });
+    window.addEventListener('unhandledrejection', (e) => {
+      try { showFatalError('An async error occurred on the Analyze page.', e?.reason); } catch {}
+    });
+  }
+}
+
 function AnalyzeApp() {
   useEffect(() => {
-    const rootEl = document.getElementById('react-analyze-root');
-    if (!rootEl) return;
+    try {
+      console.log('[AnalyzeApp] Starting initialization for comment analysis...');
+      const rootEl = document.getElementById('react-analyze-root');
+      if (!rootEl) { showFatalError('React analyze root element is missing.'); return; }
 
     // Parse server-provided context from data attributes
     const videoId = rootEl.getAttribute('data-video-id') || '';
     const isAuthenticated = (rootEl.getAttribute('data-is-auth') || 'false') === 'true';
     const isProUser = (rootEl.getAttribute('data-is-pro') || 'false') === 'true';
     const videoStatsComments = parseInt(rootEl.getAttribute('data-video-comments') || '0', 10) || 0;
+    const videoViews = parseInt(rootEl.getAttribute('data-video-views') || '0', 10) || 0;
+    const videoLikes = parseInt(rootEl.getAttribute('data-video-likes') || '0', 10) || 0;
+    const videoTitle = rootEl.getAttribute('data-video-title') || '';
+    const videoChannel = rootEl.getAttribute('data-video-channel') || '';
+    const videoPublished = rootEl.getAttribute('data-video-published') || '';
+    const videoDuration = rootEl.getAttribute('data-video-duration') || '';
+    const videoUrl = rootEl.getAttribute('data-video-url') || '';
 
     let commentStats;
     try { commentStats = JSON.parse(rootEl.getAttribute('data-comment-stats') || '{}'); } catch { commentStats = {}; }
@@ -28,6 +88,7 @@ function AnalyzeApp() {
     let charts = {};
     let currentAnalysisMode = 'instant';
     let commentData = { positive: [], neutral: [], negative: [] };
+    let analysisStartTs = null;
 
     // Loading message rotation state
     let messageRotationInterval = null;
@@ -38,22 +99,711 @@ function AnalyzeApp() {
     let targetProgress = 0;
     let progressAnimationFrame = null;
 
+    // Function to handle analyze button click
+    function handleAnalyzeClick() {
+      // Show the sentiment analysis section
+      const sentimentSection = document.getElementById('sentimentAnalysisSection');
+      if (sentimentSection) {
+        sentimentSection.style.display = 'block';
+        
+        // Smooth scroll to the section
+        setTimeout(() => {
+          sentimentSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+        
+        // Start the analysis after a brief delay for visual effect
+        setTimeout(() => {
+          startSentimentAnalysis();
+        }, 500);
+      }
+    }
+    
     // Expose a few globals for inline onclicks we still generate in HTML strings
     // Keep the API surface similar to the original inline code
     window.submitFeedback = submitFeedback;
     window.showLoginPrompt = showLoginPrompt;
     window.showProUpgradePrompt = showProUpgradePrompt;
     window.startSentimentAnalysis = startSentimentAnalysis;
+    window.handleAnalyzeClick = handleAnalyzeClick;
 
     // Make user flags globally accessible (referenced in logic)
     window.isAuthenticated = isAuthenticated;
     window.isProUser = isProUser;
+    
+    // Add manual scroll test function
+    window.testScroll = function() {
+      document.getElementById('analysisProgress').scrollIntoView();
+    };
 
     // Initialize totals
     const fetchedTopLevel = Number(commentStats?.top_level_count || 0);
     const totalTopLevel = Number(commentStats?.total_top_level_comments || commentStats?.total_available || 0);
     const totalAvailableComments = totalTopLevel || fetchedTopLevel || 5000;
     window.currentTotalComments = totalAvailableComments;
+
+    // Video info is now rendered server-side, no need to mount it here
+    
+    // Mount Comment Analysis Controls - Use direct DOM for reliability
+    const commentAnalysisMount = document.querySelector('#analysis-controls-root');
+    console.log('[AnalyzeApp] Comment analysis mount found:', commentAnalysisMount);
+    if (commentAnalysisMount) {
+      console.log('[AnalyzeApp] Inserting analyze button directly');
+      // Skip React for the button - use direct DOM manipulation for reliability
+      commentAnalysisMount.innerHTML = `
+        <div class="text-center py-3">
+          <button id="mainAnalyzeBtn" class="btn btn-lg" 
+                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                         color: white; 
+                         border: none; 
+                         border-radius: 25px; 
+                         padding: 12px 40px; 
+                         font-size: 1.1rem; 
+                         font-weight: 600; 
+                         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); 
+                         cursor: pointer;
+                         transition: all 0.3s ease;">
+            <span>🧠</span> Analyze Sentiment
+          </button>
+        </div>
+      `;
+      
+      // Add click handler
+      const btn = document.getElementById('mainAnalyzeBtn');
+      if (btn) {
+        btn.onclick = function(e) {
+          e.preventDefault();
+          
+          // Show the section first
+          const section = document.getElementById('sentimentAnalysisSection');
+          if (section) {
+            section.style.display = 'block';
+            
+            // Start analysis immediately
+            if (typeof startSentimentAnalysis === 'function') {
+                startSentimentAnalysis();
+                document.getElementById('sentimentAnalysisSection').scrollIntoView();
+            }
+          }
+        };
+        
+        // Add hover effect
+        btn.addEventListener('mouseenter', () => {
+          btn.style.transform = 'translateY(-2px)';
+          btn.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.5)';
+        });
+        btn.addEventListener('mouseleave', () => {
+          btn.style.transform = 'translateY(0)';
+          btn.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+        });
+      }
+    }
+
+    // Mount React progress and results shells
+    const progressContainer = document.getElementById('analysisProgress');
+    if (progressContainer) {
+      progressContainer.innerHTML = '';
+      const mount = document.createElement('div');
+      progressContainer.appendChild(mount);
+      const pr = createRoot(mount);
+      let progressScrolled = 0;
+      if (progressScrolled === 0) {
+        document.getElementById('analysisProgress').scrollIntoView();
+        progressScrolled = 1;
+      }
+
+      function AnalysisProgress() {
+        const [percent, setPercent] = useState(0);
+        const [status, setStatus] = useState('Initializing vibe check...');
+        const [subStatus, setSubStatus] = useState('Warming up the sentiment engines...');
+        const [detail, setDetail] = useState('');
+        const [funFact, setFunFact] = useState('Did you know? The average YouTube comment is 27 words long!');
+
+        useEffect(() => {
+          const handler = (e) => {
+            const d = e.detail || {};
+            if (typeof d.progress === 'number') setPercent(Math.max(0, Math.min(100, d.progress)));
+            if (d.status) setStatus(d.status);
+            if (d.subStatus) setSubStatus(d.subStatus);
+            if (typeof d.detail === 'string') setDetail(d.detail);
+          };
+          const fun = setInterval(() => {
+            setFunFact((prev) => {
+              const idx = (funFacts.indexOf(prev) + 1 + funFacts.length) % funFacts.length;
+              return funFacts[idx] || prev;
+            });
+          }, 5000);
+          window.addEventListener('analysis:progress', handler);
+          return () => { window.removeEventListener('analysis:progress', handler); clearInterval(fun); };
+        }, []);
+
+        return (
+          <div className="analysis-loading-content">
+            <div className="vibe-spinner mb-4">
+              <div className="vibe-spinner-inner">
+                <span className="vibe-emoji">🎭</span>
+                <span className="vibe-emoji">😊</span>
+                <span className="vibe-emoji">😐</span>
+                <span className="vibe-emoji">😔</span>
+              </div>
+            </div>
+            <h4 className="loading-status" id="progressStatus">{status}</h4>
+            <p className="loading-substatus" id="progressSubStatus">{subStatus}</p>
+            <div className="vibe-progress-container">
+              <div className="vibe-progress-bar">
+                <div className="vibe-progress-fill" style={{width: `${Math.round(percent)}%`}}>
+                  <div className="vibe-progress-glow"></div>
+                </div>
+              </div>
+            <div className="vibe-progress-text" style={{textAlign: 'center'}}>
+              <span id="progressText" style={{fontSize: '1.2rem', fontWeight: 600, color: '#667eea'}}>
+                {Math.round(percent)}%
+              </span>
+            </div>
+            </div>
+            <div className="loading-fun-fact" id="loadingFunFact">
+              <i className="fas fa-lightbulb"></i>
+              <span id="funFactText">{funFact}</span>
+            </div>
+          </div>
+        );
+      }
+      pr.render(<AnalysisProgress />);
+    }
+
+    // Mount React results shell
+    const resultsContainer = document.getElementById('analysisResults');
+    if (resultsContainer) {
+      resultsContainer.innerHTML = '';
+      const mount = document.createElement('div');
+      resultsContainer.appendChild(mount);
+      const rr = createRoot(mount);
+      function AnalysisResults() {
+        const [data, setData] = useState(null);
+        const [retryingSum, setRetryingSum] = useState(false);
+        const barRef = React.useRef(null);
+        const timelineRef = React.useRef(null);
+
+        useEffect(() => {
+          const handler = (e) => { setData(e.detail || null); };
+          window.addEventListener('analysis:results', handler);
+          return () => window.removeEventListener('analysis:results', handler);
+        }, []);
+
+        // Render charts when data changes
+        useEffect(() => {
+          if (!data || !window.Chart) return;
+          const sentiment = data.sentiment || {};
+          const barEl = barRef.current;
+          if (barEl) {
+            const ctx = barEl.getContext('2d');
+            const counts = sentiment.sentiment_counts || sentiment.distribution || { positive: 0, neutral: 0, negative: 0 };
+            const total = counts.positive + counts.neutral + counts.negative;
+            const percentages = total > 0 ? {
+              positive: ((counts.positive / total) * 100).toFixed(1),
+              neutral: ((counts.neutral / total) * 100).toFixed(1),
+              negative: ((counts.negative / total) * 100).toFixed(1)
+            } : { positive: 0, neutral: 0, negative: 0 };
+            
+            if (charts.bar) charts.bar.destroy();
+            charts.bar = new window.Chart(ctx, {
+              type: 'bar',
+              data: {
+                labels: ['Sentiment Distribution'],
+                datasets: [
+                  { 
+                    label: `Positive (${percentages.positive}%)`, 
+                    data: [counts.positive||0], 
+                    backgroundColor: 'rgba(34,197,94,0.9)',
+                    borderColor: 'rgba(34,197,94,1)',
+                    borderWidth: 1,
+                    barPercentage: 1.0,
+                    categoryPercentage: 1.0
+                  },
+                  { 
+                    label: `Neutral (${percentages.neutral}%)`, 
+                    data: [counts.neutral||0], 
+                    backgroundColor: 'rgba(156,163,175,0.9)',
+                    borderColor: 'rgba(156,163,175,1)',
+                    borderWidth: 1,
+                    barPercentage: 1.0,
+                    categoryPercentage: 1.0
+                  },
+                  { 
+                    label: `Negative (${percentages.negative}%)`, 
+                    data: [counts.negative||0], 
+                    backgroundColor: 'rgba(239,68,68,0.9)',
+                    borderColor: 'rgba(239,68,68,1)',
+                    borderWidth: 1,
+                    barPercentage: 1.0,
+                    categoryPercentage: 1.0
+                  }
+                ]
+              },
+              options: { 
+                indexAxis: 'y',
+                responsive: true, 
+                maintainAspectRatio: false,
+                scales: {
+                  x: {
+                    stacked: true,
+                    display: false,
+                    grid: { display: false }
+                  },
+                  y: {
+                    stacked: true,
+                    display: false,
+                    grid: { display: false }
+                  }
+                },
+                plugins: { 
+                  legend: { 
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                      boxWidth: 15,
+                      padding: 10,
+                      font: { size: 12 }
+                    }
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: function(context) {
+                        const label = context.dataset.label || '';
+                        const value = context.parsed.x || 0;
+                        return `${label}: ${value} comments`;
+                      }
+                    }
+                  }
+                } 
+              }
+            });
+          }
+
+          const timelineEl = timelineRef.current;
+          if (timelineEl) {
+            if (charts.timeline) charts.timeline.destroy();
+            let timeline = data.timeline;
+            if (!timeline || timeline.length === 0) {
+              if (sentiment.individual_results?.length > 0) {
+                timeline = sentiment.individual_results.map((item, i) => ({
+                  sentiment: item.predicted_sentiment || item.sentiment || 'neutral',
+                  score: item.sentiment_scores || { positive: item.predicted_sentiment==='positive'?0.8:0.1, neutral: item.predicted_sentiment==='neutral'?0.8:0.1, negative: item.predicted_sentiment==='negative'?0.8:0.1 },
+                  text_preview: (item.text || '').substring(0, 100), index: i,
+                }));
+              }
+            }
+            if (timeline && timeline.length > 0) {
+              const groups = [];
+              const groupSize = Math.max(1, Math.ceil(timeline.length / 20));
+              for (let i=0;i<timeline.length;i+=groupSize){
+                const group = timeline.slice(i, Math.min(i+groupSize, timeline.length));
+                let ap=0, an=0, ag=0, c=0;
+                group.forEach(item => { const s=item.score||item.sentiment_scores||{}; const lab=item.sentiment||item.predicted_sentiment||'neutral'; const ss = Object.keys(s).length? s : (lab==='positive'?{positive:0.8,neutral:0.15,negative:0.05}: lab==='negative'?{positive:0.05,neutral:0.15,negative:0.8}:{positive:0.1,neutral:0.8,negative:0.1}); ap+=ss.positive||0; an+=ss.neutral||0; ag+=ss.negative||0; c++; });
+                c=Math.max(c,1); groups.push({positive:(ap/c)*100, neutral:(an/c)*100, negative:(ag/c)*100, index:i});
+              }
+              const labels=[], pd=[], nd=[], gd=[];
+              groups.forEach((g, idx)=>{ const pos=(g.index/timeline.length)*100; if(idx===0) labels.push('Early'); else if(idx===groups.length-1) labels.push('Recent'); else if(Math.abs(pos-25)<5) labels.push('25%'); else if(Math.abs(pos-50)<5) labels.push('Midpoint'); else if(Math.abs(pos-75)<5) labels.push('75%'); else labels.push(`${Math.round(pos)}%`); pd.push(g.positive); nd.push(g.neutral); gd.push(g.negative); });
+              const ctx2 = timelineEl.getContext('2d');
+              charts.timeline = new window.Chart(ctx2, {
+                type: 'line',
+                data: {
+                  labels,
+                  datasets: [
+                    { label: 'Positive', data: pd, borderColor: 'rgba(25,135,84,1)', backgroundColor: 'rgba(209,231,221,0.35)', tension: 0.4 },
+                    { label: 'Neutral', data: nd, borderColor: 'rgba(160,165,170,1)', backgroundColor: 'rgba(206,212,218,0.35)', tension: 0.4 },
+                    { label: 'Negative', data: gd, borderColor: 'rgba(176,42,55,1)', backgroundColor: 'rgba(227,93,106,0.25)', tension: 0.4 }
+                  ]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                    x: {
+                      title: { display: true, text: 'Comment Timeline (Early → Recent)', font: { size: 12 } },
+                      ticks: { autoSkip: false, maxRotation: 0, font: { size: 11 } }
+                    },
+                    y: {
+                      beginAtZero: true,
+                      max: 100,
+                      title: { display: true, text: 'Sentiment Score', font: { size: 12 } },
+                      ticks: { callback: (v) => `${v}%` }
+                    }
+                  },
+                  plugins: { legend: { position: 'bottom' } }
+                }
+              });
+            }
+          }
+        }, [data]);
+
+        if (!data) return null;
+        const sentiment = data.sentiment || {};
+        const totalAnalyzed = sentiment.total_analyzed || (sentiment.individual_results?.length || 0);
+        const pos = sentiment.distribution?.positive||0, neg = sentiment.distribution?.negative||0, neu = sentiment.distribution?.neutral||0;
+        const total = pos+neg+neu; let overall='neutral'; if (total>0){ if (pos>neg && pos>neu) overall='positive'; else if (neg>pos && neg>neu) overall='negative'; }
+        const conf = (typeof sentiment.average_confidence==='number' ? (sentiment.average_confidence>1?sentiment.average_confidence:sentiment.average_confidence*100):0).toFixed(1);
+
+        const stats = data.updated_stats || null;
+        const engagement = videoViews > 0 ? ((videoLikes / videoViews) * 100).toFixed(1) : '0.0';
+        
+        // Calculate percentages for display
+        const counts = sentiment.sentiment_counts || sentiment.distribution || { positive: 0, neutral: 0, negative: 0 };
+        const countTotal = counts.positive + counts.neutral + counts.negative;
+        const percentages = countTotal > 0 ? {
+          positive: ((counts.positive / countTotal) * 100).toFixed(1),
+          neutral: ((counts.neutral / countTotal) * 100).toFixed(1),
+          negative: ((counts.negative / countTotal) * 100).toFixed(1)
+        } : { positive: 0, neutral: 0, negative: 0 };
+        
+        return (
+          <>
+            <div className="row mb-4"><div className="col-md-12"><div className="alert alert-info"><h4 className="alert-heading"><i className="fas fa-chart-line"></i> Overall Sentiment</h4><p className="mb-0"><strong>{overall[0]?.toUpperCase()+overall.slice(1)}</strong> — analyzed {totalAnalyzed} comments (confidence {conf}%)</p></div></div></div>
+            <div className="row mb-4">
+              <div className="col-md-12">
+                <div className="card">
+                  <div className="card-header header-muted-blue">
+                    <h5 className="mb-0"><i className="fas fa-chart-bar"></i> Sentiment Distribution</h5>
+                  </div>
+                  <div className="card-body" style={{paddingTop: '20px', paddingBottom: '10px'}}>
+                    <div style={{height: '80px', marginBottom: '10px'}}>
+                      <canvas ref={barRef}></canvas>
+                    </div>
+                    <div className="sentiment-stats-row" style={{display: 'flex', justifyContent: 'space-around', marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #e9ecef'}}>
+                      <div style={{textAlign: 'center'}}>
+                        <div style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#22c55e'}}>😊 {percentages.positive}%</div>
+                        <div style={{fontSize: '0.9rem', color: '#6b7280'}}>{counts.positive.toLocaleString()} positive</div>
+                      </div>
+                      <div style={{textAlign: 'center'}}>
+                        <div style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#9ca3af'}}>😐 {percentages.neutral}%</div>
+                        <div style={{fontSize: '0.9rem', color: '#6b7280'}}>{counts.neutral.toLocaleString()} neutral</div>
+                      </div>
+                      <div style={{textAlign: 'center'}}>
+                        <div style={{fontSize: '1.5rem', fontWeight: 'bold', color: '#ef4444'}}>😔 {percentages.negative}%</div>
+                        <div style={{fontSize: '0.9rem', color: '#6b7280'}}>{counts.negative.toLocaleString()} negative</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* AI Analysis Summary */}
+            <div className="card mb-4">
+              <div className="card-header header-muted-blue">
+                <h5 className="mb-0"><i className="fas fa-robot"></i> AI Analysis Summary</h5>
+              </div>
+              <div className="card-body">
+                <div className="lead" style={{fontSize: '16px', lineHeight: '1.6'}}>
+                  {(data.summary?.summary) ? (
+                    <div>
+                      {data.summary.summary.split('\n').map((paragraph, idx) => (
+                        <p key={idx}>{paragraph}</p>
+                      ))}
+                    </div>
+                  ) : (
+                    <div>
+                      {retryingSum ? (
+                        <p className="text-info">
+                          <i className="fas fa-spinner fa-spin"></i> Regenerating summary...
+                        </p>
+                      ) : (
+                        <>
+                          <p className="text-muted">
+                            Summary not available yet. The AI is processing the analysis results.
+                          </p>
+                          <button 
+                            className="btn btn-sm btn-outline-primary mt-2"
+                            disabled={retryingSum}
+                            onClick={() => {
+                              // Use global analysisId if available
+                              const currentAnalysisId = window.currentAnalysisId || analysisId;
+                              if (currentAnalysisId) {
+                                setRetryingSum(true);
+                                fetch(`/api/analyze/retry-summary/${currentAnalysisId}`, { method: 'POST' })
+                                  .then(r => r.json())
+                                  .then(result => {
+                                    if (result.success && result.summary) {
+                                      setData(prev => ({...prev, summary: result.summary}));
+                                    }
+                                    setRetryingSum(false);
+                                  })
+                                  .catch(err => {
+                                    console.error('Failed to retry summary:', err);
+                                    setRetryingSum(false);
+                                  });
+                              }
+                            }}
+                          >
+                            <i className="fas fa-redo"></i> Generate Summary
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="card mb-4"><div className="card-header header-muted-blue"><h5 className="mb-0"><i className="fas fa-clock"></i> Sentiment Timeline</h5></div><div className="card-body"><canvas ref={timelineRef} width="400" height="200"></canvas></div></div>
+            {stats && (
+              <div className="card mb-4">
+                <div className="card-header header-muted-blue"><h5 className="mb-0"><i className="fas fa-chart-bar"></i> Comment Coverage & Stats</h5></div>
+                <div className="card-body">
+                  <div className="coverage-summary mb-3">
+                    <div className="coverage-main" style={{display:'flex',alignItems:'baseline',gap:'8px'}}>
+                      <span className="coverage-number">{(stats.total_analyzed||totalAnalyzed).toLocaleString()}</span>
+                      <span className="coverage-text">comments analyzed</span>
+                      {'analysis_depth_percentage' in stats && (<span className="badge badge-info ml-2">{stats.analysis_depth_percentage}% coverage</span>)}
+                    </div>
+                    <div className="coverage-details" style={{display:'flex',gap:'16px',flexWrap:'wrap'}}>
+                      {'top_level_count' in stats && (<span className="detail-item"><i className="fas fa-comments"></i> {(stats.top_level_count||0).toLocaleString()} threads</span>)}
+                    </div>
+                  </div>
+                  <div className="comment-stats-grid mb-3">
+                    <div className="stat-item"><div className="stat-icon text-primary"><i className="fas fa-users"></i></div><div className="stat-content"><div className="stat-value">{(stats.unique_commenters||0).toLocaleString()}</div><div className="stat-label">Unique Users</div></div></div>
+                    <div className="stat-item"><div className="stat-icon text-success"><i className="fas fa-text-width"></i></div><div className="stat-content"><div className="stat-value">{stats.avg_comment_length||0}</div><div className="stat-label">Avg Length</div></div></div>
+                    <div className="stat-item"><div className="stat-icon text-info"><i className="fas fa-comment-dots"></i></div><div className="stat-content"><div className="stat-value">{(stats.top_level_count||0).toLocaleString()}</div><div className="stat-label">Comments</div></div></div>
+                    <div className="stat-item"><div className="stat-icon text-warning"><i className="fas fa-percentage"></i></div><div className="stat-content"><div className="stat-value">{engagement}%</div><div className="stat-label">Engagement</div></div></div>
+                  </div>
+                  {Array.isArray(stats.top_commenters) && stats.top_commenters.length>0 && (
+                    <div className="card bg-light">
+                      <div className="card-header"><h6 className="mb-0"><i className="fas fa-trophy"></i> Most Active Commenters</h6></div>
+                      <div className="card-body">
+                        <ol className="list-group list-group-flush">
+                          {stats.top_commenters.slice(0, 10).map((c, idx) => (
+                            <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
+                              <span><strong>#{idx+1}</strong> {String(c[0])}</span>
+                              <span className="badge badge-primary badge-pill">{(c[1]||0).toLocaleString()} comments</span>
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        );
+      }
+      rr.render(<AnalysisResults />);
+    }
+
+    // Mount React Sample Comments
+    const samplesContainer = document.getElementById('sampleCommentsSection');
+    if (samplesContainer) {
+      const inner = document.createElement('div');
+      samplesContainer.innerHTML = '';
+      samplesContainer.appendChild(inner);
+      const sr = createRoot(inner);
+      function SampleComments() {
+        const [groups, setGroups] = useState({ positive: [], neutral: [], negative: [] });
+        const [corrections, setCorrections] = useState({});
+        const [userFeedback, setUserFeedback] = useState({});
+
+        // Load user feedback on mount
+        useEffect(() => {
+          loadUserFeedback().then(feedback => {
+            const feedbackMap = {};
+            Object.keys(feedback).forEach(key => {
+              feedbackMap[key] = feedback[key];
+            });
+            setUserFeedback(feedbackMap);
+          });
+        }, []);
+
+        useEffect(() => {
+          const handler = (e) => {
+            const list = Array.isArray(e.detail) ? e.detail : [];
+            const pos=[], neu=[], neg=[];
+            list.forEach(r => {
+              const s = r.predicted_sentiment || r.sentiment;
+              const item = { 
+                text: r.text || '', 
+                confidence: (typeof r.confidence==='number' ? (r.confidence>1?r.confidence:(r.confidence*100)) : 0), 
+                commentId: r.commentId || r.comment_id || null, 
+                author: r.author || 'Anonymous',
+                originalSentiment: s
+              };
+              if (s==='positive') pos.push(item); else if (s==='negative') neg.push(item); else neu.push(item);
+            });
+            pos.sort((a,b)=>b.confidence-a.confidence); neu.sort((a,b)=>b.confidence-a.confidence); neg.sort((a,b)=>b.confidence-a.confidence);
+            setGroups({ positive: pos, neutral: neu, negative: neg });
+            
+            // Apply stored corrections
+            const storageKey = `sentiment_corrections_${videoId}`;
+            try {
+              const storedCorrections = JSON.parse(localStorage.getItem(storageKey) || '{}');
+              setCorrections(storedCorrections);
+            } catch {}
+          };
+          window.addEventListener('analysis:samples', handler);
+          return () => window.removeEventListener('analysis:samples', handler);
+        }, []);
+
+        function CommentList({ items, tone }) {
+          const [localCorrections, setLocalCorrections] = useState({});
+          const [submitting, setSubmitting] = useState({});
+          
+          async function sendFeedback(index, corrected) {
+            const item = items[index]; 
+            if (!item || corrected === tone) return;
+            
+            const commentKey = (item.text || '').substring(0, 100);
+            
+            try {
+              setSubmitting(prev => ({...prev, [index]: true}));
+              const resp = await fetch('/api/sentiment-feedback', { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ 
+                  video_id: videoId, 
+                  comment_id: item.commentId, 
+                  comment_text: item.text, 
+                  comment_author: item.author, 
+                  predicted_sentiment: tone, 
+                  corrected_sentiment: corrected, 
+                  confidence_score: (item.confidence||0)/100 
+                }) 
+              });
+              const data = await resp.json();
+              
+              if (data.success) {
+                showToast(data.message || 'Thank you for your feedback!', 'success', 3000);
+                
+                // Update local state to reflect the correction
+                setLocalCorrections(prev => ({
+                  ...prev,
+                  [index]: { original: tone, corrected: corrected }
+                }));
+                
+                // Store in localStorage
+                const storageKey = `sentiment_corrections_${videoId}`;
+                let allCorrections = {};
+                try { 
+                  allCorrections = JSON.parse(localStorage.getItem(storageKey) || '{}'); 
+                } catch {}
+                allCorrections[commentKey] = { 
+                  original: tone, 
+                  corrected: corrected, 
+                  timestamp: new Date().toISOString() 
+                };
+                localStorage.setItem(storageKey, JSON.stringify(allCorrections));
+                setCorrections(allCorrections);
+              } else {
+                if (data.error && data.error.includes('already submitted')) {
+                  showToast("You've already provided feedback for this comment", 'info');
+                  // Still update UI to show the correction
+                  setLocalCorrections(prev => ({
+                    ...prev,
+                    [index]: { original: tone, corrected: corrected }
+                  }));
+                } else {
+                  showToast(data.error || 'Failed to submit feedback', 'warning');
+                }
+              }
+            } catch (e) {
+              showToast('Failed to submit feedback', 'danger');
+            } finally {
+              setSubmitting(prev => ({...prev, [index]: false}));
+            }
+          }
+          
+          return (
+            <div className="comment-samples-container">
+              {items.length===0 ? (<p className="text-muted text-center py-3">No samples available</p>) : items.slice(0,50).map((s, idx) => {
+                const confColor = s.confidence>=80 ? 'success' : s.confidence>=60 ? 'warning' : 'secondary';
+                const truncated = (s.text||'').length<=300 ? s.text : (s.text||'').substring(0,300)+'...';
+                const commentKey = (s.text || '').substring(0, 100);
+                const correction = localCorrections[idx] || corrections[commentKey] || userFeedback[commentKey];
+                const isSubmitting = submitting[idx];
+                
+                return (
+                  <div key={idx} className={`comment-sample-item ${tone} ${correction ? 'manually-corrected' : ''}`}>
+                    <div className="comment-sample-text">{truncated}</div>
+                    <div className="comment-sample-meta">
+                      <span className="text-muted"><i className="fas fa-user-circle"></i> {(s.author||'Anonymous').substring(0,20)}</span>
+                      <span className={`confidence-badge bg-${confColor}`}>{s.confidence.toFixed(1)}%</span>
+                    </div>
+                    {correction && (
+                      <div className="correction-info" style={{padding:'8px', background:'#f0f9ff', borderRadius:'4px', marginTop:'8px', marginBottom:'8px', fontSize:'0.85rem'}}>
+                        <i className="fas fa-user-check" style={{color:'#3b82f6', marginRight:'6px'}}></i>
+                        <span style={{color:'#64748b'}}>AI predicted: <strong>{correction.original}</strong></span>
+                        <span style={{color:'#3b82f6', marginLeft:'8px', marginRight:'8px'}}>→</span>
+                        <span style={{color:'#16a34a'}}>You corrected to: <strong>{correction.corrected}</strong></span>
+                      </div>
+                    )}
+                    <div className="feedback-buttons">
+                      <span className="text-muted" style={{fontSize:'0.7rem', marginRight:8}}>AI thinks: <strong>{tone}</strong></span>
+                      <button 
+                        className={`vibe-button small ${tone==='positive'?'current-sentiment':''} ${correction?.corrected==='positive'?'highlighted-correction':''}`} 
+                        disabled={tone==='positive'||isSubmitting||!!correction} 
+                        onClick={()=>sendFeedback(idx,'positive')}
+                      >
+                        👍 Positive
+                      </button>
+                      <button 
+                        className={`vibe-button small ${tone==='neutral'?'current-sentiment':''} ${correction?.corrected==='neutral'?'highlighted-correction':''}`} 
+                        disabled={tone==='neutral'||isSubmitting||!!correction} 
+                        onClick={()=>sendFeedback(idx,'neutral')}
+                      >
+                        👐 Neutral
+                      </button>
+                      <button 
+                        className={`vibe-button small ${tone==='negative'?'current-sentiment':''} ${correction?.corrected==='negative'?'highlighted-correction':''}`} 
+                        disabled={tone==='negative'||isSubmitting||!!correction} 
+                        onClick={()=>sendFeedback(idx,'negative')}
+                      >
+                        👎 Negative
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+              {items.length>50 && (<div className="text-center text-muted py-2"><small><i className="fas fa-info-circle"></i> Showing 50 of {items.length} {tone} comments</small></div>)}
+            </div>
+          );
+        }
+
+        const totalComments = groups.positive.length + groups.neutral.length + groups.negative.length;
+        
+        return (
+          <>
+            {/* Container heading */}
+            <div className="card-header-vibe d-flex justify-content-between align-items-center" style={{marginBottom: '20px'}}>
+              <h3 className="mb-0">
+                <span className="emoji-icon">💬</span> Sample Comments by Sentiment
+              </h3>
+              <span className="badge" style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', 
+                color: 'white', 
+                fontSize: '0.9rem',
+                padding: '6px 12px'
+              }}>
+                {totalComments} total
+              </span>
+            </div>
+            
+            <div className="card-body">
+              <div className="sentiment-section mb-4">
+                <div className="sentiment-positive sentiment-header-section"><h5><span><i className="fas fa-smile"></i> Positive</span><span className="badge" style={{background:'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color:'white'}}>{groups.positive.length}</span></h5></div>
+                <CommentList items={groups.positive} tone="positive" />
+              </div>
+              <div className="sentiment-section mb-4">
+                <div className="sentiment-neutral sentiment-header-section"><h5><span><i className="fas fa-meh"></i> Neutral</span><span className="badge" style={{background:'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color:'white'}}>{groups.neutral.length}</span></h5></div>
+                <CommentList items={groups.neutral} tone="neutral" />
+              </div>
+              <div className="sentiment-section mb-4">
+                <div className="sentiment-negative sentiment-header-section"><h5><span><i className="fas fa-frown"></i> Negative</span><span className="badge" style={{background:'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color:'white'}}>{groups.negative.length}</span></h5></div>
+                <CommentList items={groups.negative} tone="negative" />
+              </div>
+              <div className="feedback-notice mt-3"><i className="fas fa-robot"></i> Your feedback helps us improve our AI models. Click the sentiment buttons to correct any misclassifications.</div>
+            </div>
+          </>
+        );
+      }
+      sr.render(<SampleComments />);
+    }
 
     // If server provided precomputed results (from a completed job), render immediately
     if (precomputedResults) {
@@ -82,127 +832,139 @@ function AnalyzeApp() {
         },
       };
       displayResults(formatted);
-      if (updatedStats) updateCommentStatistics(updatedStats);
       const samplesSection = document.getElementById('sampleCommentsSection');
       if (samplesSection) samplesSection.style.display = 'block';
+      // Also notify React components
+      window.dispatchEvent(new CustomEvent('analysis:results', { detail: formatted }));
+      if (formatted && formatted.sentiment && Array.isArray(formatted.sentiment.individual_results)) {
+        window.dispatchEvent(new CustomEvent('analysis:samples', { detail: formatted.sentiment.individual_results }));
+      }
     }
 
     // Load user's previous feedback (to restore local corrections UI)
     (async () => { await loadUserFeedback(); })();
 
-    // Hook up UI events
+    // Hook up UI events for legacy button
     const startButton = document.getElementById('startSentimentAnalysis');
     if (startButton) startButton.addEventListener('click', startSentimentAnalysis);
 
-    const instantSlider = document.getElementById('instantSlider');
-    const queueSlider = document.getElementById('queueSlider');
-    const instantValue = document.getElementById('instantValue');
-    const queueValue = document.getElementById('queueValue');
-    const instantCoverage = document.getElementById('instantCoverage');
-    const queueCoverage = document.getElementById('queueCoverage');
-    const instantAnalyzeBtn = document.getElementById('instantAnalyzeBtn');
-    const queueAnalyzeBtn = document.getElementById('queueAnalyzeBtn');
-
-    configureSlidersForUser();
-    if (instantSlider) {
-      instantSlider.addEventListener('input', updateInstantSlider);
-      instantSlider.addEventListener('change', updateInstantSlider);
-      updateInstantSlider();
-    }
-    if (queueSlider) {
-      queueSlider.addEventListener('input', updateQueueSlider);
-      queueSlider.addEventListener('change', updateQueueSlider);
-      updateQueueSlider();
-    }
-
-    const instantTab = document.getElementById('instant-tab');
-    const queueTab = document.getElementById('queue-tab');
-    if (instantTab) {
-      instantTab.addEventListener('shown.bs.tab', () => {
-        currentAnalysisMode = 'instant';
-        const header = document.getElementById('analysisTypeHeader');
-        if (header) header.textContent = 'Instant Analysis';
-        updateInstantSlider();
-      });
-    }
-    if (queueTab) {
-      queueTab.addEventListener('shown.bs.tab', () => {
-        currentAnalysisMode = 'queue';
-        const header = document.getElementById('queueAnalysisHeader');
-        if (header) header.textContent = 'Queue Analysis';
-        updateQueueSlider();
-      });
-    }
-
-    if (instantAnalyzeBtn) {
-      instantAnalyzeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const value = parseInt((instantSlider && instantSlider.value) || '100', 10);
-        startAnalysisWithMode('instant', value);
-      });
-    }
-    if (queueAnalyzeBtn) {
-      queueAnalyzeBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const value = parseInt((queueSlider && queueSlider.value) || '1000', 10);
-        startAnalysisWithMode('queue', value);
-      });
-    }
-
-    function configureSlidersForUser() {
-      const effectiveTotal = window.currentTotalComments || totalAvailableComments;
-      if (instantSlider) {
+    // Mount React controls UI
+    const controlsMount = document.getElementById('analysis-controls-root');
+    if (controlsMount) {
+      const controlsRoot = createRoot(controlsMount);
+      function AnalysisControls() {
+        const effectiveTotal = window.currentTotalComments || totalAvailableComments;
         const instantMax = Math.min(500, effectiveTotal);
-        instantSlider.max = String(instantMax);
-        const maxLbl = document.getElementById('instantMax');
-        if (maxLbl) maxLbl.textContent = String(instantMax);
-        updateInstantSlider();
-      }
-      if (queueSlider && isAuthenticated) {
         const queueMax = Math.min(isProUser ? 5000 : 2500, effectiveTotal);
-        queueSlider.max = String(queueMax);
-        queueSlider.min = '1';
-        if (queueMax < 100) {
-          queueSlider.value = String(Math.min(queueMax, 10));
-          queueSlider.step = '1';
-        } else if (queueMax < 1000) {
-          queueSlider.value = String(Math.min(100, queueMax));
-          queueSlider.step = '10';
-        } else {
-          queueSlider.value = '1000';
-          queueSlider.step = '10';
+        const [activeTab, setActiveTab] = useState('instant');
+        const [instantValue, setInstantValue] = useState(Math.min(100, instantMax));
+        const [queueValue, setQueueValue] = useState(Math.min(1000, queueMax));
+
+        const instantCoverage = Math.min(100, Math.round((instantValue / (effectiveTotal || 1)) * 100));
+        const queueCoverage = Math.min(100, Math.round((queueValue / (effectiveTotal || 1)) * 100));
+
+        function onInstantAnalyze() {
+          currentAnalysisMode = 'instant';
+          startAnalysisWithMode('instant', instantValue);
+          document.getElementById('analysisProgress').scrollIntoView();
         }
-        const queueMaxLabel = document.getElementById('queueMax');
-        if (queueMaxLabel) {
-          if (queueMax < 1000) queueMaxLabel.textContent = String(queueMax);
-          else queueMaxLabel.textContent = `${(queueMax/1000).toFixed(1).replace('.0','')}k`;
+        function onQueueAnalyze() {
+          currentAnalysisMode = 'queue';
+          // Enforce auth
+          if (!isAuthenticated) { showToast('Please sign in to queue analysis', 'warning'); showLoginPrompt(); return; }
+          // Post to queue endpoint
+          const btn = document.getElementById('queueAnalyzeBtnReact');
+          if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Queueing...'; }
+          fetch('/api/analyze/queue', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ video_id: videoId, comment_count: queueValue, include_replies: false })
+          })
+            .then(r => r.json())
+            .then(data => {
+              if (data.success) {
+                const estMin = Math.max(1, Math.round((queueValue / 100) * 1.5 / 60));
+                showToast(`Analysis queued! Estimated time: ~${estMin} min`, 'success');
+                setTimeout(() => { window.location.href = '/profile'; }, 1200);
+              } else {
+                showToast(data.error || 'Failed to queue analysis', 'danger');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-clock"></i> Queue Analysis'; }
+              }
+            })
+            .catch(err => {
+              console.error('Queue error:', err);
+              showToast('Failed to queue analysis', 'danger');
+              if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-clock"></i> Queue Analysis'; }
+            });
         }
-        updateQueueSlider();
+
+        return (
+          <div className="coverage-card">
+            <div className="coverage-header">
+              <h5 className="coverage-title"><span className="coverage-icon">📊</span> Analysis Coverage</h5>
+            </div>
+            <div className="coverage-body">
+              <ul className="nav nav-tabs analysis-tabs" role="tablist">
+                <li className="nav-item" role="presentation">
+                  <button className={`nav-link ${activeTab==='instant'?'active':''}`} type="button" onClick={() => setActiveTab('instant')}>
+                    <i className="fas fa-bolt"></i> Instant
+                  </button>
+                </li>
+                <li className="nav-item" role="presentation">
+                  <button className={`nav-link ${activeTab==='queue'?'active':''}`} type="button" onClick={() => setActiveTab('queue')}>
+                    <i className="fas fa-clock"></i> Queue
+                  </button>
+                </li>
+              </ul>
+
+              {activeTab==='instant' ? (
+                <div className="analysis-form mt-4">
+                  <h6 className="text-muted mb-3">Instant Analysis</h6>
+                  <div className="slider-container mb-3">
+                    <label className="slider-label">Comments: <span>{instantValue}</span></label>
+                    <input className="form-range coverage-slider" type="range" min={1} max={instantMax} step={1}
+                      value={instantValue} onChange={(e)=>setInstantValue(parseInt(e.target.value||'0',10))}/>
+                    <div className="slider-limits"><small>1</small><small>{instantMax}</small></div>
+                  </div>
+                  <div className="analysis-stats mb-3">
+                    <span className="stat-item"><i className="fas fa-percentage"></i> Coverage: <strong>{instantCoverage}%</strong></span>
+                    <span className="stat-item"><i className="fas fa-clock"></i> Time: <strong>{instantValue<=100?'~5s':instantValue<=300?'~15s':'~30s'}</strong></span>
+                  </div>
+                  <button className="vibe-button" onClick={onInstantAnalyze}><span className="button-icon">⚡</span><span className="button-text">Analyze</span></button>
+                </div>
+              ) : (
+                <div className="analysis-form mt-4">
+                  <h6 className="text-muted mb-3">Queue Analysis</h6>
+                  {!isAuthenticated ? (
+                    <div className="alert alert-info">
+                      <i className="fas fa-lock"></i> Sign in to queue analysis
+                      <div className="mt-3">
+                        <a href="/login" className="btn btn-sm btn-primary">Sign In</a>
+                        <a href="/register" className="btn btn-sm btn-outline-primary">Create Account</a>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="slider-container mb-3">
+                        <label className="slider-label">Comments: <span>{queueValue.toLocaleString()}</span></label>
+                        <input className="form-range coverage-slider" type="range" min={1} max={queueMax} step={queueMax<100?1:10}
+                          value={queueValue} onChange={(e)=>setQueueValue(parseInt(e.target.value||'1',10))}/>
+                        <div className="slider-limits"><small>1</small><small>{queueMax<1000?queueMax:`${(queueMax/1000).toFixed(1).replace('.0','')}k`}</small></div>
+                      </div>
+                      <div className="analysis-stats mb-3">
+                        <span className="stat-item"><i className="fas fa-percentage"></i> Coverage: <strong>{queueCoverage}%</strong></span>
+                        <span className="stat-item"><i className="fas fa-clock"></i> Time: <strong>{Math.round(queueValue*0.12)<60?`~${Math.round(queueValue*0.12)}s`:`~${Math.round(queueValue*0.12/60)} min`}</strong></span>
+                      </div>
+                      <button id="queueAnalyzeBtnReact" className="vibe-button" onClick={onQueueAnalyze}><span className="button-icon">⏱</span><span className="button-text">Queue Analysis</span></button>
+                      {!isProUser && (<div className="mt-3 text-center"><small className="text-muted"><i className="fas fa-crown"></i> Upgrade to Pro for up to 5,000 comments (currently 2,500 limit) <br/><a href="/subscribe">Learn More</a></small></div>)}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
       }
-    }
-
-    function updateInstantSlider() {
-      if (!instantSlider) return;
-      const value = parseInt(instantSlider.value || '0', 10);
-      const effectiveTotal = window.currentTotalComments || totalAvailableComments;
-      const percentage = Math.min(100, Math.round((value / effectiveTotal) * 100));
-      if (instantValue) instantValue.textContent = String(value);
-      if (instantCoverage) instantCoverage.textContent = `${percentage}%`;
-      const timeEstimate = value <= 100 ? '~5s' : value <= 300 ? '~15s' : '~30s';
-      const timeSpan = document.querySelector('#instant .analysis-stats .stat-item:nth-child(2) strong');
-      if (timeSpan) timeSpan.textContent = timeEstimate;
-    }
-
-    function updateQueueSlider() {
-      if (!queueSlider) return;
-      const value = parseInt(queueSlider.value || '1', 10);
-      const effectiveTotal = window.currentTotalComments || totalAvailableComments;
-      const percentage = Math.min(100, Math.round((value / effectiveTotal) * 100));
-      if (queueValue) queueValue.textContent = value < 1000 ? String(value) : value.toLocaleString();
-      if (queueCoverage) queueCoverage.textContent = `${percentage}%`;
-      const seconds = Math.round(value * 0.12);
-      const timeSpan = document.querySelector('#queue .analysis-stats .stat-item:nth-child(2) strong');
-      if (timeSpan) timeSpan.textContent = seconds < 60 ? `~${seconds}s` : `~${Math.round(seconds/60)} min`;
+      controlsRoot.render(<AnalysisControls />);
     }
 
     function startAnalysisWithMode(mode, commentsToAnalyze) {
@@ -245,6 +1007,7 @@ function AnalyzeApp() {
         if (section) { section.style.display = 'block'; section.classList.add('active'); }
         if (progressDiv) progressDiv.style.display = 'flex';
         if (resultsDiv) resultsDiv.style.display = 'none';
+        analysisStartTs = Date.now();
         initiateAnalysis(videoId, commentsToAnalyze, Math.round((commentsToAnalyze / (window.currentTotalComments || 5000)) * 100));
       }
     }
@@ -279,10 +1042,11 @@ function AnalyzeApp() {
 
       const funFactText = document.getElementById('funFactText');
       if (funFactText) funFactText.textContent = funFacts[0];
-      if (analysisActionButton) { analysisActionButton.disabled = true; analysisActionButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Analyzing...'; }
+      if (analysisActionButton) { analysisActionButton.disabled = true; analysisActionButton.innerHTML = '<i class=\"fas fa-spinner fa-spin\"></i> Analyzing...'; }
       section?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       const selectedPercentage = Math.round((commentsToAnalyze / (window.currentTotalComments || 5000)) * 100);
+      analysisStartTs = Date.now();
       initiateAnalysis(videoId, commentsToAnalyze, selectedPercentage);
     }
 
@@ -309,6 +1073,7 @@ function AnalyzeApp() {
           if (!data) return;
           if (data.success) {
             analysisId = data.analysis_id;
+            window.currentAnalysisId = analysisId; // Expose globally for React components
             if (data.cached) fetchAnalysisResults();
             else statusCheckInterval = setInterval(checkAnalysisStatus, 1000);
           } else {
@@ -345,6 +1110,11 @@ function AnalyzeApp() {
         .then(r => r.json())
         .then(data => {
           if (data.success) {
+            // Dispatch to React results and samples components
+            window.dispatchEvent(new CustomEvent('analysis:results', { detail: data.results }));
+            if (data.results?.sentiment?.individual_results) {
+              window.dispatchEvent(new CustomEvent('analysis:samples', { detail: data.results.sentiment.individual_results }));
+            }
             displayResults(data.results);
           } else if (data.restart_needed || (data.error && data.error.includes('Analysis not found'))) {
             showError('This analysis has expired or been cleared. Starting a new analysis...');
@@ -364,29 +1134,7 @@ function AnalyzeApp() {
     }
 
     function updateProgress(status) {
-      const progressBar = document.getElementById('progressBar');
-      const progressText = document.getElementById('progressText');
-      const progressStatus = document.getElementById('progressStatus');
-      const progressSubStatus = document.getElementById('progressSubStatus');
-      const progressDetail = document.getElementById('progressDetail');
-      const funFactText = document.getElementById('funFactText');
-
       targetProgress = status.progress || 0;
-      const animateProgress = () => {
-        if (Math.abs(lastProgressValue - targetProgress) > 0.5) {
-          lastProgressValue += (targetProgress - lastProgressValue) * 0.1;
-          if (progressBar) progressBar.style.width = lastProgressValue + '%';
-          if (progressText) progressText.textContent = String(Math.round(lastProgressValue)) + '%';
-          progressAnimationFrame = requestAnimationFrame(animateProgress);
-        } else {
-          lastProgressValue = targetProgress;
-          if (progressBar) progressBar.style.width = targetProgress + '%';
-          if (progressText) progressText.textContent = String(Math.round(targetProgress)) + '%';
-        }
-      };
-      if (progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
-      animateProgress();
-
       let mainStatus = 'Initializing vibe check...';
       let subStatus = '';
       let messagePool = [];
@@ -396,58 +1144,43 @@ function AnalyzeApp() {
           mainStatus = 'Downloading Comments';
           subStatus = loadingMessages.fetching_comments[0];
           messagePool = loadingMessages.fetching_comments;
-          if (progressDetail) progressDetail.textContent = `${status.current || 0} fetched`;
           break;
         case 'using_cached':
           mainStatus = 'Loading Cached Data';
           subStatus = 'Retrieving pre-analyzed vibes...';
-          if (progressDetail) progressDetail.textContent = 'Fast mode activated';
           break;
         case 'analyzing_sentiment':
           mainStatus = 'Analyzing Sentiment';
           subStatus = loadingMessages.analyzing_sentiment[0];
           messagePool = loadingMessages.analyzing_sentiment;
-          if (progressDetail) progressDetail.textContent = `${status.current || 0}/${status.total || 0} comments`;
           break;
         case 'generating_summary':
           mainStatus = 'Generating Insights';
           subStatus = loadingMessages.generating_summary[0];
           messagePool = loadingMessages.generating_summary;
-          if (progressDetail) progressDetail.textContent = 'Almost there!';
           break;
         case 'completed':
           mainStatus = '✨ Analysis Complete!';
           subStatus = 'Your results are ready!';
-          if (progressDetail) progressDetail.textContent = '';
-          if (messageRotationInterval) clearInterval(messageRotationInterval);
-          if (factRotationInterval) clearInterval(factRotationInterval);
           break;
       }
-      if (progressStatus) progressStatus.textContent = mainStatus;
-      if (progressSubStatus) progressSubStatus.textContent = subStatus;
+      lastProgressValue = targetProgress;
+      window.dispatchEvent(new CustomEvent('analysis:progress', { detail: { progress: targetProgress, status: mainStatus, subStatus } }));
 
       if (messagePool.length > 0 && status.status !== 'completed') {
         if (messageRotationInterval) clearInterval(messageRotationInterval);
         currentMessageIndex = 0;
         messageRotationInterval = setInterval(() => {
           currentMessageIndex = (currentMessageIndex + 1) % messagePool.length;
-          if (progressSubStatus) {
-            progressSubStatus.textContent = messagePool[currentMessageIndex];
-            progressSubStatus.style.animation = 'none';
-            setTimeout(() => { progressSubStatus.style.animation = 'fadeInOut 4s ease-in-out infinite'; }, 10);
-          }
+          window.dispatchEvent(new CustomEvent('analysis:progress', { detail: { subStatus: messagePool[currentMessageIndex] } }));
         }, 3000);
       }
 
-      if (!factRotationInterval && status.status !== 'completed' && funFactText) {
-        factRotationInterval = setInterval(() => {
-          currentFactIndex = (currentFactIndex + 1) % funFacts.length;
-          funFactText.style.opacity = '0';
-          setTimeout(() => {
-            funFactText.textContent = funFacts[currentFactIndex];
-            funFactText.style.opacity = '1';
-          }, 300);
+      if (!factRotationInterval && status.status !== 'completed') {
+        const ff = setInterval(() => {
+          window.dispatchEvent(new CustomEvent('analysis:progress', { detail: {} }));
         }, 5000);
+        factRotationInterval = ff;
       }
     }
 
@@ -471,7 +1204,7 @@ function AnalyzeApp() {
       if (progressDiv) progressDiv.style.display = 'none';
       if (resultsDiv) resultsDiv.style.display = 'block';
       if (samplesSection) samplesSection.style.display = 'block';
-      if (startButton) { startButton.innerHTML = '<i class="fas fa-sync"></i> Re-analyze'; startButton.disabled = false; }
+      if (startButton) { startButton.innerHTML = '<i class=\"fas fa-sync\"></i> Re-analyze'; startButton.disabled = false; }
 
       const sentiment = results.sentiment;
       const overallEl = document.getElementById('overallSentiment');
@@ -514,9 +1247,9 @@ function AnalyzeApp() {
         }
       }
 
-      setTimeout(() => {
-        try { createSentimentPieChart(sentiment); } catch (e) { console.error('pie chart error', e); }
-        try {
+        setTimeout(() => {
+          try { createSentimentPieChart(sentiment); } catch (e) { console.error('bar chart error', e); }
+          try {
           let timelineData = results.timeline;
           if (!timelineData || timelineData.length === 0) {
             if (sentiment.individual_results && sentiment.individual_results.length > 0) {
@@ -540,41 +1273,87 @@ function AnalyzeApp() {
         } catch (e) { console.error('timeline chart error', e); }
       }, 300);
 
-      try { displaySampleComments(sentiment.individual_results || []); } catch (e) { console.error('sample comments error', e); }
+      // React-based sample comments rendering will handle this now
 
-      if (results.updated_stats) updateCommentStatistics(results.updated_stats);
+      if (results.updated_stats) {
+        const elapsedSeconds = analysisStartTs ? Math.max(1, Math.round((Date.now() - analysisStartTs) / 1000)) : null;
+        updateCommentStatistics(results.updated_stats, { elapsedSeconds, totalAnalyzed: results.updated_stats.total_analyzed, videoViews, videoLikes });
+      }
     }
 
     function createSentimentPieChart(sentiment) {
       const canvas = document.getElementById('sentimentPieChart');
       if (!canvas || !window.Chart) return;
       const ctx = canvas.getContext('2d');
-      if (charts.pie) charts.pie.destroy();
+      if (charts.bar) charts.bar.destroy();
       const counts = sentiment.sentiment_counts || sentiment.distribution || { positive: 0, neutral: 0, negative: 0 };
-      charts.pie = new window.Chart(ctx, {
-        type: 'doughnut',
+      const total = counts.positive + counts.neutral + counts.negative;
+      const percentages = total > 0 ? {
+        positive: ((counts.positive / total) * 100).toFixed(1),
+        neutral: ((counts.neutral / total) * 100).toFixed(1),
+        negative: ((counts.negative / total) * 100).toFixed(1)
+      } : { positive: 0, neutral: 0, negative: 0 };
+      
+      charts.bar = new window.Chart(ctx, {
+        type: 'bar',
         data: {
-          labels: ['Positive', 'Neutral', 'Negative'],
-          datasets: [{
-            data: [counts.positive || 0, counts.neutral || 0, counts.negative || 0],
-            backgroundColor: ['rgba(209,231,221,0.9)', 'rgba(206,212,218,0.9)', 'rgba(227,93,106,0.85)'],
-            borderColor: ['rgba(25,135,84,1)', 'rgba(160,165,170,1)', 'rgba(176,42,55,1)'],
-            borderWidth: 2,
-          }],
+          labels: [''],
+          datasets: [
+            { 
+              label: `Positive (${percentages.positive}%)`, 
+              data: [counts.positive || 0], 
+              backgroundColor: 'rgba(34,197,94,0.9)',
+              borderColor: 'rgba(34,197,94,1)',
+              borderWidth: 1
+            },
+            { 
+              label: `Neutral (${percentages.neutral}%)`, 
+              data: [counts.neutral || 0], 
+              backgroundColor: 'rgba(156,163,175,0.9)',
+              borderColor: 'rgba(156,163,175,1)',
+              borderWidth: 1
+            },
+            { 
+              label: `Negative (${percentages.negative}%)`, 
+              data: [counts.negative || 0], 
+              backgroundColor: 'rgba(239,68,68,0.9)',
+              borderColor: 'rgba(239,68,68,1)',
+              borderWidth: 1
+            }
+          ],
         },
         options: {
+          indexAxis: 'y',
           responsive: true,
           maintainAspectRatio: false,
+          scales: {
+            x: {
+              stacked: true,
+              display: false,
+              grid: { display: false }
+            },
+            y: {
+              stacked: true,
+              display: false,
+              grid: { display: false }
+            }
+          },
           plugins: {
-            legend: { position: 'bottom' },
+            legend: { 
+              display: true,
+              position: 'bottom',
+              labels: {
+                boxWidth: 15,
+                padding: 8,
+                font: { size: 11 }
+              }
+            },
             tooltip: {
               callbacks: {
                 label: (context) => {
-                  const label = context.label || '';
-                  const value = context.parsed || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = total ? ((value / total) * 100).toFixed(1) : '0.0';
-                  return `${label}: ${value} (${percentage}%)`;
+                  const label = context.dataset.label || '';
+                  const value = context.parsed.x || 0;
+                  return `${value} comments`;
                 },
               },
             },
@@ -824,49 +1603,74 @@ function AnalyzeApp() {
       });
     }
 
-    function updateCommentStatistics(stats) {
+    function updateCommentStatistics(stats, extras = {}) {
       if (!stats) return;
-      const headers = document.querySelectorAll('.card-header-vibe h3');
-      const hdr = headers && headers[1];
-      if (hdr && !hdr.querySelector('.updated-badge')) {
-        const badge = document.createElement('span');
-        badge.className = 'badge badge-success ml-2 updated-badge';
-        badge.textContent = 'Updated';
-        badge.style.fontSize = '0.6em';
-        badge.style.verticalAlign = 'middle';
-        badge.style.animation = 'fadeIn 0.5s';
-        hdr.appendChild(badge);
+      const mount = document.getElementById('react-comment-metrics');
+      if (!mount) return;
+
+      const { elapsedSeconds, totalAnalyzed, videoViews = 0, videoLikes = 0 } = extras;
+      const root = createRoot(mount);
+
+      const analyzed = totalAnalyzed ?? stats.total_analyzed ?? 0;
+      const coverage = stats.analysis_depth_percentage ?? 0;
+      const threads = stats.top_level_count ?? 0;
+      const seconds = elapsedSeconds ?? null;
+      const rate = seconds ? Math.max(0, (analyzed / seconds)).toFixed(1) : null;
+      const engagement = videoViews > 0 ? ((videoLikes / videoViews) * 100).toFixed(1) : '0.0';
+
+      const topCommenters = Array.isArray(stats.top_commenters) ? stats.top_commenters : [];
+
+      function MetricsCard() {
+        return (
+          <div className="card">
+            <div className="card-header header-muted-blue">
+              <h5 className="mb-0"><i className="fas fa-chart-bar"></i> Comment Coverage & Stats</h5>
+            </div>
+            <div className="card-body">
+              {/* Header summary */}
+              <div className="coverage-summary mb-3">
+                <div className="coverage-main" style={{display:'flex',alignItems:'baseline',gap:'8px'}}>
+                  <span className="coverage-number">{analyzed.toLocaleString()}</span>
+                  <span className="coverage-text">comments analyzed</span>
+                  <span className="badge badge-info ml-2">{coverage}% coverage</span>
+                </div>
+                <div className="coverage-details" style={{display:'flex',gap:'16px',flexWrap:'wrap'}}>
+                  <span className="detail-item"><i className="fas fa-comments"></i> {threads.toLocaleString()} threads</span>
+                  {seconds ? <span className="detail-item"><i className="fas fa-clock"></i> {seconds}s</span> : null}
+                  {rate ? <span className="detail-item"><i className="fas fa-tachometer-alt"></i> {rate} /sec</span> : null}
+                </div>
+              </div>
+
+              {/* Stats grid */}
+              <div className="comment-stats-grid mb-3">
+                <div className="stat-item"><div className="stat-icon text-primary"><i className="fas fa-users"></i></div><div className="stat-content"><div className="stat-value">{(stats.unique_commenters||0).toLocaleString()}</div><div className="stat-label">Unique Users</div></div></div>
+                <div className="stat-item"><div className="stat-icon text-success"><i className="fas fa-text-width"></i></div><div className="stat-content"><div className="stat-value">{stats.avg_comment_length||0}</div><div className="stat-label">Avg Length</div></div></div>
+                <div className="stat-item"><div className="stat-icon text-info"><i className="fas fa-comment-dots"></i></div><div className="stat-content"><div className="stat-value">{(stats.top_level_count||0).toLocaleString()}</div><div className="stat-label">Comments</div></div></div>
+                <div className="stat-item"><div className="stat-icon text-warning"><i className="fas fa-percentage"></i></div><div className="stat-content"><div className="stat-value">{engagement}%</div><div className="stat-label">Engagement</div></div></div>
+              </div>
+
+              {/* Top commenters */}
+              {topCommenters.length > 0 && (
+                <div className="card bg-light">
+                  <div className="card-header"><h6 className="mb-0"><i className="fas fa-trophy"></i> Most Active Commenters</h6></div>
+                  <div className="card-body">
+                    <ol className="list-group list-group-flush">
+                      {topCommenters.slice(0, 10).map((c, idx) => (
+                        <li key={idx} className="list-group-item d-flex justify-content-between align-items-center">
+                          <span><strong>#{idx+1}</strong> {String(c[0])}</span>
+                          <span className="badge badge-primary badge-pill">{(c[1]||0).toLocaleString()} comments</span>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        );
       }
-      const alertInfo = document.querySelector('.alert-info');
-      if (alertInfo && stats.total_analyzed) {
-        alertInfo.innerHTML = `
-          <i class="fas fa-info-circle"></i>
-          <strong>Analysis Updated:</strong> Analyzed <strong>${stats.total_analyzed}</strong> comments
-          (<strong>${stats.analysis_depth_percentage}%</strong> of total available)<br>
-          <small class="text-muted"><i class="fas fa-chart-line"></i> Statistics below reflect the expanded analysis dataset</small>
-        `;
-        alertInfo.classList.add('alert-success');
-        alertInfo.classList.remove('alert-info');
-      }
-      const grid = document.querySelector('.comment-stats-grid');
-      if (grid) {
-        const u = grid.querySelector('.stat-item:nth-child(1) .stat-value'); if (u) u.textContent = String(stats.unique_commenters || 0);
-        const a = grid.querySelector('.stat-item:nth-child(2) .stat-value'); if (a) a.textContent = String(stats.avg_comment_length || 0);
-        const t = grid.querySelector('.stat-item:nth-child(3) .stat-value'); if (t) t.textContent = String(stats.top_level_count || 0);
-        const r = grid.querySelector('.stat-item:nth-child(4) .stat-value'); if (r) r.textContent = String(stats.replies_count || 0);
-      }
-      if (stats.top_commenters && stats.top_commenters.length > 0) {
-        const list = document.querySelector('.list-group-flush');
-        if (list) {
-          list.innerHTML = '';
-          stats.top_commenters.forEach((c, idx) => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            li.innerHTML = `<span><strong>#${idx + 1}</strong> ${c[0]}</span><span class="badge badge-primary badge-pill">${c[1]} comments</span>`;
-            list.appendChild(li);
-          });
-        }
-      }
+
+      root.render(<MetricsCard />);
     }
 
     function showToast(message, type = 'info', duration = 3000) {
@@ -1062,6 +1866,9 @@ function AnalyzeApp() {
       if (progressAnimationFrame) cancelAnimationFrame(progressAnimationFrame);
       Object.values(charts).forEach(ch => { try { ch.destroy(); } catch {} });
     };
+  } catch (err) {
+    showFatalError('Failed to initialize the Analyze UI.', err);
+  }
   }, []);
 
   // No visible React UI; we strictly orchestrate DOM interactions

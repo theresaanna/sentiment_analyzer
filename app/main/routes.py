@@ -37,8 +37,8 @@ def index():
             session['video_id'] = video_id
             session['video_url'] = build_youtube_url(video_id)
             
-            # Redirect to analysis page (use canonical route with path param)
-            return redirect(url_for('main.analyze_video', video_id=video_id))
+            # Redirect to info-only view first to avoid fetching comments on initial load
+            return redirect(url_for('main.analyze_video', video_id=video_id, info_only='true'))
         else:
             flash('Could not extract video ID from URL', 'danger')
     
@@ -49,9 +49,10 @@ def index():
 @login_required
 def analyze():
     """Analyze page for YouTube videos."""
-    # Support legacy links like /analyze?video_id=XYZ by redirecting to the canonical route
+    # Support legacy links like /analyze?video_id=XYZ or /analyze?v=XYZ by redirecting to the canonical route
     if request.method == 'GET':
-        q_video_id = request.args.get('video_id')
+        # Check for both 'v' and 'video_id' parameters
+        q_video_id = request.args.get('v') or request.args.get('video_id')
         if q_video_id:
             return redirect(url_for('main.analyze_video', video_id=q_video_id))
     if request.method == 'POST':
@@ -91,22 +92,60 @@ def analyze():
 @bp.route('/analyze/<video_id>')
 def analyze_video(video_id):
     """Analyze comments for a given video ID."""
+    import logging
+    logging.info(f"analyze_video called with video_id={video_id}, args={request.args}")
     video_url = build_youtube_url(video_id)
     cache_status = {'enabled': cache.enabled, 'hits': []}
     
     try:
-        # Initialize Enhanced YouTube service for maximum comment retrieval
+        # Read flags from query
+        info_only = request.args.get('info_only', 'false').lower() == 'true'
+        logging.info(f"info_only={info_only}")
+        preview_mode = request.args.get('preview', 'true').lower() == 'true'
+        
+        # Initialize services
         from app.services.enhanced_youtube_service import EnhancedYouTubeService
         youtube_service = EnhancedYouTubeService()
+        
+        # Always fetch basic video info first (cached if available)
+        logging.info(f"Fetching video info for {video_id}")
+        video_info = youtube_service.get_video_info(video_id)
+        logging.info(f"Video info fetched: {video_info is not None}")
+        if cache.get('video_info', video_id):
+            cache_status['hits'].append('video_info')
+        
+        # If homepage requested info-only, render without fetching any comments
+        if info_only:
+            comment_stats = {
+                'fetched_comments': 0,
+                'total_comments': 0,
+                'unique_commenters': 0,
+                'avg_comment_length': 0,
+                'replies_count': 0,
+                'top_level_count': 0,
+                'top_commenters': [],
+                'total_available': video_info.get('statistics', {}).get('comments', 0) if isinstance(video_info, dict) else 0,
+                'fetch_percentage': 0,
+                'fetch_time': 0,
+                'comments_per_second': 0,
+                'quota_used': 0
+            }
+            return render_template(
+                'analyze.html',
+                video_id=video_id,
+                video_url=video_url,
+                video_info=video_info,
+                comment_stats=comment_stats,
+                cache_status=cache_status,
+                success=True  # Show page but without any fetched comments yet
+            )
         
         # Get more comments for better analysis (configurable) - enforce user-based limits
         from flask import current_app
         from flask_login import current_user
         
         # Determine max comments based on user status
-        # For initial page load, only fetch a preview to speed up rendering
-        preview_mode = request.args.get('preview', 'true').lower() == 'true'
-        
+        # For initial page load (non info-only), load a limited preview unless overridden
         if preview_mode:
             # Fast preview mode - only load 100-500 comments for stats
             max_comments = 500  # Quick load for stats display
@@ -124,18 +163,10 @@ def analyze_video(video_id):
             # Enforce the limit based on user type
             max_comments = min(max_comments, default_limit)
         
-        # Check if data is in cache first
-        video_cached = cache.get('video_info', video_id) is not None
+        # Check if comments are in cache for this target
         cache_key = f"{video_id}:max:{max_comments}:True:relevance"
-        comments_cached = cache.get('enhanced_comments', cache_key) is not None
-        
-        if video_cached:
-            cache_status['hits'].append('video_info')
-        if comments_cached:
+        if cache.get('enhanced_comments', cache_key):
             cache_status['hits'].append('comments')
-        
-        # Fetch video info (will use cache if available)
-        video_info = youtube_service.get_video_info(video_id)
         
         # Smart loading: Determine optimal initial load based on video size
         total_video_comments = video_info.get('statistics', {}).get('comments', 0)
@@ -223,6 +254,9 @@ def analyze_video(video_id):
         )
         
     except Exception as e:
+        import logging
+        import traceback
+        logging.error(f'Error analyzing video {video_id}: {str(e)}\n{traceback.format_exc()}')
         flash(f'Error analyzing video: {str(e)}', 'danger')
         # Provide default empty stats to avoid template errors
         comment_stats = {
