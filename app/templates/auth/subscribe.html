@@ -156,6 +156,33 @@ main.container {
     background-clip: text;
 }
 
+.original-price {
+    text-decoration: line-through;
+    color: #9ca3af;
+    font-size: 1.8rem;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.intro-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: 10px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+
 a.vibe-button {
     display: inline-block;
     text-decoration: none;
@@ -222,11 +249,12 @@ a.vibe-button:hover {
                   <!-- Pro Plan -->
                   <div class="col-md-6">
                     <div class="plan-card pro featured">
-                      <div class="plan-badge">BEST VALUE</div>
+                      <div class="plan-badge">LIMITED TIME OFFER</div>
                       <div class="plan-header">
-                        <h4 class="plan-name">Pro</h4>
+                        <h4 class="plan-name">Pro <span class="intro-badge">50% OFF</span></h4>
                         <div class="plan-price">
-                          <span class="price-amount">$20</span>
+                          <span class="original-price">$20</span>
+                          <span class="price-amount">$10</span>
                           <span class="price-period">/month</span>
                         </div>
                       </div>

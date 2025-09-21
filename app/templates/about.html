@@ -86,6 +86,41 @@
         font-size: 1rem;
         margin-top: 10px;
     }
+    
+    .original-price {
+        text-decoration: line-through;
+        color: #9ca3af;
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-right: 8px;
+    }
+    
+    .intro-offer {
+        display: inline-block;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        padding: 3px 12px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+    
+    .price-highlight {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
 </style>
 {% endblock %}
 
@@ -139,14 +174,14 @@
                         <div class="text-center">
                             <div class="step-number" style="display: inline-block; width: 40px; height: 40px; background: var(--primary-gradient); color: white; border-radius: 50%; line-height: 40px; font-weight: bold; margin-bottom: 15px;">2</div>
                             <h5>AI Analysis</h5>
-                            <p class="text-muted">Our ML models analyze up to 5,000 comments in real-time</p>
+                            <p class="text-muted">Our ML models analyze up to 5,000 comments, 500 in real-time</p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="text-center">
                             <div class="step-number" style="display: inline-block; width: 40px; height: 40px; background: var(--primary-gradient); color: white; border-radius: 50%; line-height: 40px; font-weight: bold; margin-bottom: 15px;">3</div>
                             <h5>Get Insights</h5>
-                            <p class="text-muted">Receive detailed reports with charts, themes, and trends</p>
+                            <p class="text-muted">Generate detailed reports with charts, summaries, themes, and trends</p>
                         </div>
                     </div>
                 </div>
@@ -161,7 +196,7 @@
                             <span class="me-3" style="font-size: 1.5rem;">🤖</span>
                             <div>
                                 <h5>Advanced AI Models</h5>
-                                <p class="text-muted">Tested ensemble method combining RoBERTa transformers with traditional ML algorithms for robust sentiment analysis</p>
+                                <p class="text-muted">Combines open source and proprietary AI technologies for a powerful ensemble of analysis.</p>
                             </div>
                         </div>
                     </div>
@@ -170,7 +205,7 @@
                             <span class="me-3" style="font-size: 1.5rem;">📊</span>
                             <div>
                                 <h5>Rich Visualizations</h5>
-                                <p class="text-muted">Interactive charts, word clouds, and sentiment distributions</p>
+                                <p class="text-muted">Readable charts, word clouds, and sentiment summaries</p>
                             </div>
                         </div>
                     </div>
@@ -206,7 +241,7 @@
                             <span class="me-3" style="font-size: 1.5rem;">🔒</span>
                             <div>
                                 <h5>Privacy First</h5>
-                                <p class="text-muted">Secure OAuth login with Google and encrypted data storage</p>
+                                <p class="text-muted">Secure OAuth login with Google, secure HTTPS, tried, true and safe technologies</p>
                             </div>
                         </div>
                     </div>
@@ -264,8 +299,14 @@
             <div class="vibe-card mb-5" style="background: linear-gradient(135deg, #f0f4ff 0%, #e6f2ff 100%); border: 2px solid #c7d2fe;">
                 <div class="text-center mb-4">
                     <span class="pro-badge" style="font-size: 1.2rem;">PRO</span>
+                    <span class="intro-offer ml-2">LIMITED TIME: 50% OFF</span>
                 </div>
                 <h2 class="text-center mb-4">Premium Features</h2>
+                <div class="text-center mb-3">
+                    <span class="original-price">$20/month</span>
+                    <span class="price-highlight">$10/month</span>
+                    <span style="color: #10b981; font-weight: 600; margin-left: 10px;">Introductory Offer!</span>
+                </div>
                 <div class="row g-4">
                     <div class="col-md-4 text-center">
                         <span style="font-size: 2rem;">📈</span>
@@ -286,7 +327,7 @@
                 <div class="text-center mt-4">
                     <a href="{{ url_for('auth.subscribe') }}" class="vibe-button">
                         <span class="button-icon">⭐</span>
-                        <span class="button-text">Upgrade to Pro</span>
+                        <span class="button-text">Get Pro for $10/month</span>
                     </a>
                 </div>
             </div>

@@ -86,7 +86,7 @@ class Config:
 
     # Payments (Stripe only)
     STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY')
-    STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID')  # $20 monthly price id
+    STRIPE_PRICE_ID = os.environ.get('STRIPE_PRICE_ID')  # Monthly price id (introductory: $10, regular: $20)
     STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
     
     # Email Configuration

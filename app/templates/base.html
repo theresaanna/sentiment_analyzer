@@ -54,8 +54,8 @@
                         </li>
                         {% if not current_user.is_subscribed %}
                         <li class="nav-item">
-                            <a class="nav-link nav-pro-cta" href="{{ url_for('auth.subscribe') }}">
-                                <span class="nav-pro-icon">⭐</span> Upgrade
+                            <a class="nav-link nav-pro-cta" href="{{ url_for('auth.subscribe') }}" style="position: relative;">
+                                <span class="nav-pro-icon">⭐</span> Upgrade - 50% OFF
                             </a>
                         </li>
                         {% endif %}
