@@ -14,13 +14,13 @@ from unittest.mock import patch, MagicMock
 def authenticated_page(page: Page, test_user):
     """Fixture to provide an authenticated page"""
     # Login
-    page.goto('/login')
+    page.goto('http://localhost:8001/login')
     page.fill('input[name="email"]', test_user['email'])
     page.fill('input[name="password"]', test_user['password'])
     page.click('button[type="submit"]')
     
     # Wait for redirect to dashboard
-    page.wait_for_url('/dashboard', timeout=10000)
+    page.wait_for_url('**/dashboard', timeout=10000)
     
     return page
 
@@ -69,7 +69,7 @@ class TestEnhancedPreloadWorkflow:
         page = authenticated_page
         
         # Navigate to dashboard
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         
         # Load a test video
         page.click('button:has-text("Load Videos")')
@@ -196,7 +196,7 @@ class TestEnhancedPreloadWorkflow:
         ))
         
         # Navigate to dashboard (triggers sync)
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_timeout(2000)  # Wait for sync to complete
         
         # Check localStorage contains synced data

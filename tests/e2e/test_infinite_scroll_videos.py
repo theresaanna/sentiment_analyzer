@@ -14,13 +14,13 @@ from playwright.sync_api import Page, expect
 def authenticated_user(page: Page):
     """Fixture to provide an authenticated user with a YouTube channel"""
     # Login
-    page.goto('/login')
+    page.goto('http://localhost:8001/login')
     page.fill('input[name="email"]', 'user@example.com')
     page.fill('input[name="password"]', 'password123')
     page.click('button[type="submit"]')
     
     # Wait for redirect to dashboard
-    page.wait_for_url('/dashboard', timeout=10000)
+    page.wait_for_url('**/dashboard', timeout=10000)
     
     # Set channel info in session
     page.evaluate("""
@@ -78,7 +78,7 @@ class TestInfiniteScrollVideos:
         ))
         
         # Navigate to videos section
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         
         # Wait for videos to load
         page.wait_for_selector('.video-grid', timeout=10000)
@@ -124,7 +124,7 @@ class TestInfiniteScrollVideos:
         
         page.route('**/api/channel/*/videos*', handle_route)
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         
         # Wait for initial load
         page.wait_for_selector('.video-card')
@@ -173,7 +173,7 @@ class TestInfiniteScrollVideos:
         
         page.route('**/api/channel/*/videos*', handle_route)
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Perform multiple scrolls
@@ -234,7 +234,7 @@ class TestInfiniteScrollVideos:
         
         page.route('**/api/channel/*/videos?page=*&limit=50', handle_load_all)
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Click Load All Videos button
@@ -270,7 +270,7 @@ class TestInfiniteScrollVideos:
             })
         ))
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Click on first video
@@ -290,7 +290,7 @@ class TestInfiniteScrollVideos:
         # Mock API error
         page.route('**/api/channel/*/videos*', lambda route: route.abort())
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         
         # Should show error message
         page.wait_for_selector('.videos-error', timeout=10000)
@@ -334,7 +334,7 @@ class TestInfiniteScrollVideos:
             })
         ))
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         
         # Should show empty state
         page.wait_for_selector('.video-grid-empty', timeout=10000)
@@ -356,7 +356,7 @@ class TestInfiniteScrollVideos:
             })
         ))
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Check progress bar exists and shows correct progress
@@ -385,7 +385,7 @@ class TestInfiniteScrollVideos:
             })
         ))
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Videos should display in single column on mobile
@@ -417,7 +417,7 @@ class TestInfiniteScrollVideos:
             })
         ))
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Check sentiment badges are displayed
@@ -477,7 +477,7 @@ class TestVideoFormatting:
             })
         ))
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Check duration formatting
@@ -518,7 +518,7 @@ class TestVideoFormatting:
             })
         ))
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Check view count formatting
@@ -571,7 +571,7 @@ class TestVideoFormatting:
             })
         ))
         
-        page.goto('/dashboard/videos')
+        page.goto('http://localhost:8001/dashboard/videos')
         page.wait_for_selector('.video-card')
         
         # Check date formatting

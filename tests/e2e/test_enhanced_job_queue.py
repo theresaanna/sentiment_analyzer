@@ -14,13 +14,13 @@ from unittest.mock import patch, MagicMock
 def authenticated_pro_user(page: Page):
     """Fixture to provide an authenticated PRO user"""
     # Login as PRO user
-    page.goto('/login')
+    page.goto('http://localhost:8001/login')
     page.fill('input[name="email"]', 'pro@example.com')
     page.fill('input[name="password"]', 'password123')
     page.click('button[type="submit"]')
     
     # Wait for redirect to dashboard
-    page.wait_for_url('/dashboard', timeout=10000)
+    page.wait_for_url('**/dashboard', timeout=10000)
     
     # Mock PRO status
     page.evaluate("""
@@ -138,7 +138,7 @@ class TestEnhancedJobQueue:
         ))
         
         # Navigate to dashboard
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         
         # Wait for job queue to load
         page.wait_for_selector('.job-queue', timeout=10000)
@@ -176,7 +176,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True, 'jobs': mock_jobs_data})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Click on Active tab
@@ -205,7 +205,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True, 'jobs': mock_jobs_data})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Click on Completed tab
@@ -235,7 +235,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True, 'jobs': mock_jobs_data})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Click on History tab
@@ -259,7 +259,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True, 'jobs': mock_jobs_data})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Click on the first job card to expand it
@@ -294,7 +294,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True, 'jobs': mock_jobs_data})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Search by video title
@@ -334,7 +334,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True, 'jobs': mock_jobs_data})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Default should be newest first
@@ -372,7 +372,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Test cancel button for active job
@@ -412,7 +412,7 @@ class TestEnhancedJobQueue:
         
         page.route('/api/jobs/status', handle_route)
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Initial load
@@ -438,7 +438,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True, 'jobs': mock_jobs_data})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Click Select All button
@@ -466,7 +466,7 @@ class TestEnhancedJobQueue:
             body=json.dumps({'success': True, 'jobs': []})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Check that elements are properly stacked on mobile
@@ -492,7 +492,7 @@ class TestJobQueueErrorHandling:
         # Mock API failure
         page.route('/api/jobs/status', lambda route: route.abort())
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         
         # Should show error message
         page.wait_for_selector('.queue-error', timeout=10000)
@@ -512,7 +512,7 @@ class TestJobQueueErrorHandling:
             body=json.dumps({'success': True, 'jobs': []})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Should show empty state
@@ -541,7 +541,7 @@ class TestJobQueueErrorHandling:
             body=json.dumps({'success': True, 'jobs': [failed_job]})
         ))
         
-        page.goto('/dashboard')
+        page.goto('http://localhost:8001/dashboard')
         page.wait_for_selector('.job-queue')
         
         # Expand the failed job
