@@ -246,7 +246,7 @@ a.vibe-button:hover {
                             <span class="button-text">Start Pro Subscription</span>
                           </button>
                         {% else %}
-                          <a href="{{ url_for('auth.login', next=url_for('auth.subscribe')) }}" class="vibe-button">
+                          <a href="{{ url_for('auth.login') }}" class="vibe-button">
                             <span class="button-icon">🌟</span>
                             <span class="button-text">Sign In to Subscribe</span>
                           </a>
