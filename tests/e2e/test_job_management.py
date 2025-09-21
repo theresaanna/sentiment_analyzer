@@ -5,7 +5,15 @@ Tests job cancellation, clearing old jobs, and managing multiple concurrent jobs
 
 import pytest
 import asyncio
-from playwright.async_api import async_playwright, expect
+
+# Skip these tests if playwright is not installed
+try:
+    from playwright.async_api import async_playwright, expect
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    HAS_PLAYWRIGHT = False
+
+pytestmark = pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 
 
 class TestJobManagementE2E:

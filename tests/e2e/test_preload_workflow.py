@@ -5,8 +5,17 @@ Tests the complete user journey from clicking preload to completion.
 
 import pytest
 import asyncio
-from playwright.async_api import async_playwright, expect
+
+# Skip these tests if playwright is not installed
+try:
+    from playwright.async_api import async_playwright, expect
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    HAS_PLAYWRIGHT = False
+
 from unittest.mock import patch, MagicMock
+
+pytestmark = pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
 
 
 class TestPreloadWorkflowE2E:
