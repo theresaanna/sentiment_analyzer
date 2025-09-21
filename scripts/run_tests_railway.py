@@ -47,17 +47,19 @@ def run_tests():
         '--tb=short',           # Short traceback format
         '--maxfail=10',         # Stop after 10 failures
         '--disable-warnings',    # Reduce noise in CI
-        '-p', 'no:cacheprovider' # Disable cache in CI
+        '-p', 'no:cacheprovider', # Disable cache in CI
+        '--ignore=tests/e2e/'    # Always skip e2e tests in Railway (requires Playwright)
     ]
     
     # Skip integration tests if requested (they might need external services)
     if skip_integration:
         pytest_args.extend([
-            '-k', 'not integration and not redis_cloud and not slow',
+            '-k', 'not integration and not redis_cloud and not slow and not e2e',
             '--ignore=tests/test_enhanced_integration.py',
             '--ignore=tests/test_redis_cloud.py'
         ])
         print("ℹ️  Skipping integration tests (SKIP_INTEGRATION_TESTS=true)")
+        print("ℹ️  Skipping e2e tests (require Playwright)")
     
     # Add coverage if requested
     if os.environ.get('RAILWAY_COVERAGE', 'false').lower() == 'true':
