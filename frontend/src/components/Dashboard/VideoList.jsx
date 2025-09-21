@@ -170,9 +170,15 @@ const VideoItem = ({ video, isPreloaded, jobStatus, onPreload, index }) => {
 /**
  * Video List Component
  */
-const VideoList = ({ videos, preloadedVideos = new Set(), isLoading }) => {
+const VideoList = ({ videos, preloadedVideos: propPreloadedVideos = new Set(), isLoading }) => {
   const { showToast } = useToast();
-  const { getVideoJobStatus, trackJob, isVideoPreloaded } = useJobStatus();
+  const { getVideoJobStatus, trackJob, isVideoPreloaded, preloadedVideos: contextPreloadedVideos } = useJobStatus();
+  
+  // Combine preloaded videos from props and context
+  const allPreloadedVideos = new Set([
+    ...propPreloadedVideos,
+    ...contextPreloadedVideos
+  ]);
   
   // Handle preload action
   const handlePreload = async (videoId) => {
@@ -221,7 +227,7 @@ const VideoList = ({ videos, preloadedVideos = new Set(), isLoading }) => {
     <div className="video-list">
       {videos.map((video, index) => {
         const jobStatus = getVideoJobStatus(video.id);
-        const isPreloaded = preloadedVideos.has(video.id) || 
+        const isPreloaded = allPreloadedVideos.has(video.id) || 
                            isVideoPreloaded(video.id) ||
                            jobStatus?.status === 'completed';
         

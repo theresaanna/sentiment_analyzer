@@ -3,7 +3,7 @@
  * Handles all API calls for the dashboard functionality
  */
 
-class DashboardAPIError extends Error {
+export class DashboardAPIError extends Error {
   constructor(message, status, details) {
     super(message);
     this.name = 'DashboardAPIError';
@@ -19,36 +19,48 @@ class DashboardAPIError extends Error {
  * @returns {Promise<any>} - The response data
  */
 async function fetchJSON(url, options = {}) {
+  let response;
+  
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       ...options,
       headers: {
         'Content-Type': 'application/json',
         ...options.headers,
       },
     });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new DashboardAPIError(
-        data.error || `Request failed with status ${response.status}`,
-        response.status,
-        data.details || null
-      );
-    }
-
-    return data;
-  } catch (error) {
-    if (error instanceof DashboardAPIError) {
-      throw error;
-    }
+  } catch (fetchError) {
+    // Network error, fetch failed
     throw new DashboardAPIError(
-      `Network error: ${error.message}`,
+      `Network error: ${fetchError.message}`,
       0,
-      error
+      fetchError
     );
   }
+
+  // Now we have a response, try to parse it
+  let data;
+  try {
+    data = await response.json();
+  } catch (jsonError) {
+    // If JSON parsing fails, create error with response status
+    throw new DashboardAPIError(
+      `Invalid JSON response from server`,
+      response.status,
+      null
+    );
+  }
+
+  // Check if request was successful
+  if (!response.ok || !data.success) {
+    throw new DashboardAPIError(
+      data.error || `Request failed with status ${response.status}`,
+      response.status,
+      data.details || null
+    );
+  }
+
+  return data;
 }
 
 /**
@@ -128,16 +140,38 @@ export const jobsAPI = {
  */
 export const preloadAPI = {
   /**
-   * Queue a video for comment preloading
+   * Queue a video for comment preloading with metadata
    * @param {string} videoId - The video ID to preload
-   * @param {number|null} targetComments - Target number of comments
+   * @param {number|null} targetComments - Target number of comments (default 500)
    * @returns {Promise<Object>}
    */
-  async queuePreload(videoId, targetComments = null) {
+  async queuePreload(videoId, targetComments = 500) {
     return fetchJSON(`/api/preload/comments/${videoId}`, {
       method: 'POST',
       body: JSON.stringify({ target_comments: targetComments }),
     });
+  },
+
+  /**
+   * Get list of preloaded videos for current user
+   * @returns {Promise<{preloaded_videos: Array, count: number}>}
+   */
+  async getPreloadedVideos() {
+    return fetchJSON('/api/preload/status');
+  },
+
+  /**
+   * Check if a specific video is preloaded
+   * @param {string} videoId - The video ID to check
+   * @returns {Promise<boolean>}
+   */
+  async isVideoPreloaded(videoId) {
+    try {
+      const result = await this.getPreloadedVideos();
+      return result.preloaded_videos.some(v => v.video_id === videoId);
+    } catch (error) {
+      return false;
+    }
   },
 };
 

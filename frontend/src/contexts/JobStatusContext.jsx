@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { jobsAPI } from '../services/dashboardApi';
+import preloadStorage from '../services/preloadStorage';
 
 /**
  * Context for managing job statuses across the application
  * This provides a centralized way to track and poll job statuses
+ * Now with enhanced preload persistence support
  */
 
 const JobStatusContext = createContext();
@@ -26,6 +28,11 @@ export const JobStatusProvider = ({ children }) => {
 
   // Track active jobs that need polling
   const [activeJobs, setActiveJobs] = useState(new Set());
+  
+  // Track preloaded videos
+  const [preloadedVideos, setPreloadedVideos] = useState(() => {
+    return new Set(preloadStorage.getAllPreloadedIds());
+  });
   
   // Polling interval reference
   const [pollingInterval, setPollingInterval] = useState(null);
@@ -62,6 +69,12 @@ export const JobStatusProvider = ({ children }) => {
         timestamp: Date.now()
       }
     }));
+    
+    // If preload job completed, update storage
+    if (status.status === 'completed' && status.job_type === 'preload') {
+      preloadStorage.setPreloaded(videoId, status.job_id, status.metadata);
+      setPreloadedVideos(prev => new Set([...prev, videoId]));
+    }
   }, []);
 
   // Remove a job from tracking
@@ -107,12 +120,17 @@ export const JobStatusProvider = ({ children }) => {
               progress: job.progress || 0,
               timestamp: Date.now(),
               job_type: job.job_type,
-              comment_count: job.comment_count
+              comment_count: job.comment_count,
+              metadata: job.video_metadata
             };
             
             // Keep tracking if still active
             if (!['completed', 'failed', 'cancelled'].includes(job.status)) {
               stillActive.add(job.job_id);
+            } else if (job.status === 'completed' && job.job_type === 'preload') {
+              // Mark as preloaded in storage
+              preloadStorage.setPreloaded(job.video_id, job.job_id, job.video_metadata);
+              setPreloadedVideos(prev => new Set([...prev, job.video_id]));
             }
           }
         });
@@ -167,11 +185,16 @@ export const JobStatusProvider = ({ children }) => {
                 progress: job.progress || 0,
                 timestamp: Date.now(),
                 job_type: job.job_type,
-                comment_count: job.comment_count
+                comment_count: job.comment_count,
+                metadata: job.video_metadata
               };
               
               if (!['completed', 'failed', 'cancelled'].includes(job.status)) {
                 active.add(job.job_id);
+              } else if (job.status === 'completed' && job.job_type === 'preload') {
+                // Mark as preloaded in storage
+                preloadStorage.setPreloaded(job.video_id, job.job_id, job.video_metadata);
+                setPreloadedVideos(prev => new Set([...prev, job.video_id]));
               }
             }
           });
@@ -204,13 +227,29 @@ export const JobStatusProvider = ({ children }) => {
 
   // Check if a video has been preloaded
   const isVideoPreloaded = useCallback((videoId) => {
+    // Check storage first for persistent state
+    if (preloadStorage.isPreloaded(videoId)) {
+      return true;
+    }
+    // Then check current job status
     const status = jobStatuses[videoId];
     return status && status.status === 'completed' && status.job_type === 'preload';
   }, [jobStatuses]);
 
+  // Sync preloaded videos periodically
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      preloadStorage.syncWithServer();
+      setPreloadedVideos(new Set(preloadStorage.getAllPreloadedIds()));
+    }, 60000); // Sync every minute
+    
+    return () => clearInterval(syncInterval);
+  }, []);
+
   const value = {
     jobStatuses,
     activeJobs,
+    preloadedVideos,
     isPolling,
     trackJob,
     updateJobStatus,
@@ -218,7 +257,8 @@ export const JobStatusProvider = ({ children }) => {
     clearCompletedJobs,
     getVideoJobStatus,
     isVideoPreloaded,
-    pollJobStatuses
+    pollJobStatuses,
+    preloadStorage // Expose storage for direct access if needed
   };
 
   return (

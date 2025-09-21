@@ -1,0 +1,257 @@
+.job-queue {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 600px;
+}
+
+/* Header */
+.queue-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.queue-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #212529;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.queue-title i {
+  color: #6c757d;
+}
+
+.queue-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* Tabs */
+.queue-tabs {
+  margin-bottom: 20px;
+}
+
+.queue-tabs .nav-tabs {
+  border-bottom: 2px solid #dee2e6;
+}
+
+.queue-tabs .nav-link {
+  color: #6c757d;
+  font-weight: 500;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px 8px 0 0;
+  transition: all 0.2s;
+  background: transparent;
+  cursor: pointer;
+}
+
+.queue-tabs .nav-link:hover {
+  color: #212529;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.queue-tabs .nav-link.active {
+  color: #212529;
+  background: white;
+  border: 2px solid #dee2e6;
+  border-bottom: 2px solid white;
+  margin-bottom: -2px;
+}
+
+.queue-tabs .badge {
+  font-size: 0.75rem;
+  padding: 2px 6px;
+}
+
+/* Filters */
+.queue-filters {
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #6c757d;
+  pointer-events: none;
+}
+
+.search-box input {
+  padding-left: 36px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.search-box input:focus {
+  box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+  border-color: #86b7fe;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-controls .form-select {
+  width: auto;
+  min-width: 150px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+/* Content */
+.queue-content {
+  min-height: 400px;
+}
+
+.job-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Empty State */
+.queue-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: #6c757d;
+}
+
+.queue-empty h4 {
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+/* Loading State */
+.queue-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+/* Error State */
+.queue-error {
+  padding: 40px 20px;
+}
+
+.queue-error .alert {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Footer */
+.queue-footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  color: #6c757d;
+}
+
+.queue-stats {
+  font-weight: 500;
+}
+
+.auto-refresh-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #28a745;
+  font-size: 0.85rem;
+}
+
+.auto-refresh-indicator i {
+  font-size: 0.9rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .job-queue {
+    padding: 12px;
+  }
+  
+  .queue-header {
+    flex-direction: column;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  
+  .queue-tabs .nav-link {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .queue-filters {
+    flex-direction: column;
+  }
+  
+  .search-box {
+    width: 100%;
+  }
+  
+  .filter-controls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .filter-controls .form-select {
+    flex: 1;
+  }
+  
+  .queue-footer {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+}
+
+/* Animation for job cards appearing */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.job-list .job-card {
+  animation: slideIn 0.3s ease;
+}

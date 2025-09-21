@@ -138,18 +138,18 @@ def _queue_key() -> str:
 @bp.route('/api/preload/comments/<video_id>', methods=['POST'])
 @login_required
 def api_preload_comments(video_id):
-    """Queue a comment preload job (PRO feature) using the unified AnalysisJob system."""
+    """Queue a comment preload job (PRO feature) with metadata and 500 comments."""
     guard = require_pro()
     if guard:
         return guard
     
-    # Get target comment count
+    # Get target comment count - fixed at 500 for preload
     body = request.get_json(silent=True) or {}
     raw_target = body.get('target_comments', None)
-    target_comments = 5000  # Default for PRO preload
+    target_comments = 500  # Fixed at 500 for production-grade preload
     if raw_target not in (None, '', 'null', 'None'):
         try:
-            target_comments = min(int(raw_target), 10000)  # Cap at 10k
+            target_comments = min(int(raw_target), 500)  # Cap at 500 for preload
         except Exception:
             return jsonify({'success': False, 'error': 'target_comments must be an integer or null'}), 400
     
@@ -169,33 +169,117 @@ def api_preload_comments(video_id):
             'job_id': existing_job.job_id
         }), 409
     
+    # Fetch video metadata immediately
+    from app.utils.youtube import get_video_metadata
+    try:
+        metadata = get_video_metadata(video_id)
+        video_title = metadata.get('title', 'Unknown Video')
+    except Exception:
+        video_title = 'Unknown Video'
+        metadata = {}
+    
     # Create new analysis job with PRO preload metadata
     job = AnalysisJob(
         user_id=current_user.id,
         video_id=video_id,
         video_url=build_youtube_url(video_id),
+        video_title=video_title,
         comment_count_requested=target_comments,
         status='queued'
     )
     
-    # Store metadata to indicate this is a PRO preload
-    job.results = {'job_type': 'pro_preload', 'preload_only': True}
+    # Store metadata to indicate this is a PRO preload with comments and metadata
+    job.results = {
+        'job_type': 'pro_preload',
+        'preload_only': True,
+        'fetch_metadata': True,
+        'fetch_comments': True,
+        'comment_limit': target_comments,
+        'video_metadata': metadata
+    }
     
     db.session.add(job)
     db.session.commit()
     
-    # Add to Redis queue for faster processing
+    # Store preload state in cache for quick access
     if cache.enabled:
         cache.redis_client.lpush('analysis_jobs:queue', job.job_id)
-        # Also maintain backward compatibility with old status tracking
+        # Track preload status with enhanced metadata
         cache.set('preload_status', job.job_id, {
             'status': 'queued',
             'progress': 0,
             'video_id': video_id,
-            'job_type': 'preload'
-        }, ttl_hours=6)
+            'video_title': video_title,
+            'job_type': 'preload',
+            'metadata': metadata,
+            'comment_count': target_comments
+        }, ttl_hours=24)  # Keep for 24 hours
+        
+        # Mark video as preloaded in a separate key for quick lookup
+        cache.set('video_preloaded', video_id, {
+            'preloaded': True,
+            'job_id': job.job_id,
+            'timestamp': datetime.utcnow().isoformat(),
+            'metadata': metadata,
+            'comment_count': target_comments
+        }, ttl_hours=72)  # Keep preload status for 3 days
     
-    return jsonify({'success': True, 'job_id': job.job_id})
+    return jsonify({
+        'success': True,
+        'job_id': job.job_id,
+        'metadata': metadata
+    })
+
+
+@bp.route('/api/preload/status')
+@login_required
+def api_get_preloaded_videos():
+    """Get list of all preloaded videos for the current user."""
+    guard = require_pro()
+    if guard:
+        return guard
+    
+    try:
+        preloaded_videos = []
+        
+        if cache.enabled:
+            # Get all completed preload jobs for this user
+            jobs = AnalysisJob.query.filter_by(
+                user_id=current_user.id,
+                status='completed'
+            ).filter(
+                AnalysisJob.results.like('%"job_type": "pro_preload"%')
+            ).all()
+            
+            for job in jobs:
+                # Also check cache for quick lookup
+                cached_status = cache.get('video_preloaded', job.video_id)
+                if cached_status:
+                    preloaded_videos.append({
+                        'video_id': job.video_id,
+                        'video_title': job.video_title,
+                        'preloaded_at': job.completed_at.isoformat() if job.completed_at else job.created_at.isoformat(),
+                        'comment_count': cached_status.get('comment_count', 500),
+                        'metadata': cached_status.get('metadata', {})
+                    })
+                else:
+                    # Fallback to job data
+                    preloaded_videos.append({
+                        'video_id': job.video_id,
+                        'video_title': job.video_title,
+                        'preloaded_at': job.completed_at.isoformat() if job.completed_at else job.created_at.isoformat(),
+                        'comment_count': job.comment_count_requested or 500,
+                        'metadata': job.results.get('video_metadata', {}) if job.results else {}
+                    })
+        
+        return jsonify({
+            'success': True,
+            'preloaded_videos': preloaded_videos,
+            'count': len(preloaded_videos)
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @bp.route('/api/jobs/status')
@@ -236,12 +320,35 @@ def api_jobs_status():
         # Convert to status format expected by dashboard
         statuses = []
         for job in jobs:
-            # Determine job type from comment count or metadata
-            is_pro = job.comment_count_requested > 2500
-            job_type = 'preload' if is_pro else 'analysis'
+            # Determine job type from results or comment count
+            job_results = job.results or {}
+            job_type = job_results.get('job_type', 'analysis')
+            if job_type not in ['preload', 'pro_preload', 'channel_sync']:
+                # Fallback detection
+                is_pro = job.comment_count_requested and job.comment_count_requested <= 500
+                job_type = 'preload' if is_pro else 'analysis'
             
-            # Get video metadata if available
-            metadata = video_metadata_map.get(job.video_id)
+            # Get video metadata - first from job results, then from Video table
+            metadata = job_results.get('video_metadata') or video_metadata_map.get(job.video_id) or {}
+            
+            # Enhance metadata if available from cache
+            if cache.enabled and job.video_id:
+                cached_metadata = cache.get('video_preloaded', job.video_id)
+                if cached_metadata and cached_metadata.get('metadata'):
+                    metadata.update(cached_metadata['metadata'])
+            
+            # Ensure all expected fields are present
+            metadata_complete = {
+                'title': metadata.get('title') or job.video_title or '',
+                'description': metadata.get('description', ''),
+                'duration': metadata.get('duration', ''),
+                'views': metadata.get('views', 0),
+                'likes': metadata.get('likes', 0),
+                'comments': metadata.get('comments', 0),
+                'channel_title': metadata.get('channel_title', ''),
+                'published_at': metadata.get('published_at') or metadata.get('published', ''),
+                'thumbnail': metadata.get('thumbnail', '')
+            }
             
             status = {
                 'job_id': job.job_id,
@@ -250,10 +357,12 @@ def api_jobs_status():
                 'video_id': job.video_id,
                 'job_type': job_type,
                 'channel_id': None,  # Could be extracted from video
-                'video_title': job.video_title,
-                'comment_count': job.comment_count_requested,
+                'video_title': job.video_title or metadata_complete['title'],
+                'comment_count_requested': job.comment_count_requested,
                 'created_at': job.created_at.isoformat() if job.created_at else None,
-                'video_metadata': metadata  # Include enhanced metadata
+                'completed_at': job.completed_at.isoformat() if job.completed_at else None,
+                'video_metadata': metadata_complete,  # Include complete metadata
+                'error_message': job.error_message if job.status == 'failed' else None
             }
             statuses.append(status)
         
