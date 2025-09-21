@@ -70,6 +70,19 @@ function AnalyzeApp() {
       }
     }
   }
+  
+  // Check URL parameters for auto-load from completed job
+  function checkAutoLoadParams() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const autoLoad = urlParams.get('auto_load') === 'true';
+    const fromJobId = urlParams.get('from_job');
+    
+    if (autoLoad && fromJobId) {
+      console.log(`[AnalyzeApp] Auto-loading completed job: ${fromJobId}`);
+      return { autoLoad: true, jobId: fromJobId };
+    }
+    return { autoLoad: false, jobId: null };
+  }
 
   try {
     console.log('[AnalyzeApp] Starting initialization for comment analysis...');
@@ -824,39 +837,90 @@ function AnalyzeApp() {
       sr.render(<SampleComments />);
     }
 
+    // Check for auto-load parameters before checking precomputed results
+    const autoLoadParams = checkAutoLoadParams();
+    
     // If server provided precomputed results (from a completed job), render immediately
-    if (precomputedResults) {
+    if (precomputedResults || autoLoadParams.autoLoad) {
       const section = document.getElementById('sentimentAnalysisSection');
       const progressDiv = document.getElementById('analysisProgress');
       const resultsDiv = document.getElementById('analysisResults');
-      if (section) { section.style.display = 'block'; section.classList.add('active'); }
+      
+      if (section) { 
+        section.style.display = 'block'; 
+        section.classList.add('active'); 
+      }
       if (progressDiv) progressDiv.style.display = 'none';
       if (resultsDiv) resultsDiv.style.display = 'block';
 
-      const formatted = {
-        sentiment: {
-          overall_sentiment: precomputedResults.overall_sentiment || 'neutral',
-          distribution: precomputedResults.distribution || { positive: 0, neutral: 0, negative: 0 },
-          distribution_percentage: precomputedResults.percentages || { positive: 0, neutral: 0, negative: 0 },
-          sentiment_counts: precomputedResults.distribution || { positive: 0, neutral: 0, negative: 0 },
-          sentiment_percentages: precomputedResults.percentages || { positive: 0, neutral: 0, negative: 0 },
-          average_confidence: precomputedResults.average_confidence || 0,
-          sentiment_score: precomputedResults.sentiment_score || 0,
-          total_analyzed: precomputedResults.total_analyzed || 0,
-          individual_results: precomputedResults.individual_results || [],
-          model: precomputedResults.model || 'enhanced-sentiment-v1',
-        },
-        summary: {
-          summary: precomputedResults.summary || 'Analysis completed successfully.',
-        },
-      };
-      displayResults(formatted);
-      const samplesSection = document.getElementById('sampleCommentsSection');
-      if (samplesSection) samplesSection.style.display = 'block';
-      // Also notify React components
-      window.dispatchEvent(new CustomEvent('analysis:results', { detail: formatted }));
-      if (formatted && formatted.sentiment && Array.isArray(formatted.sentiment.individual_results)) {
-        window.dispatchEvent(new CustomEvent('analysis:samples', { detail: formatted.sentiment.individual_results }));
+      // If auto-loading from a completed job via query params, fetch the results
+      if (autoLoadParams.autoLoad && autoLoadParams.jobId) {
+        // Fetch job results from API
+        fetch(`/api/analyze/job/${autoLoadParams.jobId}/results`)
+          .then(r => r.json())
+          .then(data => {
+            if (data.success && data.results) {
+              const results = data.results;
+              const formatted = {
+                sentiment: results.sentiment_analysis || results.sentiment || {},
+                summary: { summary: results.summary || 'Analysis completed successfully.' },
+                updated_stats: results.comment_stats || results.updated_stats
+              };
+              
+              // Display the results
+              displayResults(formatted);
+              const samplesSection = document.getElementById('sampleCommentsSection');
+              if (samplesSection) samplesSection.style.display = 'block';
+              
+              // Notify React components
+              window.dispatchEvent(new CustomEvent('analysis:results', { detail: formatted }));
+              if (formatted.sentiment?.individual_results) {
+                window.dispatchEvent(new CustomEvent('analysis:samples', { detail: formatted.sentiment.individual_results }));
+              }
+              
+              // Scroll to results
+              setTimeout(() => {
+                safeScrollIntoView(section);
+              }, 100);
+              
+              // Clean up URL parameters
+              if (window.history && window.history.replaceState) {
+                const cleanUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, '', cleanUrl);
+              }
+            }
+          })
+          .catch(err => {
+            console.error('[AnalyzeApp] Failed to auto-load job results:', err);
+            showError('Failed to load analysis results. Please try analyzing again.');
+          });
+      } else if (precomputedResults) {
+        // Use precomputed results if available
+        const formatted = {
+          sentiment: {
+            overall_sentiment: precomputedResults.overall_sentiment || 'neutral',
+            distribution: precomputedResults.distribution || { positive: 0, neutral: 0, negative: 0 },
+            distribution_percentage: precomputedResults.percentages || { positive: 0, neutral: 0, negative: 0 },
+            sentiment_counts: precomputedResults.distribution || { positive: 0, neutral: 0, negative: 0 },
+            sentiment_percentages: precomputedResults.percentages || { positive: 0, neutral: 0, negative: 0 },
+            average_confidence: precomputedResults.average_confidence || 0,
+            sentiment_score: precomputedResults.sentiment_score || 0,
+            total_analyzed: precomputedResults.total_analyzed || 0,
+            individual_results: precomputedResults.individual_results || [],
+            model: precomputedResults.model || 'enhanced-sentiment-v1',
+          },
+          summary: {
+            summary: precomputedResults.summary || 'Analysis completed successfully.',
+          },
+        };
+        displayResults(formatted);
+        const samplesSection = document.getElementById('sampleCommentsSection');
+        if (samplesSection) samplesSection.style.display = 'block';
+        // Also notify React components
+        window.dispatchEvent(new CustomEvent('analysis:results', { detail: formatted }));
+        if (formatted && formatted.sentiment && Array.isArray(formatted.sentiment.individual_results)) {
+          window.dispatchEvent(new CustomEvent('analysis:samples', { detail: formatted.sentiment.individual_results }));
+        }
       }
     }
 

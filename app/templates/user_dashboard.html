@@ -1049,7 +1049,7 @@ function createJobElement(job) {
   let videoDisplay = '';
   if (job.video_id) {
     if (isCompleted) {
-      videoDisplay = `<a href="/analyze/${job.video_id}" class="text-decoration-none fw-bold">
+      videoDisplay = `<a href="/analyze/${job.video_id}?auto_load=true&from_job=${job.job_id}" class="text-decoration-none fw-bold">
                        <i class="fas fa-chart-line me-1"></i>Video: ${job.video_id}
                      </a>`;
     } else {
@@ -1064,7 +1064,7 @@ function createJobElement(job) {
   const jobType = 'Sentiment Analysis';
   let videoDisplay = job.video_title || `Video: ${job.video_id}`;
   if (isCompleted && job.video_id) {
-    videoDisplay = `<a href="/analyze/${job.video_id}" class="text-decoration-none fw-bold">
+    videoDisplay = `<a href="/analyze/${job.video_id}?auto_load=true&from_job=${job.job_id}" class="text-decoration-none fw-bold">
                      <i class="fas fa-chart-line me-1"></i>${job.video_title || job.video_id}
                    </a>`;
   }
@@ -1078,7 +1078,7 @@ function createJobElement(job) {
   // Update action button logic
   let actionButton = '';
   if (isCompleted && job.video_id) {
-    actionButton = `<a href="/analyze/${job.video_id}" class="btn btn-sm btn-primary">
+    actionButton = `<a href="/analyze/${job.video_id}?auto_load=true&from_job=${job.job_id}" class="btn btn-sm btn-primary">
                      <i class="fas fa-external-link-alt me-1"></i>View Analysis
                    </a>`;
   } else if (isActive) {
@@ -1241,15 +1241,38 @@ let channelRefreshInterval;
 const MAX_CHANNELS = 5;
 
 // Initialize channel management
-function initChannelManagement() {
-  // Load saved channels from localStorage
+async function initChannelManagement() {
+  // Load channels from database instead of localStorage
   try {
-    const saved = localStorage.getItem('vibe:userChannels');
-    if (saved) {
-      userChannels = JSON.parse(saved);
+    const response = await fetch('/api/channel/list');
+    const data = await response.json();
+    
+    if (data.success) {
+      userChannels = data.channels || [];
+      // Store in localStorage for backup
+      try {
+        localStorage.setItem('vibe:userChannels', JSON.stringify(userChannels));
+      } catch (e) {
+        console.log('Could not save channels to localStorage');
+      }
+    } else {
+      // Fallback to localStorage if API fails
+      const saved = localStorage.getItem('vibe:userChannels');
+      if (saved) {
+        userChannels = JSON.parse(saved);
+      }
     }
   } catch (e) {
-    console.log('Could not load saved channels');
+    console.error('Error loading channels from database:', e);
+    // Fallback to localStorage
+    try {
+      const saved = localStorage.getItem('vibe:userChannels');
+      if (saved) {
+        userChannels = JSON.parse(saved);
+      }
+    } catch (le) {
+      console.log('Could not load saved channels');
+    }
   }
   
   renderChannelTabs();
@@ -1378,41 +1401,47 @@ async function addChannelFromInput(channelUrl) {
     return;
   }
   
-  // Check if already added
-  if (userChannels.find(c => c.url === channelUrl || c.handle === channelUrl)) {
-    showError('Channel already added');
-    return;
-  }
-  
   const loadBtn = document.getElementById('loadChannelBtn');
   const originalContent = loadBtn.innerHTML;
   loadBtn.disabled = true;
   loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
   
   try {
+    // First add to database
+    const addResponse = await fetch('/api/channel/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ channel_url: channelUrl })
+    });
+    
+    const addData = await addResponse.json();
+    
+    if (!addData.success) {
+      throw new Error(addData.error || 'Failed to add channel');
+    }
+    
+    // Then fetch channel videos
     const response = await fetch(`/api/youtube/channel-videos?channel=${encodeURIComponent(channelUrl)}&max=10`);
     const data = await response.json();
     
     if (!data.success) {
-      throw new Error(data.error || 'Failed to load channel');
+      throw new Error(data.error || 'Failed to load channel videos');
     }
     
-    // Check if already added by ID
-    if (userChannels.find(c => c.id === data.channel.id)) {
-      showError('Channel already added');
-      return;
-    }
-    
-    // Add to channels
+    // Add to local list
     const newChannel = {
-      id: data.channel.id,
-      title: data.channel.title,
-      handle: data.channel.handle,
+      id: addData.channel.id || data.channel.id,
+      title: addData.channel.title || data.channel.title,
+      handle: addData.channel.handle || data.channel.handle,
       url: channelUrl
     };
     
-    userChannels.push(newChannel);
-    saveChannels();
+    // Check if not already in local list
+    if (!userChannels.find(c => c.id === newChannel.id)) {
+      userChannels.push(newChannel);
+      saveChannels();
+    }
+    
     renderChannelTabs();
     switchToChannel(newChannel.id);
     showSuccess(`Added: ${newChannel.title}`);

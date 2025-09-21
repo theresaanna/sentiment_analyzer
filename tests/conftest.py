@@ -97,6 +97,46 @@ def subscribed_user(app):
 
 
 @pytest.fixture(scope='function')
+def auth_client(client, app):
+    """Create an authenticated test client with a free user."""
+    with app.app_context():
+        user = User(
+            name='Free User',
+            email='free@example.com',
+            is_subscribed=False
+        )
+        user.set_password('test_password')
+        db.session.add(user)
+        db.session.commit()
+        
+        with client.session_transaction() as sess:
+            sess['_user_id'] = str(user.id)
+            sess['_fresh'] = True
+    return client
+
+
+@pytest.fixture(scope='function')
+def pro_client(client, app):
+    """Create an authenticated test client with a pro user."""
+    with app.app_context():
+        user = User(
+            name='Pro User',
+            email='pro@example.com',
+            is_subscribed=True,
+            provider='stripe',
+            customer_id='cus_test_pro'
+        )
+        user.set_password('test_password')
+        db.session.add(user)
+        db.session.commit()
+        
+        with client.session_transaction() as sess:
+            sess['_user_id'] = str(user.id)
+            sess['_fresh'] = True
+    return client
+
+
+@pytest.fixture(scope='function')
 def test_channel(app):
     """Create a test channel."""
     channel = Channel(
