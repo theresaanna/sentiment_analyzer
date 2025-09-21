@@ -6,6 +6,7 @@ Tests the complete workflow of loading videos with infinite scroll in "Your Vide
 import pytest
 import json
 import time
+import re
 from playwright.sync_api import Page, expect
 
 
@@ -280,7 +281,7 @@ class TestInfiniteScrollVideos:
         page.wait_for_url('**/video/video_0', timeout=5000)
         
         # Verify we're on the correct page
-        expect(page).to_have_url(/.*\/video\/video_0/)
+        expect(page).to_have_url(re.compile(r'.*\/video\/video_0'))
     
     def test_error_handling(self, authenticated_user: Page):
         """Test error handling when API fails"""
