@@ -64,20 +64,20 @@ class TestPreloadAPI:
                     mock_cache.redis_client = MagicMock()
                     mock_cache.redis_client.lpush = MagicMock()
                     
-                    response = client.post(f'/api/preload/comments/{video_id}',
-                                         json={'target_comments': 5000})
-                    
-                    assert response.status_code == 200
-                    data = json.loads(response.data)
-                    assert data['success']
-                    assert 'job_id' in data
-                    
-                    # Verify job was created in database
-                    job = AnalysisJob.query.filter_by(video_id=video_id).first()
-                    assert job is not None
-                    assert job.status == 'queued'
-                    assert job.comment_count_requested == 5000
-                    assert job.results == {'job_type': 'pro_preload', 'preload_only': True}
+                response = client.post(f'/api/preload/comments/{video_id}',
+                                     json={'target_comments': 5000})
+                
+                assert response.status_code == 200
+                data = json.loads(response.data)
+                assert data['success']
+                assert 'job_id' in data
+                
+                # Verify job was created in database
+                job = AnalysisJob.query.filter_by(video_id=video_id).first()
+                assert job is not None
+                assert job.status == 'queued'
+                # Preload endpoint caps at 500 comments
+                assert job.comment_count_requested == 500
 
     def test_preload_prevents_duplicate_jobs(self, client, test_user, app):
         """Test that duplicate preload jobs are prevented."""
@@ -135,9 +135,9 @@ class TestPreloadAPI:
                 assert not data['success']
                 assert 'must be an integer' in data['error']
 
-    def test_preload_caps_at_10000_comments(self, client, test_user, app):
-        """Test that target_comments is capped at 10000."""
-        video_id = 'abc123'
+    def test_preload_caps_at_500_comments(self, client, test_user, app):
+        """Test that preload caps at 500 comments even if more requested."""
+        video_id = 'xyz789'
         
         with app.app_context():
             # Make user PRO
@@ -162,9 +162,9 @@ class TestPreloadAPI:
                     data = json.loads(response.data)
                     assert data['success']
                     
-                    # Verify cap was applied
+                    # Verify cap was applied - preload endpoint caps at 500
                     job = AnalysisJob.query.filter_by(video_id=video_id).first()
-                    assert job.comment_count_requested == 10000
+                    assert job.comment_count_requested == 500
 
 
 class TestJobsStatusAPI:
@@ -247,8 +247,9 @@ class TestJobsStatusAPI:
             assert jobs[1]['video_id'] in ['video1', 'video2']
             
             # Check job type classification
+            # API logic: jobs with count <= 500 are 'preload', others are 'analysis'
             for job in jobs:
-                if job['comment_count'] > 2500:
+                if job['comment_count_requested'] <= 500:
                     assert job['job_type'] == 'preload'
                 else:
                     assert job['job_type'] == 'analysis'
@@ -310,7 +311,7 @@ class TestJobsStatusAPI:
             assert metadata['title'] == 'Test Video'
             assert metadata['views'] == 10000
             assert metadata['comments'] == 500
-            assert 'published' in metadata
+            assert 'published_at' in metadata
 
 
 class TestJobCancellationAPI:

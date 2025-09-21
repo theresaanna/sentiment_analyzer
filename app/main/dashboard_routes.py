@@ -170,9 +170,10 @@ def api_preload_comments(video_id):
         }), 409
     
     # Fetch video metadata immediately
-    from app.utils.youtube import get_video_metadata
+    from app.services.youtube_service import YouTubeService
     try:
-        metadata = get_video_metadata(video_id)
+        youtube_service = YouTubeService()
+        metadata = youtube_service.get_video_info(video_id)
         video_title = metadata.get('title', 'Unknown Video')
     except Exception:
         video_title = 'Unknown Video'
