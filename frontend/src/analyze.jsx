@@ -73,7 +73,13 @@ function AnalyzeApp() {
 
   try {
     console.log('[AnalyzeApp] Starting initialization for comment analysis...');
-    if (!rootEl) { showFatalError('React analyze root element is missing.'); return; }
+    
+    // Get the root element
+    const rootEl = document.getElementById('react-analyze-root');
+    if (!rootEl) { 
+      showFatalError('React analyze root element is missing.'); 
+      return; 
+    }
 
     // Parse server-provided context from data attributes
     const videoId = rootEl.getAttribute('data-video-id') || '';
