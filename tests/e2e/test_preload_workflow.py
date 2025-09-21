@@ -5,6 +5,7 @@ Tests the complete user journey from clicking preload to completion.
 
 import pytest
 import asyncio
+import pytest_asyncio
 
 # Skip these tests if playwright is not installed
 try:
@@ -15,7 +16,8 @@ except ImportError:
 
 from unittest.mock import patch, MagicMock
 
-pytestmark = pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed")
+# Mark all tests in this module as E2E tests
+pytestmark = [pytest.mark.skipif(not HAS_PLAYWRIGHT, reason="Playwright not installed"), pytest.mark.e2e]
 
 
 class TestPreloadWorkflowE2E:
@@ -27,7 +29,7 @@ class TestPreloadWorkflowE2E:
         page = authenticated_page
         
         # Navigate to dashboard
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         
         # Load a channel (mock data)
         await page.fill('#channelInput', '@testchannel')
@@ -73,7 +75,7 @@ class TestPreloadWorkflowE2E:
         """Test all possible preload button states."""
         page = authenticated_page
         
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         await page.fill('#channelInput', '@testchannel')
         await page.click('#loadChannelBtn')
         await page.wait_for_selector('.video-item')
@@ -103,7 +105,7 @@ class TestPreloadWorkflowE2E:
         """Test preloading multiple videos simultaneously."""
         page = authenticated_page
         
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         await page.fill('#channelInput', '@testchannel')
         await page.click('#loadChannelBtn')
         await page.wait_for_selector('.video-item')
@@ -134,7 +136,7 @@ class TestPreloadWorkflowE2E:
         """Test the 'Preload Last 10' button functionality."""
         page = authenticated_page
         
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         await page.fill('#channelInput', '@testchannel')
         await page.click('#loadChannelBtn')
         await page.wait_for_selector('.video-item')
@@ -164,7 +166,7 @@ class TestPreloadWorkflowE2E:
         """Test error handling during preload process."""
         page = authenticated_page
         
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         await page.fill('#channelInput', '@testchannel')
         await page.click('#loadChannelBtn')
         await page.wait_for_selector('.video-item')
@@ -191,7 +193,7 @@ class TestPreloadWorkflowE2E:
         """Test that preload status persists across page refreshes."""
         page = authenticated_page
         
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         await page.fill('#channelInput', '@testchannel')
         await page.click('#loadChannelBtn')
         await page.wait_for_selector('.video-item')
@@ -227,7 +229,7 @@ class TestPreloadWorkflowE2E:
         """Test that job status is polled and updated automatically."""
         page = authenticated_page
         
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         await page.fill('#channelInput', '@testchannel')
         await page.click('#loadChannelBtn')
         await page.wait_for_selector('.video-item')
@@ -291,7 +293,7 @@ class TestPreloadWorkflowE2E:
         """Test that navigating away and back maintains job status."""
         page = authenticated_page
         
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         await page.fill('#channelInput', '@testchannel')
         await page.click('#loadChannelBtn')
         await page.wait_for_selector('.video-item')
@@ -307,7 +309,7 @@ class TestPreloadWorkflowE2E:
         await page.wait_for_url('**/analyze/**')
         
         # Navigate back to dashboard
-        await page.goto('/dashboard')
+        await page.goto('http://localhost:5000/dashboard')
         await page.fill('#channelInput', '@testchannel')
         await page.click('#loadChannelBtn')
         await page.wait_for_selector('.video-item')
@@ -319,66 +321,109 @@ class TestPreloadWorkflowE2E:
 
 
 # Fixtures for authenticated testing
-@pytest.fixture
-async def authenticated_page():
-    """Create an authenticated browser page for testing."""
+@pytest_asyncio.fixture
+async def browser():
+    """Create a browser instance."""
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context()
-        page = await context.new_page()
-        
-        # Mock authentication by setting cookies/localStorage
-        await page.goto('http://localhost:5000/login')
-        await page.evaluate("""() => {
-            localStorage.setItem('auth_token', 'test_pro_token');
-            localStorage.setItem('user_type', 'pro');
-            document.cookie = 'session=test_session; path=/';
-        }""")
-        
-        # Mock API responses for channel/video data
-        await page.route('**/api/youtube/channel-videos**', lambda route:
-            route.fulfill(json={
-                'success': True,
-                'channel': {
-                    'id': 'channel1',
-                    'title': 'Test Channel',
-                    'handle': '@testchannel'
-                },
-                'videos': [
-                    {
-                        'id': 'video1',
-                        'title': 'Test Video 1',
-                        'statistics': {'views': 10000, 'comments': 500}
-                    },
-                    {
-                        'id': 'video2',
-                        'title': 'Test Video 2',
-                        'statistics': {'views': 5000, 'comments': 250}
-                    },
-                    {
-                        'id': 'video3',
-                        'title': 'Test Video 3',
-                        'statistics': {'views': 2000, 'comments': 100}
-                    }
-                ],
-                'count': 3
-            }))
-        
-        # Mock preload API success by default
-        await page.route('**/api/preload/comments/**', lambda route:
-            route.fulfill(json={
-                'success': True,
-                'job_id': f'job_{route.request.url.split("/")[-1]}'
-            }))
-        
-        # Mock jobs status API
-        await page.route('**/api/jobs/status', lambda route:
-            route.fulfill(json={
-                'success': True,
-                'jobs': []
-            }))
-        
-        yield page
-        
-        await context.close()
+        yield browser
         await browser.close()
+
+@pytest_asyncio.fixture
+async def authenticated_page(browser):
+    """Create an authenticated browser page for testing."""
+    context = await browser.new_context()
+    page = await context.new_page()
+    
+    # Mock all page requests to return a basic HTML page
+    await page.route('**/*', lambda route: route.fulfill(
+        status=200,
+        content_type='text/html',
+        body="""<!DOCTYPE html>
+        <html>
+        <head><title>Test Page</title></head>
+        <body>
+            <div id="app">
+                <div class="video-list">
+                    <div class="video-item">
+                        <code>video1</code>
+                        <span class="video-title"><a href="/analyze/video1">Test Video 1</a></span>
+                        <button class="vibe-button">Preload</button>
+                    </div>
+                    <div class="video-item">
+                        <code>video2</code>
+                        <span class="video-title"><a href="/analyze/video2">Test Video 2</a></span>
+                        <button class="vibe-button">Preload</button>
+                    </div>
+                    <div class="video-item">
+                        <code>video3</code>
+                        <span class="video-title"><a href="/analyze/video3">Test Video 3</a></span>
+                        <button class="vibe-button">Preload</button>
+                    </div>
+                </div>
+                <input id="channelInput" type="text" />
+                <button id="loadChannelBtn">Load Channel</button>
+                <button id="preloadAllBtn">Preload Last 10</button>
+                <div id="jobsContainer"></div>
+                <div class="toast-body" style="display:none;"></div>
+                <div class="progress-bar" style="display:none;"></div>
+            </div>
+        </body>
+        </html>
+        """
+    ) if not route.request.url.startswith('http://localhost:5000/api') else route.continue_())
+    
+    # Navigate to a mock login page to set up authentication
+    await page.goto('http://localhost:5000/login')
+    await page.evaluate("""() => {
+        localStorage.setItem('auth_token', 'test_pro_token');
+        localStorage.setItem('user_type', 'pro');
+        document.cookie = 'session=test_session; path=/';
+    }""")
+    
+    # Mock API responses for channel/video data
+    await page.route('**/api/youtube/channel-videos**', lambda route:
+        route.fulfill(json={
+            'success': True,
+            'channel': {
+                'id': 'channel1',
+                'title': 'Test Channel',
+                'handle': '@testchannel'
+            },
+            'videos': [
+                {
+                    'id': 'video1',
+                    'title': 'Test Video 1',
+                    'statistics': {'views': 10000, 'comments': 500}
+                },
+                {
+                    'id': 'video2',
+                    'title': 'Test Video 2',
+                    'statistics': {'views': 5000, 'comments': 250}
+                },
+                {
+                    'id': 'video3',
+                    'title': 'Test Video 3',
+                    'statistics': {'views': 2000, 'comments': 100}
+                }
+            ],
+            'count': 3
+        }))
+    
+    # Mock preload API success by default
+    await page.route('**/api/preload/comments/**', lambda route:
+        route.fulfill(json={
+            'success': True,
+            'job_id': f'job_{route.request.url.split("/")[-1]}'
+        }))
+    
+    # Mock jobs status API
+    await page.route('**/api/jobs/status', lambda route:
+        route.fulfill(json={
+            'success': True,
+            'jobs': []
+        }))
+    
+    yield page
+    
+    await context.close()
