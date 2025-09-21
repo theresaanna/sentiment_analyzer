@@ -6,7 +6,7 @@ import * as dashboardApi from '../services/dashboardApi';
 // Mock the API module
 vi.mock('../services/dashboardApi', () => ({
   jobsAPI: {
-    getStatus: vi.fn()
+    getStatus: vi.fn(() => Promise.resolve({ jobs: [] }))
   }
 }));
 
@@ -72,7 +72,7 @@ describe('JobStatusContext', () => {
   });
 
   describe('localStorage persistence', () => {
-    it('initializes from localStorage if available', () => {
+    it('initializes from localStorage if available', async () => {
       const mockStatuses = {
         'video1': {
           job_id: 'job1',
@@ -87,12 +87,24 @@ describe('JobStatusContext', () => {
         wrapper: JobStatusProvider,
       });
 
-      expect(result.current.jobStatuses).toEqual(mockStatuses);
+      // Wait for initial load to complete
+      await waitFor(() => {
+        // After initial load, localStorage values should be preserved
+        expect(result.current.jobStatuses).toEqual(mockStatuses);
+      });
     });
 
     it('persists job statuses to localStorage on update', async () => {
+      // Mock successful empty response for initial load
+      dashboardApi.jobsAPI.getStatus.mockResolvedValue({ jobs: [] });
+      
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
       });
 
       act(() => {
@@ -106,7 +118,10 @@ describe('JobStatusContext', () => {
         );
       });
 
-      const saved = JSON.parse(localStorageMock.setItem.mock.calls[0][1]);
+      const savedCall = localStorageMock.setItem.mock.calls.find(
+        call => call[0] === 'jobStatuses' && call[1].includes('video1')
+      );
+      const saved = JSON.parse(savedCall[1]);
       expect(saved).toHaveProperty('video1');
       expect(saved.video1.job_id).toBe('job1');
       expect(saved.video1.status).toBe('queued');
@@ -114,9 +129,19 @@ describe('JobStatusContext', () => {
   });
 
   describe('Job tracking', () => {
-    it('tracks new jobs', () => {
+    beforeEach(async () => {
+      // Setup default mock for initial load
+      dashboardApi.jobsAPI.getStatus.mockResolvedValue({ jobs: [] });
+    });
+
+    it('tracks new jobs', async () => {
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
       });
 
       act(() => {
@@ -132,9 +157,14 @@ describe('JobStatusContext', () => {
       expect(result.current.activeJobs.has('job1')).toBe(true);
     });
 
-    it('updates job status', () => {
+    it('updates job status', async () => {
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
       });
 
       act(() => {
@@ -152,9 +182,14 @@ describe('JobStatusContext', () => {
       expect(result.current.jobStatuses.video1.progress).toBe(50);
     });
 
-    it('removes jobs', () => {
+    it('removes jobs', async () => {
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
       });
 
       act(() => {
@@ -172,9 +207,19 @@ describe('JobStatusContext', () => {
   });
 
   describe('Clear completed jobs', () => {
-    it('removes completed and failed jobs', () => {
+    beforeEach(() => {
+      // Setup default mock for initial load
+      dashboardApi.jobsAPI.getStatus.mockResolvedValue({ jobs: [] });
+    });
+
+    it('removes completed and failed jobs', async () => {
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
       });
 
       act(() => {
@@ -200,6 +245,10 @@ describe('JobStatusContext', () => {
   });
 
   describe('Polling mechanism', () => {
+    beforeEach(() => {
+      dashboardApi.jobsAPI.getStatus.mockClear();
+    });
+
     it('polls for job updates when there are active jobs', async () => {
       const mockJobs = [
         {
@@ -212,13 +261,18 @@ describe('JobStatusContext', () => {
         }
       ];
 
-      dashboardApi.jobsAPI.getStatus.mockResolvedValue({
-        success: true,
-        jobs: mockJobs
-      });
+      // First call for initial load, then polling
+      dashboardApi.jobsAPI.getStatus
+        .mockResolvedValueOnce({ jobs: [] })
+        .mockResolvedValue({ jobs: mockJobs });
 
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalledTimes(1);
       });
 
       act(() => {
@@ -231,7 +285,8 @@ describe('JobStatusContext', () => {
       });
 
       await waitFor(() => {
-        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
+        // Should have been called twice now (initial + poll)
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalledTimes(2);
       });
 
       expect(result.current.jobStatuses.video1.status).toBe('processing');
@@ -257,12 +312,19 @@ describe('JobStatusContext', () => {
         }
       ];
 
+      // Initial load, first poll (running), second poll (completed)
       dashboardApi.jobsAPI.getStatus
-        .mockResolvedValueOnce({ success: true, jobs: mockJobsRunning })
-        .mockResolvedValueOnce({ success: true, jobs: mockJobsCompleted });
+        .mockResolvedValueOnce({ jobs: [] })
+        .mockResolvedValueOnce({ jobs: mockJobsRunning })
+        .mockResolvedValueOnce({ jobs: mockJobsCompleted });
 
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalledTimes(1);
       });
 
       act(() => {
@@ -292,12 +354,18 @@ describe('JobStatusContext', () => {
 
     it('does not poll when there are no active jobs', async () => {
       dashboardApi.jobsAPI.getStatus.mockClear();
+      dashboardApi.jobsAPI.getStatus.mockResolvedValue({ jobs: [] });
 
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
       });
 
-      // No active jobs initially
+      // Wait for initial load to complete
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalledTimes(1);
+      });
+
+      // No active jobs after initial load
       expect(result.current.activeJobs.size).toBe(0);
 
       // Fast-forward time
@@ -305,15 +373,24 @@ describe('JobStatusContext', () => {
         vi.advanceTimersByTime(10000);
       });
 
-      // Should not have called getStatus
-      expect(dashboardApi.jobsAPI.getStatus).not.toHaveBeenCalled();
+      // Should not have polled again (only initial load call)
+      expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('Helper functions', () => {
-    it('getVideoJobStatus returns correct status', () => {
+    beforeEach(() => {
+      dashboardApi.jobsAPI.getStatus.mockResolvedValue({ jobs: [] });
+    });
+
+    it('getVideoJobStatus returns correct status', async () => {
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
       });
 
       act(() => {
@@ -332,14 +409,20 @@ describe('JobStatusContext', () => {
       expect(nonExistent).toBeNull();
     });
 
-    it('isVideoPreloaded correctly identifies preloaded videos', () => {
+    it('isVideoPreloaded correctly identifies preloaded videos', async () => {
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
       });
 
       act(() => {
         result.current.trackJob('video1', 'job1');
         result.current.trackJob('video2', 'job2');
+        result.current.trackJob('video3', 'job3');
       });
 
       act(() => {
@@ -351,11 +434,15 @@ describe('JobStatusContext', () => {
           status: 'completed',
           job_type: 'analysis'
         });
+        result.current.updateJobStatus('video3', {
+          status: 'processing',
+          job_type: 'preload'
+        });
       });
 
       expect(result.current.isVideoPreloaded('video1')).toBe(true);
       expect(result.current.isVideoPreloaded('video2')).toBe(false);
-      expect(result.current.isVideoPreloaded('video3')).toBe(false);
+      expect(result.current.isVideoPreloaded('video3')).toBe(false); // Not completed yet
     });
   });
 
@@ -381,7 +468,6 @@ describe('JobStatusContext', () => {
       ];
 
       dashboardApi.jobsAPI.getStatus.mockResolvedValue({
-        success: true,
         jobs: mockJobs
       });
 
@@ -413,7 +499,7 @@ describe('JobStatusContext', () => {
           'Error loading initial job statuses:',
           expect.any(Error)
         );
-      });
+      }, { timeout: 2000 });
 
       expect(result.current.jobStatuses).toEqual({});
       expect(result.current.activeJobs.size).toBe(0);
@@ -426,10 +512,18 @@ describe('JobStatusContext', () => {
     it('handles polling errors gracefully', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       
-      dashboardApi.jobsAPI.getStatus.mockRejectedValue(new Error('API Error'));
+      // Initial load succeeds, then polling fails
+      dashboardApi.jobsAPI.getStatus
+        .mockResolvedValueOnce({ jobs: [] })
+        .mockRejectedValue(new Error('API Error'));
 
       const { result } = renderHook(() => useJobStatus(), {
         wrapper: JobStatusProvider,
+      });
+
+      // Wait for initial load
+      await waitFor(() => {
+        expect(dashboardApi.jobsAPI.getStatus).toHaveBeenCalled();
       });
 
       act(() => {
@@ -445,7 +539,7 @@ describe('JobStatusContext', () => {
           'Error polling job statuses:',
           expect.any(Error)
         );
-      });
+      }, { timeout: 2000 });
 
       // Job should still be tracked despite error
       expect(result.current.jobStatuses.video1).toBeDefined();

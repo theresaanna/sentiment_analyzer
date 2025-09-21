@@ -3,11 +3,12 @@
   "build": {
     "builder": "NIXPACKS",
 "nixpacksPlan": {
-      "providers": ["python"],
+      "providers": ["python", "node"],
       "phases": {
         "setup": {
           "nixPkgs": [
             "python311",
+            "nodejs_20",
             "gcc",
             "postgresql",
             "redis",
@@ -20,6 +21,8 @@
 "install": {
           "cmds": [
             "python3 -V",
+            "node --version",
+            "npm --version",
             "which pip || true; pip --version || true",
             "virtualenv --version",
             "virtualenv -p python3 /opt/venv",
@@ -27,6 +30,11 @@
             "/opt/venv/bin/pip --version",
             "/opt/venv/bin/pip install --upgrade pip setuptools wheel",
             "/opt/venv/bin/pip install -r requirements.txt",
+            "echo 'Installing frontend dependencies...'",
+            "cd frontend && npm ci --omit=dev && cd ..",
+            "echo 'Building frontend...'",
+            "cd frontend && npm run build && cd ..",
+            "echo 'Frontend built successfully!'",
             "echo 'Dependencies installed. Using Modal ML service for sentiment analysis.'"
           ]
         },

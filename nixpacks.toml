@@ -2,9 +2,10 @@
 # This configuration runs tests during the build phase
 
 [phases.setup]
-# Include Python and build tools, plus pip/virtualenv from Nix to guarantee availability
+# Include Python, Node.js, and build tools
 nixPkgs = [
   "python311",
+  "nodejs_20",
   "gcc",
   "postgresql",
   "redis",
@@ -15,9 +16,11 @@ nixPkgs = [
 ]
 
 [phases.install]
-# Create and use a dedicated venv; rely on Nix-provided virtualenv/pip binaries
+# Create and use a dedicated venv; install both Python and Node dependencies
 cmds = [
     "python3 -V",
+    "node --version",
+    "npm --version",
     "which pip || true; pip --version || true",
     "virtualenv --version",
     "virtualenv -p python3 /opt/venv",
@@ -25,7 +28,10 @@ cmds = [
     "/opt/venv/bin/pip --version",
     "/opt/venv/bin/pip install --upgrade pip setuptools wheel",
     "/opt/venv/bin/pip install -r requirements.txt",
-    "echo '📦 Dependencies installed successfully'"
+    "echo '📦 Python dependencies installed successfully'",
+    "echo '📦 Installing frontend dependencies...'",
+    "cd frontend && rm -rf node_modules package-lock.json && npm install && cd ..",
+    "echo '📦 Frontend dependencies installed successfully'"
 ]
 
 [phases.test]
@@ -38,6 +44,10 @@ cmds = [
 [phases.build]
 dependsOn = ["test"]
 cmds = [
+    # Build frontend
+    "echo '🔨 Building frontend...'",
+    "cd frontend && npm run build && cd ..",
+    "echo '✅ Frontend built successfully!'",
     # No model downloads needed - using Modal ML service
     "echo '🚀 Using Modal ML service for sentiment analysis'",
     "echo '✅ Build complete!'"
