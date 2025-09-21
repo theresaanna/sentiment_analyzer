@@ -255,8 +255,8 @@ class PreloadStorageService {
 // Create singleton instance
 const preloadStorage = new PreloadStorageService();
 
-// Auto-clean expired entries periodically
-if (typeof window !== 'undefined') {
+// Auto-clean expired entries periodically (disabled during tests)
+if (typeof window !== 'undefined' && !(typeof process !== 'undefined' && process.env.NODE_ENV === 'test')) {
   // Clean on page load
   preloadStorage.cleanExpired();
   

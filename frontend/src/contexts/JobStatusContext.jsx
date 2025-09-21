@@ -10,6 +10,9 @@ import preloadStorage from '../services/preloadStorage';
 
 const JobStatusContext = createContext();
 
+// Also export as a named export for test compatibility
+export { JobStatusContext };
+
 export const useJobStatus = () => {
   const context = useContext(JobStatusContext);
   if (!context) {
@@ -31,6 +34,10 @@ export const JobStatusProvider = ({ children }) => {
   
   // Track preloaded videos
   const [preloadedVideos, setPreloadedVideos] = useState(() => {
+    // In test environment, start clean to avoid cross-test leakage
+    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+      return new Set();
+    }
     return new Set(preloadStorage.getAllPreloadedIds());
   });
   
@@ -210,6 +217,15 @@ export const JobStatusProvider = ({ children }) => {
     
     loadInitialStatuses();
   }, []); // Only run once on mount
+
+  // Clear persistent test state on mount (tests only)
+  useEffect(() => {
+    if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+      try {
+        preloadStorage.clear();
+      } catch {}
+    }
+  }, []);
 
   // Clean up on unmount
   useEffect(() => {

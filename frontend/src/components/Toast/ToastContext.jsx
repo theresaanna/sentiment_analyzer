@@ -10,6 +10,9 @@ const ToastContext = createContext({
   hideToast: () => {},
 });
 
+// Also export as a named export for test compatibility
+export { ToastContext };
+
 /**
  * Hook to use the toast context
  */

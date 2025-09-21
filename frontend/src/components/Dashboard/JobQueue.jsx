@@ -61,7 +61,7 @@ const sortJobs = (jobs, sortBy) => {
  * JobQueue Component - Enhanced queue display with multiple views
  */
 export const JobQueue = ({ 
-  initialView = 'active',
+  initialView = 'all',
   showFilters = true,
   showSearch = true,
   autoRefresh = true,
@@ -353,7 +353,7 @@ export const JobQueue = ({
               className={`nav-link ${currentView === 'history' ? 'active' : ''}`}
               onClick={() => setCurrentView('history')}
             >
-              History <span className="badge bg-info ms-1">{viewCounts.history}</span>
+              History <span className="badge bg-info ms-1"><span aria-hidden="true">{viewCounts.history}</span><span className="visually-hidden">{viewCounts.history} items</span></span>
             </button>
           </li>
         </ul>

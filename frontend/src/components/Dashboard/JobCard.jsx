@@ -39,7 +39,7 @@ const formatRelativeTime = (dateString) => {
   const days = Math.floor(hours / 24);
   
   if (days > 7) {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
   } else if (days > 0) {
     return `${days}d ago`;
   } else if (hours > 0) {
@@ -59,7 +59,7 @@ export const JobCard = ({
   onCancel, 
   onRetry, 
   onViewAnalysis,
-  expanded = false,
+  expanded,
   onToggleExpand,
   showActions = true,
   className = ''
@@ -67,7 +67,8 @@ export const JobCard = ({
   const [localExpanded, setLocalExpanded] = useState(expanded);
   
   // Compute derived values
-  const isExpanded = onToggleExpand ? expanded : localExpanded;
+  // Use controlled expansion only if expanded prop is explicitly provided
+  const isExpanded = typeof expanded !== 'undefined' ? expanded : localExpanded;
   const statusIcon = getStatusIcon(job.status);
   const statusColor = getStatusColor(job.status);
   const isActive = ['queued', 'processing', 'running'].includes(job.status);
@@ -80,7 +81,21 @@ export const JobCard = ({
   const videoTitle = metadata.title || job.video_title || (job.video_id ? `Video ${job.video_id}` : 'Untitled');
   const channelTitle = metadata.channel_title || job.channel_title || '';
   const duration = formatDuration(metadata.duration);
-  const publishedAt = formatRelativeTime(metadata.published_at || job.created_at);
+  // Choose a sensible timestamp: if job was created very recently, show that; otherwise use video published date
+  let timestampToFormat = null;
+  const createdAtDate = job.created_at ? new Date(job.created_at) : null;
+  const publishedAtDate = metadata.published_at ? new Date(metadata.published_at) : null;
+  if (createdAtDate) {
+    const RECENT_MS = 48 * 60 * 60 * 1000; // 48 hours threshold
+    if (!publishedAtDate || (Date.now() - createdAtDate.getTime()) < RECENT_MS) {
+      timestampToFormat = job.created_at;
+    } else {
+      timestampToFormat = metadata.published_at;
+    }
+  } else if (publishedAtDate) {
+    timestampToFormat = metadata.published_at;
+  }
+  const publishedAt = formatRelativeTime(timestampToFormat);
   const thumbnail = metadata.thumbnail || null;
   
   // Job type display
@@ -105,10 +120,11 @@ export const JobCard = ({
     : `${progressPercentage}%`;
   
   const handleToggle = () => {
+    // Always toggle local expanded state for usability in uncontrolled scenarios
+    setLocalExpanded(prev => !prev);
+    // Also notify parent if callback provided (for controlled scenarios)
     if (onToggleExpand) {
       onToggleExpand(job.job_id);
-    } else {
-      setLocalExpanded(!localExpanded);
     }
   };
   
@@ -166,7 +182,8 @@ export const JobCard = ({
         
         <div className="job-card-header-right">
           <div className={`job-status badge bg-${statusColor}`}>
-            {statusIcon} {job.status.toUpperCase()}
+            <span aria-hidden="true">{statusIcon}</span>
+            <span className="status-text">{job.status.toUpperCase()}</span>
           </div>
           
           {isActive && (
