@@ -31,7 +31,7 @@
             "/opt/venv/bin/pip install --upgrade pip setuptools wheel",
             "/opt/venv/bin/pip install -r requirements.txt",
             "echo 'Installing frontend dependencies...'",
-            "cd frontend && npm ci --omit=dev && cd ..",
+            "cd frontend && rm -rf node_modules && npm install --force && cd ..",
             "echo 'Building frontend...'",
             "cd frontend && npm run build && cd ..",
             "echo 'Frontend built successfully!'",

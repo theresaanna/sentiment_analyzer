@@ -51,6 +51,11 @@
     "vite-bundle-visualizer": "^1.0.1",
     "vitest": "^2.0.5"
   },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-gnu": "4.9.5",
+    "@rollup/rollup-linux-x64-musl": "4.9.5",
+    "@rollup/rollup-darwin-x64": "4.9.5"
+  },
   "engines": {
     "node": ">=16.0.0",
     "npm": ">=8.0.0"

@@ -176,7 +176,8 @@ export const JobStatusProvider = ({ children }) => {
             }
           });
           
-          setJobStatuses(statuses);
+          // Merge with existing localStorage data, but update any jobs from API
+          setJobStatuses(prev => ({ ...prev, ...statuses }));
           setActiveJobs(active);
         }
       } catch (error) {

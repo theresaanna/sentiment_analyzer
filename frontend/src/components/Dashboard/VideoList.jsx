@@ -36,7 +36,11 @@ const VideoItem = ({ video, isPreloaded, jobStatus, onPreload, index }) => {
     if (localPreloaded || isPreloading) return;
     
     setIsPreloading(true);
-    await onPreload(video.id);  // Parent will handle job tracking
+    const success = await onPreload(video.id);  // Parent will handle job tracking
+    // If onPreload returns false or undefined (error), reset loading state
+    if (!success) {
+      setIsPreloading(false);
+    }
   };
 
   // Determine button state and text based on job status
@@ -178,9 +182,12 @@ const VideoList = ({ videos, preloadedVideos = new Set(), isLoading }) => {
         // Track this job in the context
         trackJob(videoId, result.job_id);
         showToast(`Preload queued for video`, 'success');
+        return true; // Success
       }
+      return false; // No job_id
     } catch (error) {
       showToast(error.message || 'Failed to queue preload', 'danger');
+      return false; // Error occurred
     }
   };
 
