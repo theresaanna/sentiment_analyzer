@@ -173,4 +173,7 @@ export const dashboardAPI = {
   fetchJSON,
 };
 
+// Also export individual APIs for direct imports
+export { channelAPI, jobsAPI, preloadAPI, analysisAPI };
+
 export default dashboardAPI;

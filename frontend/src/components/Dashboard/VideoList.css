@@ -114,6 +114,34 @@
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
 }
 
+.vibe-button.failed {
+  background: linear-gradient(135deg, #d9534f 0%, #c9302c 100%);
+  color: white;
+  cursor: pointer;
+}
+
+.vibe-button.cancelled {
+  background: linear-gradient(135deg, #f0ad4e 0%, #ec971f 100%);
+  color: white;
+  cursor: pointer;
+}
+
+.vibe-button.processing {
+  background: linear-gradient(135deg, #5bc0de 0%, #31b0d5 100%);
+  color: white;
+  cursor: not-allowed;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
 .loading-overlay {
   position: absolute;
   top: 0;

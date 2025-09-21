@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { VideoList } from './VideoList'
 import { ToastProvider } from '../Toast/ToastContext'
+import { JobStatusProvider } from '../../contexts/JobStatusContext'
 
 describe('VideoList Component - Props Tests', () => {
   const mockVideos = [
@@ -33,18 +34,22 @@ describe('VideoList Component - Props Tests', () => {
 
   it('renders empty state when no videos provided', () => {
     render(
-      <ToastProvider>
-        <VideoList videos={[]} isLoading={false} />
-      </ToastProvider>
+      <JobStatusProvider>
+        <ToastProvider>
+          <VideoList videos={[]} isLoading={false} />
+        </ToastProvider>
+      </JobStatusProvider>
     )
     expect(screen.getByText(/No videos found/i)).toBeInTheDocument()
   })
 
   it('renders loading state when isLoading is true', () => {
     render(
-      <ToastProvider>
-        <VideoList videos={[]} isLoading={true} />
-      </ToastProvider>
+      <JobStatusProvider>
+        <ToastProvider>
+          <VideoList videos={[]} isLoading={true} />
+        </ToastProvider>
+      </JobStatusProvider>
     )
     const loadingElements = screen.getAllByText(/Loading.../i)
     expect(loadingElements.length).toBeGreaterThan(0)
@@ -52,9 +57,11 @@ describe('VideoList Component - Props Tests', () => {
 
   it('renders videos list when videos provided', () => {
     render(
-      <ToastProvider>
-        <VideoList videos={mockVideos} isLoading={false} />
-      </ToastProvider>
+      <JobStatusProvider>
+        <ToastProvider>
+          <VideoList videos={mockVideos} isLoading={false} />
+        </ToastProvider>
+      </JobStatusProvider>
     )
     expect(screen.getByText('Amazing Video')).toBeInTheDocument()
     expect(screen.getByText('Another Great Video')).toBeInTheDocument()
@@ -65,9 +72,11 @@ describe('VideoList Component - Props Tests', () => {
 
   it('shows preload button for videos', () => {
     render(
-      <ToastProvider>
-        <VideoList videos={[mockVideos[0]]} isLoading={false} />
-      </ToastProvider>
+      <JobStatusProvider>
+        <ToastProvider>
+          <VideoList videos={[mockVideos[0]]} isLoading={false} />
+        </ToastProvider>
+      </JobStatusProvider>
     )
     expect(screen.getByText('Preload')).toBeInTheDocument()
   })
@@ -81,9 +90,11 @@ describe('VideoList Component - Props Tests', () => {
       }
     }]
     render(
-      <ToastProvider>
-        <VideoList videos={testVideos} isLoading={false} />
-      </ToastProvider>
+      <JobStatusProvider>
+        <ToastProvider>
+          <VideoList videos={testVideos} isLoading={false} />
+        </ToastProvider>
+      </JobStatusProvider>
     )
     expect(screen.getByText(/10,000 views/i)).toBeInTheDocument()
     expect(screen.getByText(/100 comments/i)).toBeInTheDocument()
@@ -91,9 +102,11 @@ describe('VideoList Component - Props Tests', () => {
 
   it('shows video links for each video', () => {
     render(
-      <ToastProvider>
-        <VideoList videos={mockVideos} isLoading={false} />
-      </ToastProvider>
+      <JobStatusProvider>
+        <ToastProvider>
+          <VideoList videos={mockVideos} isLoading={false} />
+        </ToastProvider>
+      </JobStatusProvider>
     )
     // The component creates links with the video titles
     const videoLinks = screen.getAllByRole('link')

@@ -157,12 +157,12 @@ function AnalyzeApp() {
     // Video info is now rendered server-side, no need to mount it here
     
     // Mount Comment Analysis Controls - Use direct DOM for reliability
-    const commentAnalysisMount = document.querySelector('#analysis-controls-root');
-    console.log('[AnalyzeApp] Comment analysis mount found:', commentAnalysisMount);
-    if (commentAnalysisMount) {
+    const analyzeButtonMount = document.querySelector('#analysis-controls-root');
+    console.log('[AnalyzeApp] Analyze button mount found:', analyzeButtonMount);
+    if (analyzeButtonMount) {
       console.log('[AnalyzeApp] Inserting analyze button directly');
       // Skip React for the button - use direct DOM manipulation for reliability
-      commentAnalysisMount.innerHTML = `
+      analyzeButtonMount.innerHTML = `
         <div class="text-center py-3">
           <button id="mainAnalyzeBtn" class="btn btn-lg" 
                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 

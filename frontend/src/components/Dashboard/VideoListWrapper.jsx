@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { VideoList } from './VideoList';
 import { ToastProvider } from '../Toast/ToastContext';
+import { JobStatusProvider } from '../../contexts/JobStatusContext';
 
 /**
  * Stateful wrapper for VideoList that manages fetching and state
@@ -107,12 +108,14 @@ export const VideoListWrapper = () => {
         Refresh
       </button>
 
-      <ToastProvider>
-        <VideoList 
-          videos={filteredVideos}
-          isLoading={false}
-        />
-      </ToastProvider>
+      <JobStatusProvider>
+        <ToastProvider>
+          <VideoList 
+            videos={filteredVideos}
+            isLoading={false}
+          />
+        </ToastProvider>
+      </JobStatusProvider>
       
       {/* Pagination */}
       {totalPages > 1 && (

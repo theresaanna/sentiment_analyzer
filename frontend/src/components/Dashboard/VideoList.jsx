@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { formatNumber, staggerDelay } from '../../utils/dashboardUtils';
 import { preloadAPI } from '../../services/dashboardApi';
 import { useToast } from '../Toast/ToastContext';
+import { useJobStatus } from '../../contexts/JobStatusContext';
 import './VideoList.css';
 
 /**
  * Individual Video Item Component
  */
-const VideoItem = ({ video, isPreloaded, onPreload, index }) => {
+const VideoItem = ({ video, isPreloaded, jobStatus, onPreload, index }) => {
   const [isPreloading, setIsPreloading] = useState(false);
   const [localPreloaded, setLocalPreloaded] = useState(isPreloaded);
 
@@ -15,17 +16,94 @@ const VideoItem = ({ video, isPreloaded, onPreload, index }) => {
     setLocalPreloaded(isPreloaded);
   }, [isPreloaded]);
 
+  // Update preloading state based on job status
+  useEffect(() => {
+    if (jobStatus) {
+      if (jobStatus.status === 'queued' || jobStatus.status === 'processing') {
+        setIsPreloading(true);
+        setLocalPreloaded(false);
+      } else if (jobStatus.status === 'completed') {
+        setIsPreloading(false);
+        setLocalPreloaded(true);
+      } else if (jobStatus.status === 'failed' || jobStatus.status === 'cancelled') {
+        setIsPreloading(false);
+        setLocalPreloaded(false);
+      }
+    }
+  }, [jobStatus]);
+
   const handlePreload = async () => {
     if (localPreloaded || isPreloading) return;
     
     setIsPreloading(true);
-    await onPreload(video.id);
-    
-    // Optimistically mark as preloaded
-    setTimeout(() => {
-      setLocalPreloaded(true);
-      setIsPreloading(false);
-    }, 2000);
+    await onPreload(video.id);  // Parent will handle job tracking
+  };
+
+  // Determine button state and text based on job status
+  const getButtonContent = () => {
+    if (jobStatus) {
+      switch(jobStatus.status) {
+        case 'queued':
+          return (
+            <>
+              <i className="fas fa-hourglass-half"></i> Queued
+              {jobStatus.progress > 0 && <span className="ms-1">({jobStatus.progress}%)</span>}
+            </>
+          );
+        case 'processing':
+          return (
+            <>
+              <i className="fas fa-spinner fa-spin"></i> Processing
+              {jobStatus.progress > 0 && <span className="ms-1">({jobStatus.progress}%)</span>}
+            </>
+          );
+        case 'completed':
+          return (
+            <>
+              <span className="button-icon">✅</span>
+              <span className="button-text">Preloaded</span>
+            </>
+          );
+        case 'failed':
+          return (
+            <>
+              <span className="button-icon">❌</span>
+              <span className="button-text">Failed</span>
+            </>
+          );
+        case 'cancelled':
+          return (
+            <>
+              <span className="button-icon">🚫</span>
+              <span className="button-text">Cancelled</span>
+            </>
+          );
+        default:
+          break;
+      }
+    }
+
+    if (isPreloading) {
+      return (
+        <>
+          <i className="fas fa-spinner fa-spin"></i> Queuing...
+        </>
+      );
+    } else if (localPreloaded) {
+      return (
+        <>
+          <span className="button-icon">✅</span>
+          <span className="button-text">Preloaded</span>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <span className="button-icon">🚀</span>
+          <span className="button-text">Preload</span>
+        </>
+      );
+    }
   };
 
   return (
@@ -67,25 +145,18 @@ const VideoItem = ({ video, isPreloaded, onPreload, index }) => {
       </div>
       <div>
         <button 
-          className={`vibe-button small ${localPreloaded ? 'preloaded' : ''}`}
+          className={`vibe-button small ${
+            localPreloaded ? 'preloaded' : ''
+          } ${
+            jobStatus?.status === 'failed' ? 'failed' : ''
+          } ${
+            jobStatus?.status === 'cancelled' ? 'cancelled' : ''
+          }`}
           onClick={handlePreload}
-          disabled={localPreloaded || isPreloading}
+          disabled={localPreloaded || isPreloading || 
+            (jobStatus && ['queued', 'processing'].includes(jobStatus.status))}
         >
-          {isPreloading ? (
-            <>
-              <i className="fas fa-spinner fa-spin"></i> Queuing...
-            </>
-          ) : localPreloaded ? (
-            <>
-              <span className="button-icon">✅</span>
-              <span className="button-text">Preloaded</span>
-            </>
-          ) : (
-            <>
-              <span className="button-icon">🚀</span>
-              <span className="button-text">Preload</span>
-            </>
-          )}
+          {getButtonContent()}
         </button>
       </div>
     </div>
@@ -97,11 +168,17 @@ const VideoItem = ({ video, isPreloaded, onPreload, index }) => {
  */
 const VideoList = ({ videos, preloadedVideos = new Set(), isLoading }) => {
   const { showToast } = useToast();
+  const { getVideoJobStatus, trackJob, isVideoPreloaded } = useJobStatus();
   
+  // Handle preload action
   const handlePreload = async (videoId) => {
     try {
-      await preloadAPI.queuePreload(videoId);
-      showToast(`Preload queued for ${videoId}`, 'success');
+      const result = await preloadAPI.queuePreload(videoId);
+      if (result.job_id) {
+        // Track this job in the context
+        trackJob(videoId, result.job_id);
+        showToast(`Preload queued for video`, 'success');
+      }
     } catch (error) {
       showToast(error.message || 'Failed to queue preload', 'danger');
     }
@@ -135,15 +212,23 @@ const VideoList = ({ videos, preloadedVideos = new Set(), isLoading }) => {
 
   return (
     <div className="video-list">
-      {videos.map((video, index) => (
-        <VideoItem
-          key={video.id}
-          video={video}
-          isPreloaded={preloadedVideos.has(video.id)}
-          onPreload={handlePreload}
-          index={index}
-        />
-      ))}
+      {videos.map((video, index) => {
+        const jobStatus = getVideoJobStatus(video.id);
+        const isPreloaded = preloadedVideos.has(video.id) || 
+                           isVideoPreloaded(video.id) ||
+                           jobStatus?.status === 'completed';
+        
+        return (
+          <VideoItem
+            key={video.id}
+            video={video}
+            isPreloaded={isPreloaded}
+            jobStatus={jobStatus}
+            onPreload={handlePreload}
+            index={index}
+          />
+        );
+      })}
     </div>
   );
 };
