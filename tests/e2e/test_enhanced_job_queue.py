@@ -9,6 +9,8 @@ import time
 from playwright.sync_api import Page, expect
 from unittest.mock import patch, MagicMock
 
+pytestmark = pytest.mark.e2e
+
 
 @pytest.fixture
 def authenticated_pro_user(page: Page):

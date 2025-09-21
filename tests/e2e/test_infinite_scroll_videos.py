@@ -9,6 +9,8 @@ import time
 import re
 from playwright.sync_api import Page, expect
 
+pytestmark = pytest.mark.e2e
+
 
 @pytest.fixture
 def authenticated_user(page: Page):
