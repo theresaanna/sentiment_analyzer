@@ -1926,16 +1926,10 @@ function AnalyzeApp() {
     };
 
     const funFacts = [
-      'Did you know? The average YouTube comment is 27 words long!',
-      'Fun fact: 70% of YouTube comments are positive or neutral!',
       'YouTube gets over 500 hours of video uploaded every minute!',
-      "The first YouTube comment ever was 'Interesting...' in 2005!",
-      'Comments with emojis get 33% more engagement! 😊',
       'YouTube comments support over 75 languages worldwide!',
-      'The most liked YouTube comment has over 4 million likes!',
-      'Did you know? Comments peak within the first 2 hours of upload!',
-      "YouTube's algorithm considers comment sentiment for recommendations!",
-    ];
+      'The most liked YouTube comment has over 4 million likes!'
+     ];
 
     // Cleanup on unmount
     return () => {
