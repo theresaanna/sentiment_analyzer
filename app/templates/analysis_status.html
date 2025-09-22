@@ -13,7 +13,11 @@
         </div>
         <div class="card-body">
           <div id="apiError" class="alert alert-danger mt-2" style="display: none;"></div>
-          <h4>{{ job.video_title or 'Loading video information...' }}</h4>
+          <h4>
+            <a class="job-video-link" href="/analysis/{{ job.job_id }}">
+              {{ job.video_title or 'Loading video information...' }}
+            </a>
+          </h4>
           {% if job.channel_name %}
           <p class="text-muted">Channel: {{ job.channel_name }}</p>
           {% endif %}
@@ -272,9 +276,13 @@ function updateProgress(job) {
   
   // Update video title if available
   if (job.video_title) {
-    const titleElement = document.querySelector('h4');
-    if (titleElement && titleElement.textContent.includes('Loading')) {
-      titleElement.textContent = job.video_title;
+    const titleAnchor = document.querySelector('h4 a.job-video-link');
+    if (titleAnchor) {
+      titleAnchor.textContent = job.video_title;
+    } else {
+      // Fallback if structure changes
+      const titleElement = document.querySelector('h4');
+      if (titleElement) titleElement.textContent = job.video_title;
     }
   }
   
