@@ -226,10 +226,10 @@ sentiment_analyzer/
 ### Running Tests
 
 ```bash
-# Run all tests (unit and e2e)
+# Run all front end tests (unit and e2e)
 npm run test
 
-# Run only Python tests (will cause failures if app is not running on 8001)
+# Run all Python tests (will cause failures if app is not running on 8001)
 # pytest
 ```
 
