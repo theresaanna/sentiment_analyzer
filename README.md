@@ -226,16 +226,11 @@ sentiment_analyzer/
 ### Running Tests
 
 ```bash
-# Run all tests
-pytest
+# Run all tests (unit and e2e)
+npm run test
 
-# Run with coverage
-pytest --cov=app --cov-report=html
-
-# Run specific test categories
-pytest tests/test_routes.py
-pytest tests/test_sentiment_api_service.py
-pytest -m "not integration"  # Skip integration tests
+# Run only Python tests (will cause failures if app is not running on 8001)
+# pytest
 ```
 
 ### Code Quality
