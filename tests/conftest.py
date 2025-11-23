@@ -28,13 +28,15 @@ class TestConfig(Config):
     REDIS_URL = 'redis://localhost:6379/1'
     YOUTUBE_API_KEY = 'test-api-key'
     CACHE_TYPE = 'simple'
-    
+    MODAL_ML_BASE_URL = 'http://test-modal-url'
+    SKIP_MODEL_PRELOAD = True
+
 
 @pytest.fixture(scope='function')
 def app():
     """Create application for testing."""
     app = create_app(TestConfig)
-    
+
     with app.app_context():
         db.create_all()
         yield app
@@ -108,7 +110,7 @@ def auth_client(client, app):
         user.set_password('test_password')
         db.session.add(user)
         db.session.commit()
-        
+
         with client.session_transaction() as sess:
             sess['_user_id'] = str(user.id)
             sess['_fresh'] = True
@@ -129,7 +131,7 @@ def pro_client(client, app):
         user.set_password('test_password')
         db.session.add(user)
         db.session.commit()
-        
+
         with client.session_transaction() as sess:
             sess['_user_id'] = str(user.id)
             sess['_fresh'] = True
@@ -167,6 +169,23 @@ def test_video(app, test_channel):
     db.session.add(video)
     db.session.commit()
     return video
+
+
+@pytest.fixture(scope='function')
+def test_analysis_job(app, test_user):
+    """Create a test analysis job."""
+    job = AnalysisJob(
+        user_id=test_user.id,
+        video_id='test_video_123',
+        video_title='Test Video',
+        video_url='https://youtube.com/watch?v=test_video_123',
+        channel_name='Test Channel',
+        comment_count_requested=100,
+        status='queued'
+    )
+    db.session.add(job)
+    db.session.commit()
+    return job
 
 
 @pytest.fixture(scope='function')
@@ -276,7 +295,7 @@ def mock_stripe():
     with patch('stripe.Customer') as mock_customer, \
          patch('stripe.Subscription') as mock_subscription, \
          patch('stripe.checkout.Session') as mock_session:
-        
+
         mock_customer.create.return_value = MagicMock(id='cus_test123')
         mock_subscription.create.return_value = MagicMock(
             id='sub_test123',
@@ -286,7 +305,7 @@ def mock_stripe():
             id='cs_test123',
             url='https://checkout.stripe.com/test'
         )
-        
+
         yield {
             'customer': mock_customer,
             'subscription': mock_subscription,
@@ -300,6 +319,27 @@ def mock_email():
     with patch('app.email.send_email') as mock_send:
         mock_send.return_value = True
         yield mock_send
+
+
+@pytest.fixture(scope='function')
+def mock_youtube_api():
+    """Mock YouTube API calls."""
+    with patch('app.services.youtube.build') as mock:
+        yield mock
+
+
+@pytest.fixture(scope='function')
+def mock_modal_client():
+    """Mock Modal ML client."""
+    with patch('app.services.sentiment.modal_client') as mock:
+        mock_instance = Mock()
+        mock.return_value = mock_instance
+        mock_instance.analyze_sentiment.return_value = {
+            'sentiment': 'positive',
+            'confidence': 0.85,
+            'emotions': {'joy': 0.7, 'anger': 0.1, 'sadness': 0.2}
+        }
+        yield mock_instance
 
 
 @pytest.fixture(autouse=True)

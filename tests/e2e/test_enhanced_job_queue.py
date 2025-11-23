@@ -9,7 +9,7 @@ import time
 from playwright.sync_api import Page, expect
 from unittest.mock import patch, MagicMock
 
-pytestmark = pytest.mark.e2e
+pytestmark = [pytest.mark.e2e, pytest.mark.slow]
 
 
 @pytest.fixture

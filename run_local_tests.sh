@@ -37,10 +37,10 @@ case $TEST_LEVEL in
             --tb=short \
             --maxfail=5 \
             --disable-warnings \
-            -k "not integration and not slow and not redis" \
+            --ignore=tests/e2e/ \
             --ignore=tests/test_enhanced_integration.py \
             --ignore=tests/test_redis_cloud.py \
-            --ignore=tests/test_youtube_services.py
+            -k "not integration and not slow and not redis and not e2e and not youtube"
         ;;
     
     standard)
