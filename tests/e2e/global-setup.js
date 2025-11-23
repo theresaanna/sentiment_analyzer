@@ -21,7 +21,12 @@ async function globalSetup() {
   // Start Flask development server
   const flaskScript = path.join(__dirname, '..', '..', 'run.py');
   
-  flaskProcess = spawn('python', [flaskScript], {
+  // Use python3 or venv python if available
+  const pythonCmd = require('fs').existsSync(path.join(__dirname, '..', '..', 'venv', 'bin', 'python3')) 
+    ? path.join(__dirname, '..', '..', 'venv', 'bin', 'python3')
+    : 'python3';
+  
+  flaskProcess = spawn(pythonCmd, [flaskScript], {
     env: {
       ...process.env,
       FLASK_ENV: 'testing',
